@@ -271,6 +271,7 @@ class SeleccionRepository:
             .order_by(ApplicationNote.created_at.desc())
         )
         return list(self.db.scalars(stmt))
+<<<<<<< Updated upstream
 =======
     def obtener_miembro_empresa(self, user_id: uuid.UUID) -> CompanyMember | None:
         stmt = (
@@ -495,3 +496,6 @@ class SeleccionRepository:
         )
         return list(self.db.scalars(stmt).all())
 >>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
+=======
+
+>>>>>>> Stashed changes
