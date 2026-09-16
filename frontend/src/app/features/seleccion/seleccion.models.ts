@@ -96,37 +96,32 @@ export interface ConfigurarEtapasRequest {
 
 export interface FormacionResponse {
   id: string;
-  institution: string;
-  program_name: string;
-  field_of_study_id?: string;
-  field_of_study_name?: string;
-  education_level: string;
-  start_date: string;
-  end_date?: string;
-  is_current: boolean;
+  institucion: string;
+  programa: string;
+  estado_academico?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
 }
 
 export interface ExperienciaResponse {
   id: string;
-  company_name: string;
-  job_title: string;
-  description?: string;
-  start_date: string;
-  end_date?: string;
-  is_current: boolean;
+  empresa: string;
+  cargo: string;
+  descripcion?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
 }
 
 export interface HabilidadResponse {
   id: string;
-  name: string;
-  category: string;
+  nombre: string;
+  categoria?: string;
 }
 
 export interface IdiomaResponse {
   id: string;
-  language_code: string;
-  language_name: string;
-  proficiency_level: string;
+  idioma: string;
+  nivel: string;
 }
 
 export interface CompararCandidatosRequest {
