@@ -23,6 +23,10 @@ export class ComparacionModalComponent implements OnInit {
   cargando = signal(true);
   error = signal<string | null>(null);
 
+  postulacionADescartar = signal<string | null>(null);
+  nombreADescartar = signal<string>('');
+  procesandoDescarte = signal(false);
+
   ngOnInit(): void {
     if (this.postulacionIds.length < 2 || this.postulacionIds.length > 3) {
       this.error.set('Debe seleccionar entre 2 y 3 candidatos.');
@@ -47,23 +51,38 @@ export class ComparacionModalComponent implements OnInit {
     });
   }
 
-  descartarCandidato(idPostulacion: string): void {
-    if (!confirm('¿Seguro que deseas descartar a este candidato?')) return;
+  abrirConfirmacionDescarte(idPostulacion: string, nombre: string): void {
+    this.postulacionADescartar.set(idPostulacion);
+    this.nombreADescartar.set(nombre);
+  }
+
+  cerrarConfirmacionDescarte(): void {
+    if (this.procesandoDescarte()) return;
+    this.postulacionADescartar.set(null);
+    this.nombreADescartar.set('');
+  }
+
+  confirmarDescarte(): void {
+    const id = this.postulacionADescartar();
+    if (!id) return;
     
-    this.svc.descartarCandidato(idPostulacion, { motivo: 'Descartado desde vista de comparación' }).subscribe({
+    this.procesandoDescarte.set(true);
+    this.svc.descartarCandidato(id, { motivo: 'Descartado desde vista de comparación' }).subscribe({
       next: () => {
-        const remaining = this.candidatos().filter(c => c.postulacion_id !== idPostulacion);
+        this.procesandoDescarte.set(false);
+        this.cerrarConfirmacionDescarte();
+
+        const remaining = this.candidatos().filter(c => c.postulacion_id !== id);
         this.candidatos.set(remaining);
-        this.candidateDiscarded.emit(); // Notificar al padre para actualizar el tablero
+        this.candidateDiscarded.emit(); 
         
         if (remaining.length < 2) {
-          // Ya no se puede comparar
-          alert('Queda menos de 2 candidatos, la comparación se cerrará.');
           this.close.emit();
         }
       },
       error: (e: HttpErrorResponse) => {
-        alert(e.error?.detail ?? 'Error al descartar.');
+        this.procesandoDescarte.set(false);
+        this.cerrarConfirmacionDescarte();
       }
     });
   }

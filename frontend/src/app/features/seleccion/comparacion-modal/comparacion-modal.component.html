@@ -25,7 +25,7 @@
           </div>
 
           <div class="candidate-actions">
-            <button class="btn btn-danger btn-sm" (click)="descartarCandidato(cand.postulacion_id)">
+            <button class="btn btn-danger btn-sm" (click)="abrirConfirmacionDescarte(cand.postulacion_id, cand.candidato_nombre)">
               <i class="fas fa-times"></i> Descartar
             </button>
           </div>
@@ -36,8 +36,8 @@
             <div *ngIf="cand.experiencia.length === 0" class="empty-state">Sin experiencia registrada</div>
             <ul class="item-list">
               <li *ngFor="let exp of cand.experiencia">
-                <strong>{{ exp.job_title }}</strong> en {{ exp.company_name }}
-                <div class="dates">{{ exp.start_date | date:'MMM yyyy' }} - {{ exp.is_current ? 'Presente' : (exp.end_date | date:'MMM yyyy') }}</div>
+                <strong>{{ exp.cargo }}</strong> en {{ exp.empresa }}
+                <div class="dates">{{ exp.fecha_inicio | date:'MMM yyyy' }} - {{ exp.fecha_fin ? (exp.fecha_fin | date:'MMM yyyy') : 'Presente' }}</div>
               </li>
             </ul>
           </div>
@@ -48,8 +48,8 @@
             <div *ngIf="cand.formacion.length === 0" class="empty-state">Sin formación registrada</div>
             <ul class="item-list">
               <li *ngFor="let edu of cand.formacion">
-                <strong>{{ edu.field_of_study_name || edu.program_name }}</strong>
-                <div>{{ edu.institution }} ({{ edu.education_level }})</div>
+                <strong>{{ edu.programa }}</strong>
+                <div>{{ edu.institucion }} ({{ edu.estado_academico }})</div>
               </li>
             </ul>
           </div>
@@ -59,7 +59,7 @@
             <h4><i class="fas fa-star"></i> Habilidades</h4>
             <div *ngIf="cand.habilidades.length === 0" class="empty-state">Sin habilidades</div>
             <div class="tags">
-              <span class="tag" *ngFor="let hab of cand.habilidades">{{ hab.name }}</span>
+              <span class="tag" *ngFor="let hab of cand.habilidades">{{ hab.nombre }}</span>
             </div>
           </div>
 
@@ -69,7 +69,7 @@
             <div *ngIf="cand.idiomas.length === 0" class="empty-state">Sin idiomas</div>
             <ul class="item-list">
               <li *ngFor="let lang of cand.idiomas">
-                <strong>{{ lang.language_name }}</strong>: {{ lang.proficiency_level }}
+                <strong>{{ lang.idioma }}</strong>: {{ lang.nivel }}
               </li>
             </ul>
           </div>
@@ -77,6 +77,26 @@
         </div>
 
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación custom para no usar window.confirm() -->
+<div class="modal-overlay custom-confirm-modal" *ngIf="postulacionADescartar() !== null" style="z-index: 9999;">
+  <div class="modal-panel" style="max-width: 450px; background: white; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <div style="color: #ef4444; margin-bottom: 15px;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </div>
+    <h3 style="margin-bottom: 10px; font-size: 1.25rem;">Descartar Candidato</h3>
+    <p style="color: #64748b; margin-bottom: 25px;">¿Seguro que deseas descartar definitivamente a <strong>{{ nombreADescartar() }}</strong> de este proceso de selección?</p>
+    
+    <div style="display: flex; gap: 15px; justify-content: center;">
+      <button class="btn btn-ghost" (click)="cerrarConfirmacionDescarte()" [disabled]="procesandoDescarte()">Cancelar</button>
+      <button class="btn btn-danger" (click)="confirmarDescarte()" [disabled]="procesandoDescarte()">
+        {{ procesandoDescarte() ? 'Procesando...' : 'Sí, descartar' }}
+      </button>
     </div>
   </div>
 </div>
