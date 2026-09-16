@@ -1,0 +1,82 @@
+<div class="modal-overlay">
+  <div class="modal-content comparison-modal">
+    <div class="modal-header">
+      <h2>Comparación de Candidatos</h2>
+      <button class="btn-close" (click)="close.emit()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="cargando()" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando perfiles...</p>
+      </div>
+
+      <div *ngIf="error()" class="error-state">
+        <p>{{ error() }}</p>
+      </div>
+
+      <div *ngIf="!cargando() && !error()" class="comparison-grid" [style.grid-template-columns]="'repeat(' + candidatos().length + ', 1fr)'">
+        
+        <!-- Headers -->
+        <div class="candidate-col" *ngFor="let cand of candidatos()">
+          <div class="candidate-header">
+            <h3>{{ cand.candidato_nombre }}</h3>
+            <span class="afinidad-badge" *ngIf="cand.afinidad !== null">{{ cand.afinidad }}% afinidad</span>
+          </div>
+
+          <div class="candidate-actions">
+            <button class="btn btn-danger btn-sm" (click)="descartarCandidato(cand.postulacion_id)">
+              <i class="fas fa-times"></i> Descartar
+            </button>
+          </div>
+
+          <!-- Experiencia -->
+          <div class="section-card">
+            <h4><i class="fas fa-briefcase"></i> Experiencia</h4>
+            <div *ngIf="cand.experiencia.length === 0" class="empty-state">Sin experiencia registrada</div>
+            <ul class="item-list">
+              <li *ngFor="let exp of cand.experiencia">
+                <strong>{{ exp.job_title }}</strong> en {{ exp.company_name }}
+                <div class="dates">{{ exp.start_date | date:'MMM yyyy' }} - {{ exp.is_current ? 'Presente' : (exp.end_date | date:'MMM yyyy') }}</div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Formación -->
+          <div class="section-card">
+            <h4><i class="fas fa-graduation-cap"></i> Formación</h4>
+            <div *ngIf="cand.formacion.length === 0" class="empty-state">Sin formación registrada</div>
+            <ul class="item-list">
+              <li *ngFor="let edu of cand.formacion">
+                <strong>{{ edu.field_of_study_name || edu.program_name }}</strong>
+                <div>{{ edu.institution }} ({{ edu.education_level }})</div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Habilidades -->
+          <div class="section-card">
+            <h4><i class="fas fa-star"></i> Habilidades</h4>
+            <div *ngIf="cand.habilidades.length === 0" class="empty-state">Sin habilidades</div>
+            <div class="tags">
+              <span class="tag" *ngFor="let hab of cand.habilidades">{{ hab.name }}</span>
+            </div>
+          </div>
+
+          <!-- Idiomas -->
+          <div class="section-card">
+            <h4><i class="fas fa-language"></i> Idiomas</h4>
+            <div *ngIf="cand.idiomas.length === 0" class="empty-state">Sin idiomas</div>
+            <ul class="item-list">
+              <li *ngFor="let lang of cand.idiomas">
+                <strong>{{ lang.language_name }}</strong>: {{ lang.proficiency_level }}
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

@@ -99,3 +99,26 @@ class NotaInternaResponse(BaseModel):
     autor_cargo: str | None = None
     content: str
     created_at: datetime
+
+
+from app.features.perfil.schema import (
+    FormacionResponse,
+    ExperienciaResponse,
+    IdiomaResponse,
+    HabilidadResponse,
+)
+
+class CompararCandidatosRequest(BaseModel):
+    postulaciones: list[uuid.UUID] = Field(..., min_length=2, max_length=3, description="IDs de las postulaciones a comparar")
+
+class CandidatoComparacionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    postulacion_id: uuid.UUID
+    candidato_id: uuid.UUID
+    candidato_nombre: str
+    afinidad: int | None = None
+    formacion: list[FormacionResponse] = Field(default_factory=list)
+    experiencia: list[ExperienciaResponse] = Field(default_factory=list)
+    habilidades: list[HabilidadResponse] = Field(default_factory=list)
+    idiomas: list[IdiomaResponse] = Field(default_factory=list)

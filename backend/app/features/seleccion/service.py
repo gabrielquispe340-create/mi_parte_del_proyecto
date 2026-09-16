@@ -495,3 +495,108 @@ class SeleccionService:
             puede_avanzar=a.current_status not in ("rejected", "withdrawn", "hired"),
             puede_descartar=a.current_status not in ("rejected", "withdrawn", "hired"),
         )
+
+    def obtener_comparacion_candidatos(
+        self, user_id: uuid.UUID, job_id: uuid.UUID, data: CompararCandidatosRequest, ip: str = "127.0.0.1"
+    ) -> list["CandidatoComparacionResponse"]:
+        from app.features.vacantes.service import VacanteService
+        from app.features.perfil.schema import (
+            FormacionResponse, ExperienciaResponse, IdiomaResponse, HabilidadResponse
+        )
+        from app.features.seleccion.schema import CandidatoComparacionResponse
+
+        miembro = self._obtener_miembro(user_id)
+        vacante = self.repo.obtener_vacante(job_id, miembro.company_id)
+        if not vacante:
+            raise NotFoundException("Vacante no encontrada o no pertenece a la empresa.")
+
+        if not (2 <= len(data.postulaciones) <= 3):
+            raise BadRequestException("Debe seleccionar entre 2 y 3 candidatos para comparar.")
+
+        vacante_service = VacanteService(self.db)
+        
+        resultado: list[CandidatoComparacionResponse] = []
+        for post_id in data.postulaciones:
+            app = self.repo.obtener_postulacion_por_id(post_id)
+            if not app or app.job_id != job_id:
+                raise BadRequestException(f"La postulación no pertenece a esta vacante.")
+            if app.current_status in ("rejected", "withdrawn"):
+                raise BadRequestException("No se pueden comparar candidatos descartados o retirados.")
+            
+            cand: CandidateProfile = app.candidate
+            
+            candidato_skills_ids = {cs.skill_id for cs in cand.skills} if cand and cand.skills else set()
+            candidato_carreras_ids = {e.field_of_study_id for e in cand.educations if e.field_of_study_id} if cand and cand.educations else set()
+            
+            afinidad = vacante_service._calcular_afinidad(vacante, candidato_skills_ids, candidato_carreras_ids)
+            
+            nombre_completo = f"{cand.first_name} {cand.last_name}" if cand else "Candidato"
+            
+            formacion = []
+            if cand and cand.educations:
+                for e in cand.educations:
+                    formacion.append(FormacionResponse(
+                        id=e.id,
+                        institution=e.institution,
+                        program_name=e.program_name or "",
+                        field_of_study_id=e.field_of_study_id,
+                        field_of_study_name=e.field_of_study.name if e.field_of_study else None,
+                        education_level=e.education_level,
+                        start_date=e.start_date,
+                        end_date=e.end_date,
+                        is_current=e.is_current
+                    ))
+                    
+            experiencia = []
+            if cand and cand.experiences:
+                for ex in cand.experiences:
+                    experiencia.append(ExperienciaResponse(
+                        id=ex.id,
+                        company_name=ex.company_name,
+                        job_title=ex.job_title,
+                        description=ex.description,
+                        start_date=ex.start_date,
+                        end_date=ex.end_date,
+                        is_current=ex.is_current
+                    ))
+                    
+            habilidades = []
+            if cand and cand.skills:
+                for s in cand.skills:
+                    if s.skill:
+                        habilidades.append(HabilidadResponse(
+                            id=s.skill.id,
+                            name=s.skill.name,
+                            category=s.skill.category
+                        ))
+                        
+            idiomas = []
+            if cand and cand.languages:
+                for lang in cand.languages:
+                    idiomas.append(IdiomaResponse(
+                        id=lang.id,
+                        language_code=lang.language_code,
+                        language_name=lang.language_code,
+                        proficiency_level=lang.proficiency_level
+                    ))
+            
+            resultado.append(CandidatoComparacionResponse(
+                postulacion_id=app.id,
+                candidato_id=cand.id if cand else uuid.uuid4(),
+                candidato_nombre=nombre_completo,
+                afinidad=afinidad,
+                formacion=formacion,
+                experiencia=experiencia,
+                habilidades=habilidades,
+                idiomas=idiomas
+            ))
+            
+        self.bitacora.registrar(
+            modulo="seleccion",
+            accion="comparar_candidatos",
+            usuario_id=user_id,
+            ip=ip,
+            detalles=f"vacante_id={job_id} cantidad={len(data.postulaciones)}"
+        )
+        self.db.commit()
+        return resultado

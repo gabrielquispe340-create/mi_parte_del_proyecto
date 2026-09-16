@@ -92,3 +92,55 @@ export interface NotaInternaResponse {
 export interface ConfigurarEtapasRequest {
   etapas: EtapaItem[];
 }
+
+
+export interface FormacionResponse {
+  id: string;
+  institution: string;
+  program_name: string;
+  field_of_study_id?: string;
+  field_of_study_name?: string;
+  education_level: string;
+  start_date: string;
+  end_date?: string;
+  is_current: boolean;
+}
+
+export interface ExperienciaResponse {
+  id: string;
+  company_name: string;
+  job_title: string;
+  description?: string;
+  start_date: string;
+  end_date?: string;
+  is_current: boolean;
+}
+
+export interface HabilidadResponse {
+  id: string;
+  name: string;
+  category: string;
+}
+
+export interface IdiomaResponse {
+  id: string;
+  language_code: string;
+  language_name: string;
+  proficiency_level: string;
+}
+
+export interface CompararCandidatosRequest {
+  postulaciones: string[];
+}
+
+export interface CandidatoComparacionResponse {
+  postulacion_id: string;
+  candidato_id: string;
+  candidato_nombre: string;
+  afinidad?: number | null;
+  formacion: FormacionResponse[];
+  experiencia: ExperienciaResponse[];
+  habilidades: HabilidadResponse[];
+  idiomas: IdiomaResponse[];
+}
+

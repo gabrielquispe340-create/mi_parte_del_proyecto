@@ -13,6 +13,8 @@ import {
   NotaInternaResponse,
   PipelineVacanteResponse,
   VacanteResumenSeleccion,
+  CompararCandidatosRequest,
+  CandidatoComparacionResponse,
 } from './seleccion.models';
 
 @Injectable({ providedIn: 'root' })
@@ -70,5 +72,9 @@ export class SeleccionService {
 
   agregarNota(idPostulacion: string, data: NotaInternaRequest): Observable<NotaInternaResponse> {
     return this.http.post<NotaInternaResponse>(`${this.base}/postulaciones/${idPostulacion}/notas`, data);
+  }
+
+  compararCandidatos(idVacante: string, data: CompararCandidatosRequest): Observable<CandidatoComparacionResponse[]> {
+    return this.http.post<CandidatoComparacionResponse[]>(`${this.base}/vacantes/${idVacante}/comparar`, data);
   }
 }
