@@ -183,6 +183,11 @@
     color: #0e7490;
   }
 
+  &[data-tipo='respaldos'] {
+    background: #fff7ed;
+    color: #c2410c;
+  }
+
   &[data-tipo='vacantes'] {
     background: #fdf4ff;
     color: #a21caf;

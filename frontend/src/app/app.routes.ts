@@ -96,6 +96,10 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'respaldos',
+        loadComponent: () => import('./features/admin/respaldos/respaldos.component').then((m) => m.RespaldosComponent),
+      },
+      {
         path: 'bitacora',
         loadComponent: () => import('./features/admin/bitacora/bitacora.component').then((m) => m.BitacoraComponent),
       },

@@ -28,6 +28,9 @@ services:
       TZ: America/La_Paz
     expose:
       - "8000"
+    volumes:
+      # Copias de seguridad (Backup/Restore): sobreviven a recrear el contenedor.
+      - storage:/app/storage
 
   frontend:
     image: ${FRONTEND_IMAGE}
@@ -51,3 +54,4 @@ services:
 
 volumes:
   pgdata:
+  storage:

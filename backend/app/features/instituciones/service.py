@@ -22,6 +22,7 @@ from app.models.candidato import CandidateProfile
 from app.models.empresa import Company, CompanyMember
 from app.models.institucion import CompanyInstitution, Institution, SaasPlan, UniversitySignupRequest
 from app.models.postulacion import Application
+from app.models.respaldo import SystemBackup
 from app.models.seguridad import AuditLog
 from app.models.usuario import AppUser, Role, UserRole
 from app.models.vacante import JobPosting, JobStatus
@@ -31,6 +32,7 @@ from app.security.tenant import usuarios_de_institucion
 _ZONA_BOLIVIA = timezone(timedelta(hours=-4))
 _ACCIONES_DE_ACCESO = ("login", "login_fallido")
 _LIMITE_ACTIVIDAD = 8
+_DIAS_SIN_RESPALDO = 7
 
 
 def _sigla(institucion: Institution) -> str | None:
@@ -241,6 +243,7 @@ class InstitucionService:
                 empresas=cifras["empresas_pendientes"],
                 vacantes=cifras["vacantes_por_moderar"],
                 universidades=cifras.get("universidades_pendientes", 0),
+                respaldo=1 if institution_id is None and cifras.get("respaldos_recientes", 0) == 0 else 0,
             ),
             accesos_hoy=cifras["accesos_hoy"],
             accesos_fallidos_hoy=cifras["accesos_fallidos_hoy"],
@@ -313,6 +316,10 @@ class InstitucionService:
             # Las altas de universidades las decide solo el superadmin.
             subconsultas["universidades_pendientes"] = select(func.count(UniversitySignupRequest.id)).where(
                 UniversitySignupRequest.status == "pending"
+            )
+            # Backup/Restore también es tarea del superadmin: se avisa si pasó una semana sin copias.
+            subconsultas["respaldos_recientes"] = select(func.count(SystemBackup.id)).where(
+                SystemBackup.created_at >= datetime.now(_ZONA_BOLIVIA) - timedelta(days=_DIAS_SIN_RESPALDO)
             )
         fila = self.db.execute(
             select(*(sub.scalar_subquery().label(nombre) for nombre, sub in subconsultas.items()))

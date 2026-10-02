@@ -63,6 +63,7 @@ class PendientesPanel(BaseModel):
     empresas: int
     vacantes: int
     universidades: int = 0  # solicitudes de alta (solo las ve el superadmin)
+    respaldo: int = 0  # 1 si no hay copias de seguridad de los últimos 7 días (solo superadmin)
 
 
 class ActividadPanel(BaseModel):

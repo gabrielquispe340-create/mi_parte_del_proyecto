@@ -22,6 +22,7 @@ from app.models.institucion import (
     UniversitySignupRequest,
 )
 from app.models.notificacion import Notification
+from app.models.respaldo import SystemBackup
 from app.models.seguridad import AuditLog, LoginAttempt
 from app.models.usuario import AppUser, Role, UserRole
 from app.models.vacante import (
@@ -85,6 +86,7 @@ __all__ = [
     "SeniorityLevel",
     "Skill",
     "SkillProficiencyLevel",
+    "SystemBackup",
     "UniversitySignupRequest",
     "UserRole",
     "WorkExperience",

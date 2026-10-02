@@ -40,7 +40,7 @@ interface PanelAdmin {
     vacantes_publicadas: number;
     postulaciones: number;
   };
-  pendientes: { egresados: number; empresas: number; vacantes: number; universidades: number };
+  pendientes: { egresados: number; empresas: number; vacantes: number; universidades: number; respaldo: number };
   accesos_hoy: number;
   accesos_fallidos_hoy: number;
   actividad: ActividadApi[];
@@ -49,7 +49,7 @@ interface PanelAdmin {
 type Tono = 'exito' | 'peligro' | 'info' | 'neutro';
 
 interface Tarea {
-  clave: 'universidades' | 'egresados' | 'empresas' | 'vacantes';
+  clave: 'universidades' | 'respaldos' | 'egresados' | 'empresas' | 'vacantes';
   titulo: string;
   ayuda: string;
   cantidad: number;
@@ -96,6 +96,12 @@ const TEXTO_ACCION: Record<string, string> = {
   cambiar_plan: 'Cambió el plan de una universidad',
   registrar_pago: 'Registró el pago manual de un plan',
   pago_stripe: 'Pagó el plan con tarjeta',
+  crear_respaldo: 'Creó una copia de seguridad',
+  descargar_respaldo: 'Descargó una copia de seguridad',
+  subir_respaldo: 'Subió una copia de seguridad',
+  eliminar_respaldo: 'Eliminó una copia de seguridad',
+  verificar_respaldo: 'Verificó una copia de seguridad',
+  restaurar_respaldo: 'Restauró la plataforma desde una copia',
   avanzar_etapa: 'Avanzó a un candidato de etapa',
   descartar_candidato: 'Descartó a un candidato',
   comparar_candidatos: 'Comparó candidatos de una vacante',
@@ -151,9 +157,9 @@ function describir(a: ActividadApi): Actividad {
     const sigla = dato(a.detalles, 'sigla');
     if (sigla) texto = `${TEXTO_ACCION[a.accion]} (${sigla})`;
     tono = a.accion === 'aprobar_universidad' ? 'exito' : 'info';
-  } else if (a.accion === 'registrar_pago' || a.accion === 'pago_stripe') {
+  } else if (['registrar_pago', 'pago_stripe', 'crear_respaldo', 'verificar_respaldo'].includes(a.accion)) {
     tono = 'exito';
-  } else if (a.accion === 'rechazar_universidad') {
+  } else if (a.accion === 'rechazar_universidad' || a.accion === 'restaurar_respaldo') {
     tono = 'peligro';
   } else if (a.accion.startsWith('registro_')) {
     tono = 'info';
@@ -215,6 +221,14 @@ export class Dashboard implements OnInit {
         ayuda: 'Pidieron sumarse a EGRESA y eligieron un plan.',
         cantidad: p.pendientes.universidades,
         ruta: '/admin/universidades',
+        query: null,
+      });
+      tareas.push({
+        clave: 'respaldos',
+        titulo: 'Copia de seguridad',
+        ayuda: 'No hay copias de la última semana. Hacé una ahora.',
+        cantidad: p.pendientes.respaldo,
+        ruta: '/admin/respaldos',
         query: null,
       });
     }

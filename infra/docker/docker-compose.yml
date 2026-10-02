@@ -35,6 +35,9 @@ services:
       TZ: America/La_Paz
     ports:
       - "8000:8000"
+    volumes:
+      # Copias de seguridad (Backup/Restore): sobreviven a recrear el contenedor.
+      - storage:/app/storage
 
   frontend:
     image: ${FRONTEND_IMAGE:-egresa-frontend}
@@ -51,3 +54,4 @@ services:
 
 volumes:
   pgdata:
+  storage:

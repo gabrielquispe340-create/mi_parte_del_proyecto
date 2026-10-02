@@ -22,6 +22,7 @@ from app.features.perfil import router as perfiles
 from app.features.planes import router as planes
 from app.features.postulaciones import router as postulaciones
 from app.features.reportes import router as reportes
+from app.features.respaldos import router as respaldos
 from app.features.roles import router as roles
 from app.features.seleccion import router as seleccion
 from app.features.vacantes import router as vacantes
@@ -81,6 +82,7 @@ routers = [
     notificaciones.router,
     moderacion.router,
     reportes.router,
+    respaldos.router,
     ia.router,
 ]
 
