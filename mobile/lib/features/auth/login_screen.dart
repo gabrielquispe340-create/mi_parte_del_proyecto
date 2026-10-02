@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                     ),
                     Text(
-                      'Bolsa de trabajo UAGRM',
+                      'Bolsa de trabajo universitaria',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                     ),
