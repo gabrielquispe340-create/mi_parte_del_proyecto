@@ -20,12 +20,26 @@ mobile/     Aplicación móvil Flutter (core, features/<módulo>)
 infra/      Docker Compose, Nginx, scripts de despliegue y respaldo
 ```
 
+## Producción (Railway)
+
+| Qué | URL |
+|---|---|
+| Web | https://frontend-production-29d2.up.railway.app |
+| API | https://backend-production-24e5.up.railway.app/api |
+| App móvil | APK generado con `flutter build apk` (ver [Móvil](#móvil)) |
+
+- Cada push a `preproduccion` que toca `backend/` o `frontend/` redespliega solo ese servicio.
+- Producción usa la **misma Supabase** que el desarrollo local: lo que se cree probando en
+  local también aparece en producción.
+- Las variables secretas (`DATABASE_URL`, `JWT_SECRET`, claves de Stripe) están cargadas en
+  Railway y no se versionan. En producción el backend no arranca sin un `JWT_SECRET` propio.
+
 ## Requisitos
 
 | Herramienta | Versión |
 |---|---|
 | Python | 3.13+ |
-| Node.js | 20+ |
+| Node.js | 22+ |
 | PostgreSQL | 16 |
 | Flutter | 3.11+ (opcional, solo móvil) |
 | Docker Desktop | 24+ (opcional, alternativa al setup nativo) |
@@ -60,8 +74,19 @@ Abre 👉 http://localhost:4200
 ```bash
 cd mobile
 flutter pub get
-flutter run
+flutter run        # desarrollo: usa el backend local
 ```
+
+Para generar el APK que se instala en el celular:
+
+```bash
+flutter build apk  # queda en mobile/build/app/outputs/flutter-apk/app-release.apk
+```
+
+El APK de release se conecta al backend de producción en Railway, así que funciona
+con cualquier conexión a internet (WiFi o datos), sin tener una PC prendida. Para
+probar un celular contra el backend de tu PC, compilá con `--dart-define=CELULAR_FISICO=true`
+(misma red WiFi; la IP está en `mobile/lib/core/services/api_config.dart`).
 
 ### Todo junto con Docker Compose
 
