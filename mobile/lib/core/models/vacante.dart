@@ -68,6 +68,30 @@ class Vacante {
     );
   }
 
+  /// Los códigos del backend vienen en inglés; en pantalla se muestran en español.
+  static const _modalidades = {'onsite': 'Presencial', 'on_site': 'Presencial', 'remote': 'Remoto', 'hybrid': 'Híbrido'};
+  static const _jornadas = {
+    'permanent': 'Tiempo completo',
+    'full_time': 'Tiempo completo',
+    'part_time': 'Medio tiempo',
+    'temporary': 'Temporal',
+    'contract': 'Por contrato',
+    'contractor': 'Por contrato',
+    'internship': 'Pasantía',
+    'freelance': 'Freelance',
+  };
+  static const _niveles = {
+    'internship': 'Pasantía',
+    'junior': 'Junior',
+    'mid': 'Semi senior',
+    'senior': 'Senior',
+    'lead': 'Líder',
+  };
+
+  String get modalidadLegible => _modalidades[workModality] ?? workModality;
+  String get jornadaLegible => _jornadas[employmentType] ?? employmentType;
+  String get nivelLegible => _niveles[seniorityLevel] ?? seniorityLevel;
+
   String get salarioLegible {
     if (!salaryVisible || (salaryMin == null && salaryMax == null)) {
       return 'No especificado';
