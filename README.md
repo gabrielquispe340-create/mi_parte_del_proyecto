@@ -185,18 +185,79 @@ Para crear o restablecer los usuarios de inicio de sesión:
 ```powershell
 cd backend
 .\.venv\Scripts\activate
-python -m scripts.crear_usuarios_demo
+python -m scripts.sembrar_multitenant     # superadmin, admins, empresas y egresados del SaaS
+python -m scripts.crear_usuarios_demo     # cuentas del Sprint 0 (ver la nota de abajo)
 ```
 
-### Credenciales de prueba
+`sembrar_multitenant` es idempotente y vuelve a poner en sus cuentas la contraseña de
+`DEMO_PASSWORD`, que se define en `backend/.env` (no se versiona). `crear_usuarios_demo`
+restablece las cuentas del Sprint 0 con las contraseñas del propio script; ojo, también
+cambia la de `rrhh@tecnova.bo`.
 
-| Rol | Correo | Contraseña |
+En una base nueva, antes hay que correr las migraciones aditivas, en este orden:
+`migrar_multitenant`, `migrar_cambio_password`, `migrar_planes` y `migrar_respaldos`
+(todas con `python -m scripts.<nombre>`; en la Supabase compartida ya están aplicadas).
+
+### Cuentas de prueba
+
+> **Las contraseñas no se publican**: el repositorio es público. Pedilas por el grupo del
+> equipo, igual que la `DATABASE_URL` y las claves de Stripe.
+
+Verificadas el 01/10/2026 contra la Supabase compartida.
+
+**Superadmin del SaaS.** Ve todas las universidades, aprueba altas, gestiona planes y
+pagos, y es el único que entra a Copias de seguridad: `superadmin@egresa.bo`.
+
+**Administradores de universidad.** Cada uno ve solo los datos de su universidad.
+
+| Universidad | Plan | Correo |
 |---|---|---|
-| Administrador de plataforma | `admin@uagrm.bo` | `Admin1234!` |
-| Empresa (TECNOVA, verificada) | `rrhh@tecnova.bo` | `empresa1234` |
-| Egresado / Candidato | `egresado.prueba@uagrm.bo` | `Egresado1234!` |
+| UAGRM | Institucional (al día) | `admin@uagrm.bo`, `admin2@uagrm.bo` |
+| UMSS | Profesional (al día) | `admin@umss.egresa.bo` |
+| UMSA | Básico (gratis) | `admin@umsa.egresa.bo` |
+| Unifranz | Profesional (pago pendiente) | `admin@unifranz.egresa.bo` |
 
-Si alguna deja de funcionar (alguien del equipo pudo haberla cambiado probando), se resetea corriendo el script de arriba o pidiendo que se actualice manualmente — avisen en el grupo antes de cambiarlas para no romper la sesión de otro compañero.
+Moderador de UMSS: `moderador@umss.egresa.bo`.
+
+**Empresas.** Son globales: cada universidad decide si las habilita para reclutar.
+
+| Empresa | Correo |
+|---|---|
+| TECNOVA | `rrhh@tecnova.bo` |
+| Andes Digital | `rrhh@andesdigital.bo` |
+| ValleFin | `seleccion@vallefin.bo` |
+| Oriente Logística | `empleos@orientelogistica.bo` |
+| Chiquitano Agro | `rrhh@chiquitanoagro.bo` |
+| Altiplano Analytics | `talento@altiplanoanalytics.bo` |
+| Empresa Prueba SRL | `empresa@prueba.com` |
+
+**Egresados.**
+
+| Universidad | Correo |
+|---|---|
+| UAGRM | `antonio@prueba.com` (perfil completo, ideal para la HU-23), `egresado.prueba@uagrm.bo`, `sofia.vargas@uagrm.egresa.bo`, `marco.rivero@uagrm.egresa.bo` |
+| UMSS | `valeria.quiroga@umss.egresa.bo`, `jorge.montano@umss.egresa.bo`, `paola.arce@umss.egresa.bo` |
+| UMSA | `andrea.gutierrez@umsa.egresa.bo`, `luis.mamani@umsa.egresa.bo`, `rodrigo.condori@umsa.egresa.bo` |
+| Unifranz | `camila.salvatierra@unifranz.egresa.bo`, `diego.antelo@unifranz.egresa.bo` |
+
+**Para probar las funciones nuevas:**
+
+- **Recomendaciones (HU-23):** entrá como egresado y abrí "Vacantes Recomendadas" en el
+  dashboard (`/recomendaciones`). Con `IA_RECOMENDACIONES_ACTIVAS=false` en el `.env` se
+  prueba el CP04 (servicio no disponible).
+- **Pago con tarjeta (Stripe, modo prueba):** entrá como admin de Unifranz → Universidades →
+  "Pagar con tarjeta". Tarjeta de prueba de Stripe `4242 4242 4242 4242`, cualquier fecha
+  futura y cualquier CVC. Las claves (`STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`) van en
+  `backend/.env` e `infra/docker/.env`.
+- **Altas de universidades:** hay solicitudes pendientes (UPDS y UCB) para aprobar desde
+  Universidades con el superadmin. La página pública es `/auth/registro-universidad`.
+- **Copias de seguridad:** con el superadmin, menú "Copias de seguridad". Ojo: restaurar
+  reemplaza los datos de la Supabase compartida para todo el equipo; para probar usá
+  "Verificar sin cambiar nada".
+- Las cuentas que se crean desde Gestión de roles (o al aprobar una universidad) tienen una
+  contraseña temporal y deben cambiarla en el primer ingreso.
+
+Si alguna deja de funcionar (alguien del equipo pudo haberla cambiado probando), se resetea corriendo los scripts de arriba o pidiendo que se actualice manualmente — avisen en el grupo antes de cambiarlas para no romper la sesión de otro compañero.
 
 Con el backend (`uvicorn app.main:app --reload`) y el frontend (`ng serve`)
 corriendo, inicia sesión en http://localhost:4200 (o http://localhost si
