@@ -200,45 +200,47 @@ En una base nueva, antes hay que correr las migraciones aditivas, en este orden:
 
 ### Cuentas de prueba
 
-> **Las contraseñas no se publican**: el repositorio es público. Pedilas por el grupo del
-> equipo, igual que la `DATABASE_URL` y las claves de Stripe.
+> Son cuentas de demostración de la base compartida. Las claves reales (`DATABASE_URL`,
+> Stripe) **no** van acá: se piden por el grupo del equipo.
 
 Verificadas el 01/10/2026 contra la Supabase compartida.
 
 **Superadmin del SaaS.** Ve todas las universidades, aprueba altas, gestiona planes y
-pagos, y es el único que entra a Copias de seguridad: `superadmin@egresa.bo`.
+pagos, y es el único que entra a Copias de seguridad: `superadmin@egresa.bo` / `Egresa2026!`.
 
 **Administradores de universidad.** Cada uno ve solo los datos de su universidad.
 
-| Universidad | Plan | Correo |
-|---|---|---|
-| UAGRM | Institucional (al día) | `admin@uagrm.bo`, `admin2@uagrm.bo` |
-| UMSS | Profesional (al día) | `admin@umss.egresa.bo` |
-| UMSA | Básico (gratis) | `admin@umsa.egresa.bo` |
-| Unifranz | Profesional (pago pendiente) | `admin@unifranz.egresa.bo` |
+| Universidad | Plan | Correo | Contraseña |
+|---|---|---|---|
+| UAGRM | Institucional (al día) | `admin@uagrm.bo`, `admin2@uagrm.bo` | `Admin1234!` |
+| UMSS | Profesional (al día) | `admin@umss.egresa.bo` | `Egresa2026!` |
+| UMSA | Básico (gratis) | `admin@umsa.egresa.bo` | `Egresa2026!` |
+| Unifranz | Profesional (pago pendiente) | `admin@unifranz.egresa.bo` | `Egresa2026!` |
 
-Moderador de UMSS: `moderador@umss.egresa.bo`.
+Moderador de UMSS: `moderador@umss.egresa.bo` / `Egresa2026!`.
 
 **Empresas.** Son globales: cada universidad decide si las habilita para reclutar.
 
-| Empresa | Correo |
-|---|---|
-| TECNOVA | `rrhh@tecnova.bo` |
-| Andes Digital | `rrhh@andesdigital.bo` |
-| ValleFin | `seleccion@vallefin.bo` |
-| Oriente Logística | `empleos@orientelogistica.bo` |
-| Chiquitano Agro | `rrhh@chiquitanoagro.bo` |
-| Altiplano Analytics | `talento@altiplanoanalytics.bo` |
-| Empresa Prueba SRL | `empresa@prueba.com` |
+| Empresa | Correo | Contraseña |
+|---|---|---|
+| TECNOVA | `rrhh@tecnova.bo` | `empresa1234` |
+| Andes Digital | `rrhh@andesdigital.bo` | `Egresa2026!` |
+| ValleFin | `seleccion@vallefin.bo` | `Egresa2026!` |
+| Oriente Logística | `empleos@orientelogistica.bo` | `Egresa2026!` |
+| Chiquitano Agro | `rrhh@chiquitanoagro.bo` | `Egresa2026!` |
+| Altiplano Analytics | `talento@altiplanoanalytics.bo` | `Egresa2026!` |
+| Empresa Prueba SRL | `empresa@prueba.com` | `Prueba123!` |
 
 **Egresados.**
 
-| Universidad | Correo |
-|---|---|
-| UAGRM | `antonio@prueba.com` (perfil completo, ideal para la HU-23), `egresado.prueba@uagrm.bo`, `sofia.vargas@uagrm.egresa.bo`, `marco.rivero@uagrm.egresa.bo` |
-| UMSS | `valeria.quiroga@umss.egresa.bo`, `jorge.montano@umss.egresa.bo`, `paola.arce@umss.egresa.bo` |
-| UMSA | `andrea.gutierrez@umsa.egresa.bo`, `luis.mamani@umsa.egresa.bo`, `rodrigo.condori@umsa.egresa.bo` |
-| Unifranz | `camila.salvatierra@unifranz.egresa.bo`, `diego.antelo@unifranz.egresa.bo` |
+| Universidad | Correo | Contraseña |
+|---|---|---|
+| UAGRM | `antonio@prueba.com` (perfil completo, ideal para la HU-23) | `Prueba123!` |
+| UAGRM | `egresado.prueba@uagrm.bo` | `Egresado1234!` |
+| UAGRM | `sofia.vargas@uagrm.egresa.bo`, `marco.rivero@uagrm.egresa.bo` | `Egresa2026!` |
+| UMSS | `valeria.quiroga@umss.egresa.bo`, `jorge.montano@umss.egresa.bo`, `paola.arce@umss.egresa.bo` | `Egresa2026!` |
+| UMSA | `andrea.gutierrez@umsa.egresa.bo`, `luis.mamani@umsa.egresa.bo`, `rodrigo.condori@umsa.egresa.bo` | `Egresa2026!` |
+| Unifranz | `camila.salvatierra@unifranz.egresa.bo`, `diego.antelo@unifranz.egresa.bo` | `Egresa2026!` |
 
 **Para probar las funciones nuevas:**
 
