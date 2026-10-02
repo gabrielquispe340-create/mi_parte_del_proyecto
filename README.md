@@ -24,7 +24,7 @@ infra/      Docker Compose, Nginx, scripts de despliegue y respaldo
 
 | Qué | URL |
 |---|---|
-| Web | https://frontend-production-29d2.up.railway.app |
+| Web | https://egresa.up.railway.app |
 | API | https://backend-production-24e5.up.railway.app/api |
 | App móvil | APK generado con `flutter build apk` (ver [Móvil](#móvil)) |
 
