@@ -28,6 +28,12 @@ class ConflictException(AppException):
     status_code = 409
 
 
+class ServiceUnavailableException(AppException):
+    """Un servicio auxiliar (p. ej. la IA) no responde; el resto de la plataforma sigue."""
+
+    status_code = 503
+
+
 # Alias comunes para compatibilidad con el resto de los módulos
 NotFoundException = ResourceNotFoundException
 BadRequestException = BusinessException

@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     # Adonde vuelve el navegador después de pagar (o cancelar) en Stripe.
     frontend_url: str = "http://localhost:4200"
 
+    # Interruptor del servicio de IA (recomendaciones y afinidad). En false la plataforma
+    # sigue funcionando y solo avisa que las recomendaciones no están disponibles.
+    ia_recomendaciones_activas: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:

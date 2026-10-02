@@ -319,6 +319,7 @@ class VacanteRepository:
                 joinedload(JobPosting.category),
                 selectinload(JobPosting.skills).joinedload(JobSkill.skill),
                 selectinload(JobPosting.education_preferences).joinedload(JobEducationPreference.field_of_study),
+                selectinload(JobPosting.language_requirements),
             )
             .limit(limit)
             .offset(offset)
@@ -339,6 +340,7 @@ class VacanteRepository:
             joinedload(JobPosting.category),
             selectinload(JobPosting.skills).joinedload(JobSkill.skill),
             selectinload(JobPosting.education_preferences).joinedload(JobEducationPreference.field_of_study),
+            selectinload(JobPosting.language_requirements),
         )
         return self.db.scalar(stmt)
 

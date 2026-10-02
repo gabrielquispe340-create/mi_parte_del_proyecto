@@ -1,3 +1,4 @@
+import logging
 import math
 import uuid
 from datetime import datetime
@@ -11,8 +12,10 @@ from app.common.exceptions import (
     ForbiddenException,
     ResourceNotFoundException,
 )
+from app.features.ia.services import afinidad as motor_afinidad
 from app.features.vacantes.repository import VacanteRepository
 from app.features.vacantes.schema import (
+    CriterioAfinidadResponse,
     CarreraEnVacanteResponse,
     EmpresaEnVacanteResponse,
     FiltrosDisponiblesResponse,
@@ -29,7 +32,7 @@ from app.features.vacantes.schema import (
     VacantesBuscadasResponse,
     VacanteUpdateRequest,
 )
-from app.models.candidato import CandidateEducation, CandidateProfile, CandidateSkill
+from app.models.candidato import CandidateProfile
 from app.models.empresa import Company, CompanyMember
 from app.models.institucion import CompanyInstitution
 from app.models.seguridad import AuditLog
@@ -37,6 +40,11 @@ from app.models.vacante import JobPosting, JobSkill, JobStatus, ScreeningOption,
 from app.security.dependencies import CurrentUser
 from app.security.tenant import empresa_habilitada_en, institucion_de_candidato
 from app.shared.email_service import EmailService
+
+logger = logging.getLogger(__name__)
+
+# Tope de vacantes que se puntúan para ordenar la búsqueda por afinidad.
+_MAX_VACANTES_POR_AFINIDAD = 500
 
 
 class VacanteService:
@@ -709,6 +717,9 @@ class VacanteService:
         usuario_id: uuid.UUID | None = None,
     ) -> VacantesBuscadasResponse:
         """Busca vacantes con filtros combinados y calcula la afinidad con el perfil del egresado si está autenticado."""
+        perfil = self._perfil_afinidad_de(usuario_id)
+        # Para ordenar por afinidad hay que puntuar todas las coincidencias, no solo la página.
+        por_afinidad = ordenar_por == "afinidad" and perfil is not None
         items, total = self.repo.buscar_vacantes(
             q=q,
             carrera_id=carrera_id,
@@ -721,20 +732,19 @@ class VacanteService:
             salario_max=salario_max,
             solo_vigentes=True,
             ordenar_por=ordenar_por if ordenar_por != "afinidad" else "fecha",
-            limit=limit,
-            offset=offset,
+            limit=_MAX_VACANTES_POR_AFINIDAD if por_afinidad else limit,
+            offset=0 if por_afinidad else offset,
             institution_id=self._institucion_para_busqueda(usuario_id),
         )
 
-        candidato_skills, candidato_carreras, es_candidato = self._perfil_afinidad_de(usuario_id)
-
         vacantes_dto = []
         for vacante in items:
-            afinidad = self._calcular_afinidad(vacante, candidato_skills, candidato_carreras) if es_candidato else None
-            vacantes_dto.append(self._mapear_a_resumen_busqueda(vacante, afinidad))
+            afinidad = self._calcular_afinidad(vacante, perfil)
+            vacantes_dto.append(self._mapear_a_resumen_busqueda(vacante, afinidad.porcentaje if afinidad else None))
 
-        if ordenar_por == "afinidad" and es_candidato:
+        if por_afinidad:
             vacantes_dto.sort(key=lambda x: (x.afinidad_porcentaje or 0), reverse=True)
+            vacantes_dto = vacantes_dto[offset : offset + limit]
 
         return VacantesBuscadasResponse(total=total, limit=limit, offset=offset, items=vacantes_dto)
 
@@ -748,14 +758,16 @@ class VacanteService:
 
         self.repo.incrementar_vistas(vacante_id)
 
-        candidato_skills, candidato_carreras, es_candidato = self._perfil_afinidad_de(usuario_id)
-        afinidad = self._calcular_afinidad(vacante, candidato_skills, candidato_carreras) if es_candidato else None
+        afinidad = self._calcular_afinidad(vacante, self._perfil_afinidad_de(usuario_id))
 
-        resumen = self._mapear_a_resumen_busqueda(vacante, afinidad)
+        resumen = self._mapear_a_resumen_busqueda(vacante, afinidad.porcentaje if afinidad else None)
         empresa = vacante.company
 
         return VacanteDetalleBusquedaResponse(
             **resumen.model_dump(),
+            afinidad_criterios=(
+                [CriterioAfinidadResponse(**vars(c)) for c in afinidad.criterios] if afinidad else None
+            ),
             responsibilities=vacante.responsibilities_json if isinstance(vacante.responsibilities_json, list) else [],
             requirements=vacante.requirements_json if isinstance(vacante.requirements_json, list) else [],
             benefits=vacante.benefits_json if isinstance(vacante.benefits_json, list) else [],
@@ -772,59 +784,32 @@ class VacanteService:
         """Universidad del egresado autenticado; None (sin filtro) para anónimos, empresas y staff."""
         return institucion_de_candidato(self.db, usuario_id) if usuario_id else None
 
-    def _perfil_afinidad_de(
-        self, usuario_id: uuid.UUID | None
-    ) -> tuple[set[uuid.UUID], set[uuid.UUID], bool]:
-        if not usuario_id:
-            return set(), set(), False
+    def _perfil_afinidad_de(self, usuario_id: uuid.UUID | None) -> motor_afinidad.PerfilAfinidad | None:
+        """Perfil de afinidad del egresado autenticado; None si no es egresado o la IA está apagada."""
+        if not usuario_id or not motor_afinidad.ia_activa():
+            return None
+        candidato_id = self.db.scalar(select(CandidateProfile.id).where(CandidateProfile.user_id == usuario_id))
+        if candidato_id is None:
+            return None
+        try:
+            return motor_afinidad.perfiles_de_candidatos(self.db, {candidato_id})[candidato_id]
+        except Exception:
+            # Si la IA falla, la búsqueda sigue funcionando sin afinidad (HU-23, CP04).
+            logger.exception("No se pudo cargar el perfil de afinidad del usuario %s", usuario_id)
+            return None
 
-        perfil = self.db.query(CandidateProfile).filter(CandidateProfile.user_id == usuario_id).one_or_none()
-        if not perfil:
-            return set(), set(), False
-
-        skills = {
-            cs.skill_id for cs in self.db.query(CandidateSkill).filter(CandidateSkill.candidate_id == perfil.id).all()
-        }
-        carreras = {
-            ce.field_of_study_id
-            for ce in self.db.query(CandidateEducation)
-            .filter(CandidateEducation.candidate_id == perfil.id, CandidateEducation.field_of_study_id.isnot(None))
-            .all()
-        }
-        return skills, carreras, True
-
+    @staticmethod
     def _calcular_afinidad(
-        self,
-        vacante: JobPosting,
-        candidato_skills: set[uuid.UUID],
-        candidato_carreras: set[uuid.UUID],
-    ) -> int:
-        """Calcula el porcentaje de afinidad (0-100%) entre el candidato y la vacante."""
-        score = 0
-        total_peso = 0
-
-        carreras_vacante = {ep.field_of_study_id for ep in vacante.education_preferences}
-        if carreras_vacante:
-            total_peso += 40
-            if candidato_carreras & carreras_vacante:
-                score += 40
-        else:
-            score += 20
-            total_peso += 20
-
-        skills_vacante = {js.skill_id for js in vacante.skills}
-        if skills_vacante:
-            total_peso += 60
-            coincidencias = len(candidato_skills & skills_vacante)
-            score += int((coincidencias / len(skills_vacante)) * 60)
-        else:
-            score += 30
-            total_peso += 30
-
-        if total_peso == 0:
-            return 50
-
-        return max(15, min(98, int((score / total_peso) * 100)))
+        vacante: JobPosting, perfil: motor_afinidad.PerfilAfinidad | None
+    ) -> motor_afinidad.Afinidad | None:
+        """Afinidad del motor de la HU-23 (carrera, habilidades, experiencia e idiomas)."""
+        if perfil is None:
+            return None
+        try:
+            return motor_afinidad.evaluar(vacante, perfil)
+        except Exception:
+            logger.exception("No se pudo calcular la afinidad de la vacante %s", vacante.id)
+            return None
 
     def _mapear_a_resumen_busqueda(self, vacante: JobPosting, afinidad: int | None = None) -> VacanteResumenResponse:
         empresa = vacante.company

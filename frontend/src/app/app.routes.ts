@@ -120,6 +120,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'recomendaciones',
+    canActivate: [authGuard],
+    data: { roles: ['candidate'] },
+    loadComponent: () =>
+      import('./features/ia/recomendaciones/recomendaciones.component').then((m) => m.RecomendacionesComponent),
+  },
+  {
     path: 'seleccion',
     canActivate: [authGuard],
     data: { roles: ['empresa'] },
