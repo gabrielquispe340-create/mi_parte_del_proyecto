@@ -1,7 +1,7 @@
 <div class="admin-container">
   <header class="admin-header">
     <div>
-      <div class="header-badge">Administración Institucional • UAGRM</div>
+      <div class="header-badge">Administración Institucional • {{ auth.institucion() || 'Todas las universidades' }}</div>
       <h1>Bitácora del Sistema</h1>
       <p class="subtitle">
         Consulta el historial de operaciones críticas registradas por la plataforma y expórtalo para auditoría.
@@ -93,19 +93,13 @@
           </table>
         </div>
 
-        <div class="pagination-bar">
-          <span class="pagination-info">
-            Página {{ paginaActual() }} de {{ totalPaginas() }} · {{ logs().length }} registro(s)
-          </span>
-          <div class="pagination-controls">
-            <button type="button" (click)="irAPagina(paginaActual() - 1)" [disabled]="paginaActual() === 1">
-              ← Anterior
-            </button>
-            <button type="button" (click)="irAPagina(paginaActual() + 1)" [disabled]="paginaActual() === totalPaginas()">
-              Siguiente →
-            </button>
-          </div>
-        </div>
+        <app-paginador
+          [total]="logs().length"
+          [(pagina)]="pagina"
+          [(tamanio)]="tamanio"
+          [opcionesTamanio]="[15, 30, 50, 100]"
+          etiqueta="registros"
+        />
       }
     </div>
   }

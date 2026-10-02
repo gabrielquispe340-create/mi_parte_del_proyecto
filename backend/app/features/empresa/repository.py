@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.empresa import Company, CompanyMember, CompanyVerification
+from app.models.institucion import CompanyInstitution
 
 
 class EmpresaRepository:
@@ -43,6 +44,35 @@ class EmpresaRepository:
         if not incluir_inactivas:
             stmt = stmt.where(Company.account_status != "suspended")
         return list(self.db.scalars(stmt))
+
+    # --- Vínculos empresa-universidad (multitenant) ---
+    def listar_vinculadas(self, institution_id: uuid.UUID, estados: list[str] | None = None) -> list[Company]:
+        stmt = (
+            select(Company)
+            .join(CompanyInstitution, CompanyInstitution.company_id == Company.id)
+            .options(selectinload(Company.sector))
+            .where(CompanyInstitution.institution_id == institution_id)
+            .order_by(CompanyInstitution.requested_at.desc())
+        )
+        if estados is not None:
+            stmt = stmt.where(CompanyInstitution.status.in_(estados))
+        return list(self.db.scalars(stmt))
+
+    def obtener_vinculo(self, company_id: uuid.UUID | str, institution_id: uuid.UUID) -> CompanyInstitution | None:
+        return self.db.get(CompanyInstitution, (company_id, institution_id))
+
+    def vinculos_de(self, company_ids: list[uuid.UUID]) -> dict[uuid.UUID, list[CompanyInstitution]]:
+        if not company_ids:
+            return {}
+        stmt = (
+            select(CompanyInstitution)
+            .options(selectinload(CompanyInstitution.institution))
+            .where(CompanyInstitution.company_id.in_(company_ids))
+        )
+        resultado: dict[uuid.UUID, list[CompanyInstitution]] = {}
+        for vinculo in self.db.scalars(stmt):
+            resultado.setdefault(vinculo.company_id, []).append(vinculo)
+        return resultado
 
     # --- Historial de verificación/autorización (motivo de rechazo/suspensión real) ---
     def registrar_verificacion(

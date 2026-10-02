@@ -1,0 +1,372 @@
+$primario: #4c5bd4;
+$violeta: #7a53c5;
+$texto: #1a1a2e;
+$suave: #7b7c93;
+$borde: #e2e4ef;
+
+.pagina {
+  min-height: 100vh;
+  background: #f6f7fc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: $texto;
+}
+
+// ─── Encabezado ──────────────────────────────────────────────────────────
+.hero {
+  background: linear-gradient(145deg, $violeta 0%, $primario 100%);
+  color: white;
+  padding: 2.2rem 1rem 6.5rem;
+}
+
+.hero-contenido {
+  max-width: 980px;
+  margin: 0 auto;
+
+  h1 {
+    margin: 1.2rem 0 0.6rem;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+  }
+
+  p {
+    margin: 0;
+    max-width: 640px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.88);
+  }
+}
+
+.marca {
+  display: inline-flex;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+}
+
+// ─── Contenido ───────────────────────────────────────────────────────────
+.contenido {
+  max-width: 980px;
+  margin: -5rem auto 0;
+  padding: 0 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.tarjeta {
+  background: white;
+  border-radius: 16px;
+  padding: 1.6rem 1.8rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+.paso h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+// El paso 1 va sobre el fondo del encabezado.
+.contenido > .paso h2 {
+  color: white;
+}
+
+.num {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, $violeta, $primario);
+  color: white;
+  font-size: 0.8rem;
+}
+
+.contenido > .paso .num {
+  background: white;
+  color: $primario;
+}
+
+.cargando,
+.nota {
+  margin: 0.75rem 0 0;
+  font-size: 0.78rem;
+  color: $suave;
+}
+
+// ─── Planes ──────────────────────────────────────────────────────────────
+.planes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.4rem 1.3rem 1.2rem;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &.elegido {
+    border-color: $primario;
+    box-shadow: 0 14px 34px rgba(76, 91, 212, 0.22);
+
+    .plan-elegir {
+      background: linear-gradient(90deg, #5b66d6 0%, #8254ca 100%);
+      color: white;
+      border-color: transparent;
+    }
+  }
+
+  ul {
+    list-style: none;
+    margin: 0.6rem 0 0.9rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+  }
+
+  li {
+    display: flex;
+    gap: 0.45rem;
+    font-size: 0.8rem;
+    color: #3a3b5c;
+
+    &.no {
+      color: #a0a0b5;
+    }
+
+    small {
+      color: #a0a0b5;
+    }
+  }
+}
+
+.ok {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.cinta {
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.plan-nombre {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.plan-precio {
+  font-size: 1.35rem;
+  font-weight: 800;
+  background: linear-gradient(145deg, $violeta, $primario);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.plan-elegir {
+  padding: 8px;
+  border: 1px solid $borde;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: $primario;
+}
+
+// ─── Formulario ──────────────────────────────────────────────────────────
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.ayuda {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.8rem;
+  color: $suave;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+
+    > span {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #4a4b63;
+
+      small {
+        font-weight: 400;
+        color: $suave;
+      }
+    }
+
+    &.ancho {
+      grid-column: 1 / -1;
+    }
+  }
+
+  input,
+  select {
+    padding: 10px 12px;
+    border: 1px solid $borde;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    color: #333;
+    background: white;
+
+    &:focus {
+      outline: none;
+      border-color: #6161d6;
+      box-shadow: 0 0 0 3px rgba(97, 97, 214, 0.1);
+    }
+  }
+
+  .mayus {
+    text-transform: uppercase;
+  }
+}
+
+.enviar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 1.2rem;
+  border-top: 1px solid #f0f1f8;
+}
+
+.resumen {
+  font-size: 0.85rem;
+  color: $suave;
+}
+
+.btn-primario {
+  display: inline-block;
+  padding: 11px 22px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #5b66d6 0%, #8254ca 100%);
+  color: white;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.error {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+.exito {
+  text-align: center;
+  padding: 2.4rem 2rem;
+
+  h2 {
+    margin: 0.8rem 0 0.6rem;
+  }
+
+  p {
+    max-width: 560px;
+    margin: 0 auto 0.8rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #4a4b63;
+  }
+
+  .btn-primario {
+    margin-top: 0.8rem;
+  }
+}
+
+.exito-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.volver {
+  text-align: center;
+  font-size: 0.82rem;
+  color: $suave;
+
+  a {
+    color: $primario;
+    font-weight: 600;
+    text-decoration: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .campos {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-contenido h1 {
+    font-size: 1.6rem;
+  }
+}

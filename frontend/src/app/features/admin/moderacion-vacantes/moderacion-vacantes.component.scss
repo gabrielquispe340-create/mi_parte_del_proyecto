@@ -236,17 +236,6 @@
   }
 }
 
-.pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid #f1f5f9;
-  font-size: 0.875rem;
-  color: #475569;
-}
-
 .empty-state,
 .loading-state,
 .error-state {

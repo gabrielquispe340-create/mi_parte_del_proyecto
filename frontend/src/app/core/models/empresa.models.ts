@@ -4,6 +4,13 @@ export type EstadoVerificacionEmpresa =
   | 'RECHAZADA'
   | 'SUSPENDIDA';
 
+export interface InstitucionDeEmpresa {
+  id: string;
+  nombre: string;
+  sigla: string | null;
+  estado: 'pending' | 'approved' | 'rejected' | 'suspended';
+}
+
 export interface Empresa {
   id: string;
   usuario_id: string | null;
@@ -23,6 +30,7 @@ export interface Empresa {
   activo: boolean;
   fecha_registro?: string;
   fecha_eliminacion?: string;
+  instituciones?: InstitucionDeEmpresa[];
 }
 
 export interface ConfiguracionEmpresaRequest {

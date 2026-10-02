@@ -34,6 +34,20 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from: str = "no-reply@egresa.uagrm.edu.bo"
 
+    # Contraseña de las cuentas demo de scripts.sembrar_multitenant (no se versiona).
+    demo_password: str | None = None
+
+    # Stripe Checkout: cobro anual de los planes de las universidades.
+    stripe_secret_key: str | None = None
+    stripe_publishable_key: str | None = None
+    stripe_webhook_secret: str | None = None  # opcional: sin él se confirma al volver de Stripe
+    # Adonde vuelve el navegador después de pagar (o cancelar) en Stripe.
+    frontend_url: str = "http://localhost:4200"
+
+    # Interruptor del servicio de IA (recomendaciones y afinidad). En false la plataforma
+    # sigue funcionando y solo avisa que las recomendaciones no están disponibles.
+    ia_recomendaciones_activas: bool = True
+
 
 @lru_cache
 def get_settings() -> Settings:

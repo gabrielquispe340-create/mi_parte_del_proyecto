@@ -7,12 +7,26 @@ from sqlalchemy import delete, distinct, func, or_, select, update
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.catalogo import FieldOfStudy, JobCategory
+from app.models.institucion import CompanyInstitution
 from app.models.vacante import JobEducationPreference, JobPosting, JobSkill, JobStatus
 
 # Caché en memoria para catálogos y filtros dinámicos de la búsqueda (5 minutos TTL) — HU-13
 _FILTROS_CACHE: dict | None = None
 _FILTROS_CACHE_TIME: float = 0.0
 _CACHE_TTL_SECONDS: float = 300.0
+
+
+def empresa_vinculada_a(institution_id: uuid.UUID, estados: tuple[str, ...] = ("approved",)):
+    """Condición: la empresa de la vacante está habilitada en la universidad dada."""
+    return (
+        select(CompanyInstitution.company_id)
+        .where(
+            CompanyInstitution.company_id == JobPosting.company_id,
+            CompanyInstitution.institution_id == institution_id,
+            CompanyInstitution.status.in_(estados),
+        )
+        .exists()
+    )
 
 
 class VacanteRepository:
@@ -90,10 +104,15 @@ class VacanteRepository:
         salary_min: Decimal | None = None,
         page: int = 1,
         page_size: int = 10,
+        institution_id: uuid.UUID | None = None,
     ) -> tuple[list[JobPosting], int]:
         """Lista vacantes publicadas para búsqueda pública o de candidatos."""
         stmt = self._query_base_con_relaciones().where(JobPosting.status == JobStatus.PUBLISHED.value)
         count_stmt = select(func.count(JobPosting.id)).where(JobPosting.status == JobStatus.PUBLISHED.value)
+
+        if institution_id is not None:
+            stmt = stmt.where(empresa_vinculada_a(institution_id))
+            count_stmt = count_stmt.where(empresa_vinculada_a(institution_id))
 
         if q:
             filtro_texto = or_(
@@ -145,10 +164,15 @@ class VacanteRepository:
         estado: str,
         page: int = 1,
         page_size: int = 10,
+        institution_id: uuid.UUID | None = None,
     ) -> tuple[list[JobPosting], int]:
         """Lista vacantes en un estado dado (usado por moderación para pendientes de revisión)."""
         stmt = self._query_base_con_relaciones().where(JobPosting.status == estado)
         count_stmt = select(func.count(JobPosting.id)).where(JobPosting.status == estado)
+        if institution_id is not None:
+            vinculada = empresa_vinculada_a(institution_id, ("approved", "pending"))
+            stmt = stmt.where(vinculada)
+            count_stmt = count_stmt.where(vinculada)
 
         total = self.db.scalar(count_stmt) or 0
         offset = (max(page, 1) - 1) * page_size
@@ -234,9 +258,13 @@ class VacanteRepository:
         ordenar_por: str = "fecha",
         limit: int = 20,
         offset: int = 0,
+        institution_id: uuid.UUID | None = None,
     ) -> tuple[list[JobPosting], int]:
         """Busca vacantes publicadas aplicando filtros combinados y paginación por límite/desplazamiento."""
         stmt = select(JobPosting).where(JobPosting.status == JobStatus.PUBLISHED.value)
+
+        if institution_id is not None:
+            stmt = stmt.where(empresa_vinculada_a(institution_id))
 
         if solo_vigentes:
             now = func.now()
@@ -291,6 +319,7 @@ class VacanteRepository:
                 joinedload(JobPosting.category),
                 selectinload(JobPosting.skills).joinedload(JobSkill.skill),
                 selectinload(JobPosting.education_preferences).joinedload(JobEducationPreference.field_of_study),
+                selectinload(JobPosting.language_requirements),
             )
             .limit(limit)
             .offset(offset)
@@ -299,17 +328,19 @@ class VacanteRepository:
         items = list(self.db.scalars(stmt).unique())
         return items, total
 
-    def obtener_por_id_con_afinidad(self, vacante_id: uuid.UUID) -> JobPosting | None:
+    def obtener_por_id_con_afinidad(
+        self, vacante_id: uuid.UUID, institution_id: uuid.UUID | None = None
+    ) -> JobPosting | None:
         """Obtiene una vacante con las relaciones necesarias para calcular afinidad (skills + carreras)."""
-        stmt = (
-            select(JobPosting)
-            .where(JobPosting.id == vacante_id)
-            .options(
-                joinedload(JobPosting.company),
-                joinedload(JobPosting.category),
-                selectinload(JobPosting.skills).joinedload(JobSkill.skill),
-                selectinload(JobPosting.education_preferences).joinedload(JobEducationPreference.field_of_study),
-            )
+        stmt = select(JobPosting).where(JobPosting.id == vacante_id)
+        if institution_id is not None:
+            stmt = stmt.where(empresa_vinculada_a(institution_id))
+        stmt = stmt.options(
+            joinedload(JobPosting.company),
+            joinedload(JobPosting.category),
+            selectinload(JobPosting.skills).joinedload(JobSkill.skill),
+            selectinload(JobPosting.education_preferences).joinedload(JobEducationPreference.field_of_study),
+            selectinload(JobPosting.language_requirements),
         )
         return self.db.scalar(stmt)
 

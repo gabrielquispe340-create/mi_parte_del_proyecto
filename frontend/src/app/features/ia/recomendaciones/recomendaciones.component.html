@@ -1,0 +1,176 @@
+<div class="reco-page">
+  <header class="topbar">
+    <div class="topbar__left">
+      <a routerLink="/dashboard" class="btn-back" title="Volver al Dashboard">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+      </a>
+      <div>
+        <div class="module-chip">MÓDULO 5.1.11 · RECOMENDACIÓN DE VACANTES</div>
+        <h1 class="topbar__title">Vacantes recomendadas para vos</h1>
+        <p class="topbar__subtitle">Ordenadas por afinidad con tu perfil, para que sepas dónde conviene postularte primero.</p>
+      </div>
+    </div>
+    <button type="button" class="btn btn--outline" [disabled]="estado() === 'cargando'" (click)="cargar()">
+      {{ estado() === 'cargando' ? 'Calculando…' : '🔄 Recalcular' }}
+    </button>
+  </header>
+
+  <main class="container">
+    <p class="privacidad">
+      🔒 La afinidad compara tu <strong>carrera, habilidades, experiencia e idiomas</strong> con cada vacante vigente.
+      Nunca usa tu edad, género, foto ni otros datos personales.
+    </p>
+
+    @switch (estado()) {
+      @case ('cargando') {
+        <div class="estado">
+          <div class="spinner"></div>
+          <p>Calculando tu afinidad con las vacantes vigentes…</p>
+        </div>
+      }
+      @case ('no_disponible') {
+        <div class="estado estado--aviso">
+          <span class="estado__icono">🤖</span>
+          <h2>Recomendaciones no disponibles</h2>
+          <p>{{ mensaje() }}</p>
+          <div class="estado__acciones">
+            <a routerLink="/vacantes" class="btn btn--primary">Buscar vacantes</a>
+            <button type="button" class="btn btn--outline" (click)="cargar()">Reintentar</button>
+          </div>
+        </div>
+      }
+      @case ('error') {
+        <div class="estado estado--error">
+          <p>{{ mensaje() }}</p>
+          <button type="button" class="btn btn--outline" (click)="cargar()">Reintentar</button>
+        </div>
+      }
+      @case ('listo') {
+        @if (datos(); as d) {
+          @if (d.perfil_faltantes.length > 0) {
+            <section class="mejorar">
+              <div>
+                <strong>Mejorá tus recomendaciones</strong>
+                <ul>
+                  @for (f of d.perfil_faltantes; track f) {
+                    <li>{{ f }}</li>
+                  }
+                </ul>
+              </div>
+              <a routerLink="/perfil/profesional" class="btn btn--primary">Completar mi perfil</a>
+            </section>
+          }
+
+          <div class="barra-herramientas">
+            <span class="conteo">
+              <strong>{{ filtradas().length }}</strong> {{ filtradas().length === 1 ? 'vacante' : 'vacantes' }}
+              · calculado a las {{ horaCalculo() }} con tu perfil actual
+            </span>
+            <div class="filtros" role="group" aria-label="Afinidad mínima">
+              @for (f of filtros; track f.minimo) {
+                <button type="button" class="filtro" [class.filtro--activo]="minimo() === f.minimo" (click)="filtrar(f.minimo)">
+                  {{ f.texto }}
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (filtradas().length === 0) {
+            <div class="estado">
+              <p>
+                @if (d.total === 0) {
+                  No hay vacantes vigentes para recomendarte ahora (no se incluyen las que ya te postulaste).
+                } @else {
+                  Ninguna vacante llega a esa afinidad. Probá con “Todas”.
+                }
+              </p>
+            </div>
+          }
+
+          @for (r of paginaActual(); track r.vacante.id) {
+            <article class="reco" [class.reco--abierta]="abiertas().has(r.vacante.id)">
+              <div class="reco__afinidad" [attr.data-nivel]="nivel(r.afinidad)">
+                <span class="reco__porcentaje">{{ r.afinidad }}%</span>
+                <span class="reco__etiqueta">afinidad</span>
+              </div>
+
+              <div class="reco__cuerpo">
+                <h2 class="reco__titulo">{{ r.vacante.title }}</h2>
+                <p class="reco__empresa"><strong>{{ empresa(r) }}</strong> · {{ datosVacante(r) }}</p>
+
+                <div class="criterios-resumen">
+                  @for (c of r.criterios; track c.clave) {
+                    <span class="chip-criterio" [attr.data-estado]="c.estado" [title]="c.detalle">
+                      {{ iconoEstado[c.estado] }} {{ c.nombre }}
+                    </span>
+                  } @empty {
+                    <span class="chip-criterio">La vacante no detalla requisitos comparables</span>
+                  }
+                </div>
+
+                @if (abiertas().has(r.vacante.id)) {
+                  <div class="explicacion">
+                    <p class="descripcion">{{ resumenDescripcion(r.vacante.description) }}</p>
+                    @for (c of r.criterios; track c.clave) {
+                      <div class="criterio" [attr.data-estado]="c.estado">
+                        <div class="criterio__cabecera">
+                          <span class="criterio__nombre">{{ iconoEstado[c.estado] }} {{ c.nombre }}</span>
+                          <span class="criterio__valor">{{ c.cumplimiento }}% · pesa {{ c.peso }}%</span>
+                        </div>
+                        <span class="criterio__barra"><span [style.width.%]="c.cumplimiento"></span></span>
+                        <p class="criterio__detalle">{{ c.detalle }}</p>
+                        @if (c.coincidencias.length > 0 || c.faltantes.length > 0) {
+                          <div class="etiquetas">
+                            @for (x of c.coincidencias; track x) {
+                              <span class="etiqueta etiqueta--si">✓ {{ x }}</span>
+                            }
+                            @for (x of c.faltantes; track x) {
+                              <span class="etiqueta etiqueta--no">✗ {{ x }}</span>
+                            }
+                          </div>
+                        }
+                      </div>
+                    } @empty {
+                      <p class="criterio__detalle">
+                        La vacante no especifica carrera, habilidades, experiencia ni idiomas, así que la afinidad es neutral (50%).
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="reco__acciones">
+                <button type="button" class="btn btn--primary" (click)="postularme(r)">Postularme</button>
+                <button type="button" class="btn btn--outline" [attr.aria-expanded]="abiertas().has(r.vacante.id)" (click)="alternar(r.vacante.id)">
+                  {{ abiertas().has(r.vacante.id) ? 'Ocultar detalle' : '¿Por qué ' + r.afinidad + '%?' }}
+                </button>
+              </div>
+            </article>
+          }
+
+          @if (filtradas().length > 0) {
+            <div class="paginacion">
+              <app-paginador
+                [total]="filtradas().length"
+                [(pagina)]="pagina"
+                [(tamanio)]="tamanio"
+                [opcionesTamanio]="[5, 10, 25]"
+                etiqueta="vacantes"
+              />
+            </div>
+          }
+        }
+      }
+    }
+  </main>
+
+  @if (postulandoA(); as r) {
+    <app-postulacion-modal
+      [jobId]="r.vacante.id"
+      (onClose)="postulandoA.set(null)"
+      (onPostulacionExitosa)="postulacionExitosa()"
+    />
+  }
+</div>

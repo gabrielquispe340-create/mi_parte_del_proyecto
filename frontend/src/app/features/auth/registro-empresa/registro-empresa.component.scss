@@ -282,3 +282,53 @@
     }
   }
 }
+.universidades-ayuda {
+  margin: -0.25rem 0 0.875rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.universidades-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.625rem;
+}
+
+.universidad-opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.625rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: #a5b4fc;
+  }
+
+  &.seleccionada {
+    border-color: #6366f1;
+    background-color: #eef2ff;
+  }
+
+  input {
+    accent-color: #4f46e5;
+  }
+
+  .universidad-nombre {
+    flex: 1;
+    font-size: 0.875rem;
+    color: #1e293b;
+  }
+
+  .universidad-sigla {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #4338ca;
+    background: #e0e7ff;
+    padding: 0.15rem 0.45rem;
+    border-radius: 9999px;
+  }
+}

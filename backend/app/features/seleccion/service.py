@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.common.exceptions import BadRequestException, ForbiddenException, NotFoundException
 from app.features.bitacora.service import BitacoraService
+from app.features.ia.services import afinidad as motor_afinidad
 from app.features.postulaciones.schema import ESTADOS_INFO, MODALIDADES_INFO, TIPOS_EMPLEO_INFO
 from app.features.seleccion.repository import SeleccionRepository
 from app.features.seleccion.schema import (
@@ -17,7 +18,7 @@ from app.features.seleccion.schema import (
     PipelineVacanteResponse,
     VacanteResumenSeleccion,
 )
-from app.models.candidato import CandidateEducation, CandidateProfile, CandidateSkill
+from app.models.candidato import CandidateEducation, CandidateProfile
 from app.models.empresa import CompanyMember
 from app.models.postulacion import Application
 from app.models.vacante import JobPosting, JobSelectionStage
@@ -162,6 +163,9 @@ class SeleccionService:
         vacante_service = VacanteService(self.db)
         etapas = self.repo.obtener_etapas_vacante(job_id)
         apps = self.repo.obtener_postulaciones_vacante(job_id)
+        # Perfiles de afinidad de todos los postulantes en una sola consulta (HU-23).
+        perfiles = motor_afinidad.perfiles_de_candidatos(self.db, {a.candidate_id for a in apps})
+        ia_activa = motor_afinidad.ia_activa()
 
         conteo_por_etapa: dict[uuid.UUID, int] = {}
         candidatos_list: list[CandidatoPipelineItem] = []
@@ -194,14 +198,7 @@ class SeleccionService:
                     elif edu.program_name:
                         carrera_nombre = edu.program_name
 
-            candidato_skills_ids = (
-                {
-                    cs.skill_id
-                    for cs in self.db.query(CandidateSkill).filter(CandidateSkill.candidate_id == cand.id).all()
-                }
-                if cand
-                else set()
-            )
+            candidato_skills_ids = set(perfiles[cand.id].habilidades) if cand else set()
             candidato_carreras_ids = {
                 e.field_of_study_id for e in cand.educations if e.field_of_study_id
             } if cand and cand.educations else set()
@@ -212,7 +209,10 @@ class SeleccionService:
             if habilidad_id is not None and habilidad_id not in candidato_skills_ids:
                 continue
 
-            afinidad = vacante_service._calcular_afinidad(vacante, candidato_skills_ids, candidato_carreras_ids)
+            resultado_afinidad = vacante_service._calcular_afinidad(
+                vacante, perfiles.get(a.candidate_id) if ia_activa else None
+            )
+            afinidad = resultado_afinidad.porcentaje if resultado_afinidad else None
 
             nombre_completo = f"{cand.first_name} {cand.last_name}" if cand else "Candidato"
             info_estado = ESTADOS_INFO.get(a.current_status, {"label": a.current_status.capitalize(), "color": "gray"})
@@ -231,6 +231,7 @@ class SeleccionService:
                     candidato_email=user.email if user else None,
                     candidato_telefono=cand.phone if cand else None,
                     candidato_ciudad=cand.city if cand else None,
+                    candidato_universidad=cand.institution.name if cand and cand.institution else None,
                     candidato_carrera_id=carrera_id_candidato,
                     candidato_afinidad=afinidad,
                     estado=a.current_status,
@@ -483,6 +484,7 @@ class SeleccionService:
             candidato_email=user.email if user else None,
             candidato_telefono=cand.phone if cand else None,
             candidato_ciudad=cand.city if cand else None,
+            candidato_universidad=cand.institution.name if cand and cand.institution else None,
             estado=a.current_status,
             estado_label=info_estado["label"],
             estado_color=info_estado["color"],

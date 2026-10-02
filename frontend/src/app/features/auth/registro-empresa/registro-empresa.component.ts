@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Component, OnInit, inject } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -11,6 +12,7 @@ import {
 } from '@angular/forms';
 import { AuthService } from '../auth.service';
 import { RegistroEmpresaRequest } from '../../../core/models/auth.models';
+import { environment } from '../../../../environments/environment';
 
 /** Validador personalizado para asegurar que las contraseñas coincidan */
 export const passwordsMatchValidator: ValidatorFn = (
@@ -32,9 +34,25 @@ export const passwordsMatchValidator: ValidatorFn = (
   templateUrl: './registro-empresa.component.html',
   styleUrl: './registro-empresa.component.scss',
 })
-export class RegistroEmpresaComponent {
+export class RegistroEmpresaComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly http = inject(HttpClient);
+
+  instituciones: { id: string; nombre: string; sigla: string | null }[] = [];
+  readonly institucionesSeleccionadas = new Set<string>();
+
+  ngOnInit(): void {
+    this.http
+      .get<{ id: string; nombre: string; sigla: string | null }[]>(`${environment.apiUrl}/catalogos/instituciones`)
+      .subscribe({ next: (data) => (this.instituciones = data) });
+  }
+
+  alternarInstitucion(id: string): void {
+    if (!this.institucionesSeleccionadas.delete(id)) {
+      this.institucionesSeleccionadas.add(id);
+    }
+  }
 
   // Estados de la vista
   isLoading = false;
@@ -138,6 +156,7 @@ export class RegistroEmpresaComponent {
       representante_legal: formValues.representante_legal
         ? formValues.representante_legal.trim()
         : undefined,
+      instituciones_ids: [...this.institucionesSeleccionadas],
     };
 
     this.authService.registrarEmpresa(payload).subscribe({

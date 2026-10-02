@@ -83,6 +83,21 @@
           </div>
 
           <div class="form-group">
+            <label for="institucion_id">Universidad</label>
+            <div class="input-wrapper">
+              <select id="institucion_id" formControlName="institucion_id">
+                <option value="">Selecciona tu universidad</option>
+                @for (institucion of instituciones; track institucion.id) {
+                  <option [value]="institucion.id">{{ institucion.nombre }}{{ institucion.sigla ? ' (' + institucion.sigla + ')' : '' }}</option>
+                }
+              </select>
+            </div>
+            @if (registroForm.get('institucion_id')?.touched && registroForm.get('institucion_id')?.invalid) {
+              <div class="error-msg">Requerido</div>
+            }
+          </div>
+
+          <div class="form-group">
             <label for="carrera_id">Carrera de Egreso</label>
             <div class="input-wrapper">
               <select id="carrera_id" formControlName="carrera_id" [disabled]="isCargandoCarreras">

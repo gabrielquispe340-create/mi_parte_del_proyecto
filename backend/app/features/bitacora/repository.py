@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.seguridad import AuditLog
+from app.security.tenant import usuarios_de_institucion
 
 
 class BitacoraRepository:
@@ -23,8 +24,11 @@ class BitacoraRepository:
         accion: str | None = None,
         fecha_desde: datetime | None = None,
         fecha_hasta: datetime | None = None,
+        institution_id: uuid.UUID | None = None,
     ) -> list[AuditLog]:
         stmt = select(AuditLog).order_by(AuditLog.created_at.desc())
+        if institution_id is not None:
+            stmt = stmt.where(AuditLog.user_id.in_(usuarios_de_institucion(institution_id)))
         if usuario_id is not None:
             stmt = stmt.where(AuditLog.user_id == usuario_id)
         if modulo is not None:

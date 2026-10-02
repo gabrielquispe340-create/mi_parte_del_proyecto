@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/carrera.dart';
+import '../models/institucion.dart';
 import 'api_config.dart';
 import 'auth_service.dart';
 
@@ -28,12 +29,32 @@ class RegistroService {
     return lista.map((e) => Carrera.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Universidades clientes de la plataforma (tenants del SaaS).
+  Future<List<Institucion>> listarInstituciones() async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/catalogos/instituciones');
+
+    late final http.Response respuesta;
+    try {
+      respuesta = await http.get(uri).timeout(const Duration(seconds: 15));
+    } catch (_) {
+      throw const AuthException('No se pudo cargar la lista de universidades. Verificá tu conexión.');
+    }
+
+    if (respuesta.statusCode != 200) {
+      throw const AuthException('No se pudo cargar la lista de universidades.');
+    }
+
+    final lista = jsonDecode(respuesta.body) as List<dynamic>;
+    return lista.map((e) => Institucion.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<void> registrarEgresado({
     required String nombres,
     required String apellidos,
     required String ci,
     required String correo,
     required String password,
+    required String institucionId,
     String? carreraId,
     int? anioEgreso,
     String? matricula,
@@ -52,6 +73,7 @@ class RegistroService {
               'ci': ci,
               'correo': correo,
               'password': password,
+              'institucion_id': institucionId,
               'carrera_id': carreraId,
               'anio_egreso': anioEgreso,
               'matricula': matricula,

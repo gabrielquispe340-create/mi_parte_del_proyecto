@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.common.exceptions import BadRequestException, NotFoundException
+from app.core.tenancy import institucion_efectiva
 from app.features.bitacora.service import BitacoraService
 from app.features.postulaciones.repository import PostulacionRepository
 from app.features.postulaciones.schema import (
@@ -27,6 +28,7 @@ from app.models.candidato import CandidateProfile
 from app.models.empresa import Company
 from app.models.postulacion import Application, ApplicationAnswer, ApplicationStatusHistory
 from app.models.vacante import JobPosting, ScreeningOption, ScreeningQuestion
+from app.security.tenant import empresa_habilitada_en
 
 
 class PostulacionService:
@@ -48,6 +50,9 @@ class PostulacionService:
         vacante = self.db.query(JobPosting).filter(JobPosting.id == data.job_id).first()
         if not vacante:
             raise HTTPException(status_code=404, detail="La vacante no existe.")
+
+        if not empresa_habilitada_en(self.db, vacante.company_id, institucion_efectiva(candidate.institution_id)):
+            raise HTTPException(status_code=403, detail="Esta empresa no recluta egresados de tu universidad.")
 
         existing_app = (
             self.db.query(Application)

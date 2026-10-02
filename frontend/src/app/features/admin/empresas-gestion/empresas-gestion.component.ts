@@ -1,22 +1,37 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Empresa } from '../../../core/models/empresa.models';
 import { EmpresaService } from '../../../core/services/empresa.service';
+import { PaginadorComponent, paginar } from '../../../shared/components/paginador/paginador.component';
+import { AuthService } from '../../auth/auth.service';
+
+const FILTROS_VALIDOS = ['TODAS', 'ACTIVAS', 'INACTIVAS', 'PENDIENTES'];
 
 @Component({
   selector: 'app-empresas-gestion',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, PaginadorComponent],
   templateUrl: './empresas-gestion.component.html',
   styleUrl: './empresas-gestion.component.scss',
 })
 export class EmpresasGestionComponent implements OnInit {
   private readonly empresaService = inject(EmpresaService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  readonly auth = inject(AuthService);
+
+  readonly pagina = signal(1);
+  readonly tamanio = signal(10);
 
   empresas: Empresa[] = [];
+  readonly etiquetaVinculo: Record<string, string> = {
+    pending: 'solicitud pendiente',
+    approved: 'aprobada',
+    rejected: 'rechazada',
+    suspended: 'suspendida',
+  };
   isLoading = false;
   errorMessage: string | null = null;
   toastMessage: string | null = null;
@@ -35,6 +50,9 @@ export class EmpresasGestionComponent implements OnInit {
   isDecidiendo: Record<string, boolean> = {};
 
   ngOnInit(): void {
+    // El dashboard enlaza aquí con ?filtro=PENDIENTES para ir directo a lo que hay que revisar.
+    const filtro = this.route.snapshot.queryParamMap.get('filtro');
+    if (filtro && FILTROS_VALIDOS.includes(filtro)) this.filtroEstado = filtro;
     this.cargarEmpresas();
   }
 
@@ -75,6 +93,10 @@ export class EmpresasGestionComponent implements OnInit {
 
       return true;
     });
+  }
+
+  get empresasPagina(): Empresa[] {
+    return paginar(this.empresasFiltradas, this.pagina(), this.tamanio());
   }
 
   toggleNotificaciones(empresa: Empresa, event: Event): void {

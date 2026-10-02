@@ -44,6 +44,7 @@ class BitacoraService:
         accion: str | None = None,
         fecha_desde: datetime | None = None,
         fecha_hasta: datetime | None = None,
+        institution_id: uuid.UUID | None = None,
     ) -> list[AuditLog]:
         return self.repo.listar(
             usuario_id=usuario_id,
@@ -51,6 +52,7 @@ class BitacoraService:
             accion=accion,
             fecha_desde=fecha_desde,
             fecha_hasta=fecha_hasta,
+            institution_id=institution_id,
         )
 
     @staticmethod

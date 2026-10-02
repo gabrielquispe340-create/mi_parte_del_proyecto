@@ -25,6 +25,13 @@ class CategoriaOfertaResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class InstitucionResponse(BaseModel):
+    id: uuid.UUID
+    nombre: str
+    sigla: str | None = None
+    ciudad: str | None = None
+
+
 class CiudadResponse(BaseModel):
     id: uuid.UUID | None = None
     nombre: str

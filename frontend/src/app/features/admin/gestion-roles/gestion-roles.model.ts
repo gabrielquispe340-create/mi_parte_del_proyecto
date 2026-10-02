@@ -4,6 +4,7 @@ export const ETIQUETAS_ROL: Record<string, string> = {
   candidate: 'Egresado',
   moderator: 'Moderador',
   platform_admin: 'Administrador universitario',
+  empresa: 'Empresa',
 };
 
 export interface Rol {
@@ -20,6 +21,22 @@ export interface UsuarioAdmin {
   ultimo_acceso: string | null;
   roles: string[];
   es_miembro_empresa: boolean;
+  institucion_id: string | null;
+  institucion: string | null;
+}
+
+/** Alta de personal institucional; egresados y empresas se registran solos. */
+export interface NuevoUsuarioStaff {
+  correo: string;
+  password: string;
+  rol: 'moderator' | 'platform_admin';
+  institucion_id: string | null;
+}
+
+export interface UniversidadCliente {
+  id: string;
+  nombre: string;
+  sigla: string | null;
 }
 
 export interface AsignarRolRespuesta {

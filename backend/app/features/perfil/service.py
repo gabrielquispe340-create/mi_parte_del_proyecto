@@ -5,6 +5,7 @@ from datetime import date, datetime
 from sqlalchemy.orm import Session
 
 from app.common.exceptions import ResourceNotFoundException
+from app.core.tenancy import institucion_efectiva
 from app.features.auth.repository import UsuarioRepository
 from app.features.perfil.repository import EgresadoRepository
 from app.features.perfil.schema import (
@@ -253,8 +254,8 @@ class EgresadoService:
         self.db.commit()
         return self._a_dto(perfil)
 
-    def listar_pendientes_validacion(self) -> list[PerfilEgresadoResponse]:
-        perfiles = self.repo.listar_pendientes_validacion()
+    def listar_pendientes_validacion(self, institution_id: uuid.UUID | None = None) -> list[PerfilEgresadoResponse]:
+        perfiles = self.repo.listar_pendientes_validacion(institution_id)
         ids = [perfil.id for perfil in perfiles]
         cantidad_habilidades = self.repo.cantidad_habilidades_de(ids)
         educacion_principal = self.repo.educacion_principal_de(ids)
@@ -263,9 +264,18 @@ class EgresadoService:
             for perfil in perfiles
         ]
 
-    def validar(self, perfil_id: uuid.UUID | str, aprobado: bool, motivo_rechazo: str | None) -> PerfilEgresadoResponse:
+    def validar(
+        self,
+        perfil_id: uuid.UUID | str,
+        aprobado: bool,
+        motivo_rechazo: str | None,
+        institution_id: uuid.UUID | None = None,
+    ) -> PerfilEgresadoResponse:
         perfil = self.repo.obtener_por_id(perfil_id)
-        if perfil is None:
+        # Un egresado de otra universidad se trata como inexistente para no filtrar datos entre tenants.
+        if perfil is None or (
+            institution_id is not None and institucion_efectiva(perfil.institution_id) != institution_id
+        ):
             raise ResourceNotFoundException("No se encontró el perfil del egresado.")
 
         perfil.verification_status = "verified" if aprobado else "rejected"
@@ -536,6 +546,7 @@ class EgresadoService:
         return PerfilEgresadoResponse(
             id=perfil.id,
             usuario_id=perfil.user_id,
+            institucion_id=institucion_efectiva(perfil.institution_id),
             nombres=perfil.first_name,
             apellidos=perfil.last_name,
             ci=perfil.document_number,

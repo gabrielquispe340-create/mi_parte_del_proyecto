@@ -114,6 +114,7 @@ def listar_vacantes_publicas(
         salary_min=salary_min,
         page=page,
         page_size=page_size,
+        usuario_id=current_user.id_usuario,
     )
 
 

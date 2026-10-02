@@ -2,7 +2,7 @@
   <!-- Encabezado de la Sección -->
   <header class="admin-header">
     <div>
-      <div class="header-badge">Administración Institucional • UAGRM</div>
+      <div class="header-badge">Administración Institucional • {{ auth.institucion() || 'Todas las universidades' }}</div>
       <h1>Moderación de Ofertas Laborales</h1>
       <p class="subtitle">
         Revisá y aprobá o rechazá las vacantes enviadas por las empresas antes de que se publiquen (HU-12).
@@ -79,16 +79,15 @@
       </table>
     </div>
 
-    <!-- Paginación -->
-    <div *ngIf="totalPages > 1" class="pagination-bar">
-      <button type="button" class="btn-secondary" [disabled]="page <= 1" (click)="irAPagina(page - 1)">
-        ← Anterior
-      </button>
-      <span>Página {{ page }} de {{ totalPages }} ({{ total }} pendientes)</span>
-      <button type="button" class="btn-secondary" [disabled]="page >= totalPages" (click)="irAPagina(page + 1)">
-        Siguiente →
-      </button>
-    </div>
+    <!-- Paginación (en el servidor: cada cambio vuelve a pedir la página) -->
+    <app-paginador
+      [total]="total"
+      [pagina]="page"
+      (paginaChange)="irAPagina($event)"
+      [tamanio]="pageSize"
+      (tamanioChange)="cambiarTamanio($event)"
+      etiqueta="ofertas pendientes"
+    />
   </div>
 
   <!-- Modal de Rechazo (motivo obligatorio) -->

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/carrera.dart';
+import '../../core/models/institucion.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/registro_service.dart';
 
@@ -28,6 +29,8 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
 
   List<Carrera> _carreras = [];
   String? _carreraSeleccionadaId;
+  List<Institucion> _instituciones = [];
+  String? _institucionSeleccionadaId;
   bool _cargandoCarreras = true;
   bool _enviando = false;
   bool _ocultarPassword = true;
@@ -54,9 +57,11 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
   Future<void> _cargarCarreras() async {
     try {
       final carreras = await _registroService.listarCarreras();
+      final instituciones = await _registroService.listarInstituciones();
       if (!mounted) return;
       setState(() {
         _carreras = carreras;
+        _instituciones = instituciones;
         _cargandoCarreras = false;
       });
     } catch (e) {
@@ -83,6 +88,7 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
         ci: _ciCtrl.text.trim(),
         correo: _correoCtrl.text.trim(),
         password: _passwordCtrl.text,
+        institucionId: _institucionSeleccionadaId!,
         carreraId: _carreraSeleccionadaId,
         anioEgreso: _anioEgresoCtrl.text.trim().isEmpty ? null : int.tryParse(_anioEgresoCtrl.text.trim()),
         matricula: _matriculaCtrl.text.trim().isEmpty ? null : _matriculaCtrl.text.trim(),
@@ -196,7 +202,21 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                         padding: EdgeInsets.symmetric(vertical: 8),
                         child: Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
                       )
-                    else
+                    else ...[
+                      DropdownButtonFormField<String>(
+                        initialValue: _institucionSeleccionadaId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Universidad', border: OutlineInputBorder()),
+                        items: _instituciones
+                            .map((i) => DropdownMenuItem(
+                                  value: i.id,
+                                  child: Text(i.etiqueta, overflow: TextOverflow.ellipsis),
+                                ))
+                            .toList(),
+                        onChanged: (v) => setState(() => _institucionSeleccionadaId = v),
+                        validator: (v) => v == null ? 'Seleccioná tu universidad.' : null,
+                      ),
+                      const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         initialValue: _carreraSeleccionadaId,
                         decoration: const InputDecoration(labelText: 'Carrera', border: OutlineInputBorder()),
@@ -205,6 +225,7 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                             .toList(),
                         onChanged: (v) => setState(() => _carreraSeleccionadaId = v),
                       ),
+                    ],
                     const SizedBox(height: 12),
 
                     TextFormField(
