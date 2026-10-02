@@ -23,12 +23,14 @@ export class RegistroEgresado implements OnInit {
     ci: ['', Validators.required],
     correo: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
+    institucion_id: ['', Validators.required],
     carrera_id: ['', Validators.required],
     anio_egreso: ['', [Validators.required, Validators.min(1950), Validators.max(new Date().getFullYear())]],
     matricula: ['']
   });
 
   carreras: any[] = [];
+  instituciones: { id: string; nombre: string; sigla: string | null }[] = [];
   isCargandoCarreras = true;
   carrerasError = '';
   mensajeExito = '';
@@ -36,6 +38,10 @@ export class RegistroEgresado implements OnInit {
   isLoading = false;
 
   ngOnInit(): void {
+    this.http
+      .get<{ id: string; nombre: string; sigla: string | null }[]>(`${environment.apiUrl}/catalogos/instituciones`)
+      .subscribe({ next: (data) => (this.instituciones = data) });
+
     this.http.get<any[]>(`${environment.apiUrl}/catalogos/carreras`).subscribe({
       next: (data) => {
         this.carreras = data;

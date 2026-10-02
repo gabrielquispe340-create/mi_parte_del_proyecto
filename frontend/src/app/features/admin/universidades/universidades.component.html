@@ -1,0 +1,301 @@
+<div class="admin-container">
+  <header class="admin-header">
+    <div class="header-badge">{{ esSuperadmin() ? 'Plataforma SaaS · Vista global' : 'Mi universidad' }}</div>
+    <h1>{{ esSuperadmin() ? 'Universidades clientes' : auth.institucion() }}</h1>
+    <p class="subtitle">
+      @if (esSuperadmin()) {
+        Cada universidad opera como un espacio aislado con su propio plan. Aprobá las solicitudes de alta,
+        cambiá planes y registrá los pagos.
+      } @else {
+        Indicadores y plan de tu universidad. Los datos de otras universidades no son visibles desde esta cuenta.
+      }
+    </p>
+  </header>
+
+  @if (cargando()) {
+    <div class="estado">
+      <div class="spinner"></div>
+      <p>Cargando universidades...</p>
+    </div>
+  } @else if (error()) {
+    <div class="estado error">{{ error() }}</div>
+  } @else {
+    @if (avisoPago(); as aviso) {
+      <div class="aviso-pago-stripe" [attr.data-tipo]="aviso.tipo" role="status">
+        <span>{{ aviso.texto }}</span>
+        <button type="button" aria-label="Cerrar aviso" (click)="avisoPago.set(null)">✕</button>
+      </div>
+    }
+
+    <!-- Solicitudes de alta (superadmin) -->
+    @if (esSuperadmin() && solicitudes().length > 0) {
+      <section class="solicitudes">
+        <h2>Solicitudes de alta <span class="contador">{{ solicitudes().length }}</span></h2>
+        @for (s of solicitudes(); track s.id) {
+          <article class="solicitud">
+            <div class="solicitud-datos">
+              <div class="solicitud-titulo">
+                <span class="sigla-chip">{{ s.sigla }}</span>
+                <strong>{{ s.nombre }}</strong>
+                <span class="origen">{{ s.institucion_id ? 'Del catálogo' : 'Nueva' }}</span>
+              </div>
+              <span class="meta">
+                {{ s.ciudad || 'Ciudad sin indicar' }} · Plan <strong>{{ s.plan_nombre }}</strong> · {{ fecha(s.fecha) }}
+              </span>
+              <span class="meta">
+                Responsable: {{ s.responsable_nombre }} · {{ s.responsable_correo }}
+                @if (s.responsable_telefono) { · {{ s.responsable_telefono }} }
+              </span>
+            </div>
+
+            @if (rechazandoId() === s.id) {
+              <div class="rechazo">
+                <input type="text" placeholder="Motivo del rechazo…" [(ngModel)]="motivoRechazo" maxlength="500" />
+                <button type="button" class="btn btn-peligro" [disabled]="procesandoId() === s.id" (click)="confirmarRechazo(s)">
+                  Confirmar rechazo
+                </button>
+                <button type="button" class="btn btn-secundario" (click)="rechazandoId.set(null)">Cancelar</button>
+              </div>
+            } @else {
+              <div class="acciones">
+                <button type="button" class="btn btn-primario" (click)="abrirAprobacion(s)">Aprobar…</button>
+                <button type="button" class="btn btn-secundario" (click)="iniciarRechazo(s)">Rechazar</button>
+              </div>
+            }
+          </article>
+        }
+      </section>
+    }
+
+    @if (esSuperadmin()) {
+      <section class="totales">
+        <div class="total"><span class="valor">{{ resumen().length }}</span><span class="etiqueta">Universidades clientes</span></div>
+        <div class="total"><span class="valor">{{ totales().egresados }}</span><span class="etiqueta">Egresados</span></div>
+        <div class="total">
+          <span class="valor">Bs {{ totales().facturacion.toLocaleString('es-BO') }}</span>
+          <span class="etiqueta">Facturación anual (planes al día)</span>
+        </div>
+        <div class="total" [class.total--alerta]="totales().pagosPendientes > 0">
+          <span class="valor">{{ totales().pagosPendientes }}</span>
+          <span class="etiqueta">Pagos pendientes o vencidos</span>
+        </div>
+      </section>
+    }
+
+    <section class="grid">
+      @for (u of resumenPagina(); track u.id) {
+        <article class="tarjeta">
+          <div class="tarjeta-cabecera">
+            <span class="sigla">{{ u.sigla }}</span>
+            <div>
+              <h2>{{ u.nombre }}</h2>
+              <span class="ciudad">{{ u.ciudad }}</span>
+            </div>
+          </div>
+
+          @if (u.plan; as p) {
+            <div class="plan" [attr.data-plan]="p.codigo">
+              <div class="plan-cabecera">
+                <span class="plan-nombre">Plan {{ p.nombre }}</span>
+                <span class="pago" [attr.data-estado]="p.estado_pago">
+                  {{ etiquetaPago[p.estado_pago] }}{{ p.estado_pago === 'al_dia' ? ' hasta ' + fecha(p.pago_hasta) : '' }}
+                </span>
+              </div>
+              @if (p.estado_pago === 'pendiente' || p.estado_pago === 'vencido') {
+                <p class="aviso-pago">Hasta registrar el pago rigen los límites del plan Básico.</p>
+              }
+
+              <div class="uso">
+                <div class="uso-fila">
+                  <span>Egresados</span>
+                  <span>{{ u.egresados_total }} / {{ textoLimite(p.max_egresados) }}</span>
+                </div>
+                <span class="barra" [class.llena]="porcentajeUso(u.egresados_total, p.max_egresados) >= 90">
+                  <span [style.width.%]="porcentajeUso(u.egresados_total, p.max_egresados)"></span>
+                </span>
+                <div class="uso-fila">
+                  <span>Moderadores</span>
+                  <span>{{ u.moderadores }} / {{ textoLimite(p.max_moderadores) }}</span>
+                </div>
+                <span class="barra" [class.llena]="porcentajeUso(u.moderadores, p.max_moderadores) >= 90">
+                  <span [style.width.%]="porcentajeUso(u.moderadores, p.max_moderadores)"></span>
+                </span>
+              </div>
+
+              @if (esSuperadmin()) {
+                <div class="plan-acciones">
+                  <select [ngModel]="planSeleccionado(u)" (ngModelChange)="elegirPlan(u, $event)" [disabled]="procesandoId() === u.id">
+                    @for (opcion of planes(); track opcion.codigo) {
+                      <option [value]="opcion.codigo" [title]="textoPrecio(opcion.precio_anual_bs)">{{ opcion.nombre }}</option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="btn btn-secundario"
+                    [disabled]="planSeleccionado(u) === p.codigo || procesandoId() === u.id"
+                    (click)="aplicarPlan(u)"
+                  >
+                    Aplicar
+                  </button>
+                  @if (p.precio_anual_bs > 0) {
+                    <button
+                      type="button"
+                      class="btn btn-primario"
+                      title="Para pagos por transferencia o QR. Las universidades también pueden pagar con tarjeta."
+                      [disabled]="procesandoId() === u.id"
+                      (click)="registrarPago(u)"
+                    >
+                      Registrar pago manual
+                    </button>
+                  }
+                </div>
+              } @else {
+                @if (esAdminUniversidad() && p.precio_anual_bs > 0) {
+                  <div class="pago-tarjeta">
+                    <button type="button" class="btn btn-primario" [disabled]="pagando()" (click)="pagarConTarjeta()">
+                      @if (pagando()) {
+                        Abriendo Stripe…
+                      } @else {
+                        💳 {{ p.estado_pago === 'al_dia' ? 'Renovar un año' : 'Pagar con tarjeta' }} · {{ textoPrecio(p.precio_anual_bs) }}
+                      }
+                    </button>
+                    <small>Pago seguro con Stripe. {{ p.estado_pago === 'al_dia' ? 'El año nuevo se suma al vencimiento actual.' : 'Al pagar se activan los límites de tu plan.' }}</small>
+                  </div>
+                }
+                <p class="nota-plan">Para cambiar de plan, escribile al equipo de EGRESA.</p>
+              }
+            </div>
+          }
+
+          <div class="metricas">
+            <div class="metrica">
+              <span class="valor">{{ u.egresados_total }}</span>
+              <span class="etiqueta">Egresados</span>
+              <span class="detalle">{{ u.egresados_verificados }} verificados · {{ u.egresados_pendientes }} por validar</span>
+            </div>
+            <div class="metrica">
+              <span class="valor">{{ u.empresas_aprobadas }}</span>
+              <span class="etiqueta">Empresas habilitadas</span>
+              <span class="detalle">{{ u.empresas_pendientes }} solicitudes pendientes</span>
+            </div>
+            <div class="metrica">
+              <span class="valor">{{ u.vacantes_publicadas }}</span>
+              <span class="etiqueta">Vacantes visibles</span>
+            </div>
+            <div class="metrica">
+              <span class="valor">{{ u.postulaciones }}</span>
+              <span class="etiqueta">Postulaciones</span>
+            </div>
+          </div>
+        </article>
+      }
+    </section>
+
+    <div class="paginacion">
+      <app-paginador
+        [total]="resumen().length"
+        [(pagina)]="pagina"
+        [(tamanio)]="tamanio"
+        [opcionesTamanio]="[6, 12, 24]"
+        etiqueta="universidades"
+      />
+    </div>
+
+    <section class="pagos">
+      <h2>Historial de pagos</h2>
+      @if (pagos().length === 0) {
+        <p class="pagos-vacio">Todavía no hay pagos registrados.</p>
+      } @else {
+        <div class="tabla-pagos" role="table" [class.tabla-pagos--global]="esSuperadmin()">
+          <div class="fila-pago fila-pago--cabecera" role="row">
+            <span role="columnheader">Fecha</span>
+            @if (esSuperadmin()) {
+              <span role="columnheader">Universidad</span>
+            }
+            <span role="columnheader">Plan</span>
+            <span role="columnheader">Monto</span>
+            <span role="columnheader">Método</span>
+            <span role="columnheader">Al día hasta</span>
+          </div>
+          @for (pago of pagosPagina(); track pago.id) {
+            <div class="fila-pago" role="row">
+              <span role="cell">{{ fecha(pago.fecha) }}</span>
+              @if (esSuperadmin()) {
+                <span role="cell" class="pago-universidad">{{ pago.universidad }}</span>
+              }
+              <span role="cell">{{ pago.plan_nombre }}</span>
+              <span role="cell">Bs {{ pago.monto_bs.toLocaleString('es-BO') }}</span>
+              <span role="cell">
+                <span class="metodo" [attr.data-metodo]="pago.metodo" [title]="pago.registrado_por ?? ''">
+                  {{ pago.metodo === 'stripe' ? '💳 Tarjeta' : '🧾 Manual' }}
+                </span>
+              </span>
+              <span role="cell">{{ fecha(pago.pagado_hasta) }}</span>
+            </div>
+          }
+        </div>
+        <app-paginador
+          [total]="pagos().length"
+          [(pagina)]="paginaPagos"
+          [(tamanio)]="tamanioPagos"
+          [opcionesTamanio]="[5, 10, 25]"
+          etiqueta="pagos"
+        />
+      }
+    </section>
+  }
+</div>
+
+<!-- Aprobación de una solicitud: crea el admin con contraseña temporal -->
+@if (aprobacion(); as a) {
+  <div class="modal-fondo">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-aprobacion">
+      @if (a.creada; as c) {
+        <div class="modal-icono-ok">✓</div>
+        <h2 id="titulo-aprobacion">{{ c.universidad }} ya es cliente</h2>
+        <p class="modal-sub">{{ c.detalle }} <strong>La contraseña no se vuelve a mostrar.</strong></p>
+        <dl class="credenciales">
+          <div><dt>Correo</dt><dd>{{ c.correo }}</dd></div>
+          <div><dt>Contraseña temporal</dt><dd class="password">{{ c.password }}</dd></div>
+        </dl>
+        @if (a.copia === 'ok') {
+          <p class="banner banner-ok">Credenciales copiadas al portapapeles.</p>
+        } @else if (a.copia === 'error') {
+          <p class="banner banner-error">No se pudo copiar automáticamente: copialas a mano.</p>
+        }
+        <div class="modal-acciones">
+          <button type="button" class="btn btn-secundario" (click)="copiarCredenciales()">📋 Copiar credenciales</button>
+          <button type="button" class="btn btn-primario" (click)="cerrarAprobacion()">Listo</button>
+        </div>
+      } @else {
+        <h2 id="titulo-aprobacion">Aprobar {{ a.solicitud.nombre }}</h2>
+        <p class="modal-sub">
+          La universidad pasa a ser cliente con el plan <strong>{{ a.solicitud.plan_nombre }}</strong> y se crea
+          su administrador. Los planes pagos quedan con el pago pendiente hasta que la universidad pague con
+          tarjeta desde su panel (o registres un pago manual).
+        </p>
+        @if (a.error) {
+          <p class="banner banner-error" role="alert">{{ a.error }}</p>
+        }
+        <div class="dato">
+          <span>Administrador</span>
+          <strong>{{ a.solicitud.responsable_nombre }} · {{ a.solicitud.responsable_correo }}</strong>
+        </div>
+        <label class="dato">
+          <span>Contraseña temporal</span>
+          <div class="campo-password">
+            <input type="text" [ngModel]="a.password" (ngModelChange)="actualizarPassword($event)" autocomplete="off" />
+            <button type="button" class="btn btn-secundario" (click)="regenerarPassword()">↻ Generar</button>
+          </div>
+          <small>La va a cambiar en su primer ingreso.</small>
+        </label>
+        <div class="modal-acciones">
+          <button type="button" class="btn btn-secundario" [disabled]="a.guardando" (click)="cerrarAprobacion()">Cancelar</button>
+          <button type="button" class="btn btn-primario" [disabled]="a.guardando" (click)="confirmarAprobacion()">
+            {{ a.guardando ? 'Aprobando…' : 'Aprobar y crear acceso' }}
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

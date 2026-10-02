@@ -3,7 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 
-import { AuthService } from '../auth.service';
+import { AuthService, inicioSegunRol } from '../auth.service';
 
 @Component({
   imports: [RouterLink, FormsModule],
@@ -38,7 +38,8 @@ export class Login {
     this.auth.login(this.correo().trim(), this.password()).subscribe({
       next: (respuesta) => {
         this.cargando.set(false);
-        const destino = ['platform_admin', 'moderator'].includes(respuesta.rol) ? '/admin' : '/dashboard';
+        // Una contraseña temporal (creada por un admin) se reemplaza antes de entrar.
+        const destino = respuesta.debe_cambiar_password ? '/cuenta/contrasena' : inicioSegunRol(respuesta.rol);
         void this.router.navigate([destino]);
       },
       error: (err: HttpErrorResponse) => {

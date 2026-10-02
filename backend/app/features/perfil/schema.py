@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class PerfilEgresadoResponse(BaseModel):
     id: uuid.UUID
     usuario_id: uuid.UUID
+    institucion_id: uuid.UUID | None = None
     nombres: str
     apellidos: str
     ci: str | None = None

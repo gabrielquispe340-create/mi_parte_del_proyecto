@@ -7,6 +7,11 @@
 
 .cabecera {
   margin-bottom: 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
 
   h1 {
     margin: 0;
@@ -118,9 +123,31 @@
   }
 }
 
+.btn-nuevo {
+  padding: 10px 18px;
+  background: linear-gradient(90deg, #5b66d6 0%, #8254ca 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(91, 102, 214, 0.25);
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+// Columnas: usuario | rol actual | nuevo rol | guardar
+$columnas: minmax(0, 1fr) 200px 200px 96px;
+
 .encabezado-tabla {
   display: grid;
-  grid-template-columns: 1fr 150px 170px auto;
+  grid-template-columns: $columnas;
   gap: 12px;
   padding-bottom: 0.45rem;
   border-bottom: 1px solid #e8eaf3;
@@ -146,7 +173,7 @@
 
 .usuario-fila {
   display: grid;
-  grid-template-columns: 1fr 150px 170px auto;
+  grid-template-columns: $columnas;
   gap: 12px;
   align-items: center;
   padding: 0.65rem 0;
@@ -179,10 +206,21 @@
       color: #b45309;
     }
   }
+
+  .institucion {
+    font-size: 0.68rem;
+    color: #6366f1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .rol-chip {
   justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   background: rgba(76, 91, 212, 0.1);
   color: #4c5bd4;
   font-size: 0.72rem;
@@ -190,6 +228,27 @@
   padding: 4px 11px;
   border-radius: 20px;
   white-space: nowrap;
+
+  &--empresa {
+    background: rgba(14, 116, 144, 0.1);
+    color: #0e7490;
+  }
+}
+
+.nota-empresa {
+  grid-column: span 2;
+  font-size: 0.74rem;
+  color: #7b7c93;
+
+  a {
+    color: #4c5bd4;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .selector-rol {
@@ -238,11 +297,177 @@
   }
 }
 
+// El paginador trae su propio padding lateral; lo alineamos al borde de la tarjeta.
+.paginacion {
+  margin: 0.5rem -1.5rem -1.3rem;
+}
+
 .nota-pie {
   margin-top: 1rem;
   font-size: 0.72rem;
   line-height: 1.5;
   color: #7b7c93;
+}
+
+// ─── Modal de alta de usuario ────────────────────────────────────────────
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: white;
+  border-radius: 14px;
+  padding: 1.6rem 1.7rem 1.4rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+
+  h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+}
+
+.modal-sub {
+  margin: 0.35rem 0 1.1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #7b7c93;
+}
+
+.modal-icono--ok {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 0.8rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+
+  label,
+  .dato-fijo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+
+    > span {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #7b7c93;
+    }
+
+    small {
+      font-size: 0.7rem;
+      color: #a0a0b0;
+    }
+  }
+
+  .dato-fijo strong {
+    font-size: 0.85rem;
+    color: #2d2d3f;
+  }
+
+  input,
+  select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #e2e4ef;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    color: #333;
+    background: white;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: #6161d6;
+      box-shadow: 0 0 0 3px rgba(97, 97, 214, 0.1);
+    }
+  }
+}
+
+.campo-password {
+  display: flex;
+  gap: 0.5rem;
+
+  input {
+    flex: 1;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    letter-spacing: 0.5px;
+  }
+}
+
+.credenciales {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: #f6f7fc;
+  border: 1px solid #e8eaf3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+
+  div {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+
+  dt {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #7b7c93;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #2d2d3f;
+    word-break: break-all;
+    user-select: all;
+  }
+
+  .password {
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #4c5bd4;
+  }
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
 }
 
 @media (max-width: 800px) {
@@ -254,5 +479,9 @@
 
   .encabezado-tabla {
     display: none;
+  }
+
+  .nota-empresa {
+    grid-column: auto;
   }
 }

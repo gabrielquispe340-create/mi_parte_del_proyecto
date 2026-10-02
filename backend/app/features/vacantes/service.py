@@ -31,9 +31,11 @@ from app.features.vacantes.schema import (
 )
 from app.models.candidato import CandidateEducation, CandidateProfile, CandidateSkill
 from app.models.empresa import Company, CompanyMember
+from app.models.institucion import CompanyInstitution
 from app.models.seguridad import AuditLog
 from app.models.vacante import JobPosting, JobSkill, JobStatus, ScreeningOption, ScreeningQuestion
 from app.security.dependencies import CurrentUser
+from app.security.tenant import empresa_habilitada_en, institucion_de_candidato
 from app.shared.email_service import EmailService
 
 
@@ -259,9 +261,14 @@ class VacanteService:
         salary_min: Decimal | None = None,
         page: int = 1,
         page_size: int = 10,
+        usuario_id: uuid.UUID | None = None,
     ) -> VacantePaginadaResponse:
-        """Lista las vacantes publicadas activas con filtros para candidatos o público general."""
+        """Lista las vacantes publicadas activas con filtros para candidatos o público general.
+
+        Un egresado autenticado solo ve vacantes de empresas habilitadas en su universidad.
+        """
         items, total = self.repo.listar_publicas(
+            institution_id=self._institucion_para_busqueda(usuario_id),
             q=q,
             category_id=category_id,
             city=city,
@@ -293,6 +300,9 @@ class VacanteService:
             raise ResourceNotFoundException("La vacante solicitada no existe.")
 
         if vacante.status == JobStatus.PUBLISHED.value:
+            institucion = self._institucion_para_busqueda(current_user.id_usuario if current_user else None)
+            if institucion is not None and not empresa_habilitada_en(self.db, vacante.company_id, institucion):
+                raise ResourceNotFoundException("La vacante solicitada no existe.")
             return self._a_dto(vacante)
 
         if current_user is None:
@@ -423,10 +433,14 @@ class VacanteService:
         self,
         page: int = 1,
         page_size: int = 10,
+        institution_id: uuid.UUID | None = None,
     ) -> VacantePaginadaResponse:
-        """Lista las vacantes en estado 'pending_review' para que un moderador las revise."""
+        """Lista las vacantes en estado 'pending_review' para que un moderador las revise.
+
+        El moderador de una universidad solo revisa vacantes de empresas vinculadas a ella.
+        """
         items, total = self.repo.listar_por_estado(
-            JobStatus.PENDING_REVIEW.value, page=page, page_size=page_size
+            JobStatus.PENDING_REVIEW.value, page=page, page_size=page_size, institution_id=institution_id
         )
         total_pages = math.ceil(total / page_size) if total > 0 else 1
 
@@ -445,6 +459,7 @@ class VacanteService:
         motivo_rechazo: str | None,
         current_user: CurrentUser,
         ip_address: str | None = None,
+        institution_id: uuid.UUID | None = None,
     ) -> VacanteResponse:
         """Aprueba o rechaza una vacante pendiente de revisión (HU-12).
 
@@ -453,7 +468,10 @@ class VacanteService:
         que pueda corregirla y reenviarla.
         """
         vacante = self.repo.obtener_por_id(vacante_id)
-        if vacante is None:
+        if vacante is None or (
+            institution_id is not None
+            and self.db.get(CompanyInstitution, (vacante.company_id, institution_id)) is None
+        ):
             raise ResourceNotFoundException("La vacante a moderar no existe.")
 
         if vacante.status != JobStatus.PENDING_REVIEW.value:
@@ -705,6 +723,7 @@ class VacanteService:
             ordenar_por=ordenar_por if ordenar_por != "afinidad" else "fecha",
             limit=limit,
             offset=offset,
+            institution_id=self._institucion_para_busqueda(usuario_id),
         )
 
         candidato_skills, candidato_carreras, es_candidato = self._perfil_afinidad_de(usuario_id)
@@ -723,7 +742,7 @@ class VacanteService:
         self, vacante_id: uuid.UUID, usuario_id: uuid.UUID | None = None
     ) -> VacanteDetalleBusquedaResponse:
         """Obtiene el detalle enriquecido (afinidad, contacto de empresa) de una vacante publicada."""
-        vacante = self.repo.obtener_por_id_con_afinidad(vacante_id)
+        vacante = self.repo.obtener_por_id_con_afinidad(vacante_id, self._institucion_para_busqueda(usuario_id))
         if not vacante:
             raise ResourceNotFoundException("La vacante solicitada no existe o no está disponible.")
 
@@ -748,6 +767,10 @@ class VacanteService:
     def obtener_filtros_disponibles(self) -> FiltrosDisponiblesResponse:
         """Obtiene las opciones disponibles para los filtros de búsqueda."""
         return FiltrosDisponiblesResponse(**self.repo.obtener_filtros_disponibles())
+
+    def _institucion_para_busqueda(self, usuario_id: uuid.UUID | None) -> uuid.UUID | None:
+        """Universidad del egresado autenticado; None (sin filtro) para anónimos, empresas y staff."""
+        return institucion_de_candidato(self.db, usuario_id) if usuario_id else None
 
     def _perfil_afinidad_de(
         self, usuario_id: uuid.UUID | None

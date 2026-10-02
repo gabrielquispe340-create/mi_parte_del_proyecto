@@ -40,6 +40,7 @@ export interface CandidatoPipelineItem {
   candidato_email?: string | null;
   candidato_telefono?: string | null;
   candidato_ciudad?: string | null;
+  candidato_universidad?: string | null;
   candidato_carrera_id?: string | null;
   candidato_afinidad?: number | null;
   estado: string;

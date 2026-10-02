@@ -6,7 +6,7 @@ import { AuthService } from '../../auth/auth.service';
 interface ItemMenu {
   ruta: string;
   etiqueta: string;
-  tipoIcono: 'dashboard' | 'roles' | 'validacion' | 'empresas' | 'moderacion' | 'bitacora';
+  tipoIcono: 'dashboard' | 'universidades' | 'roles' | 'validacion' | 'empresas' | 'moderacion' | 'bitacora';
   exacta: boolean;
 }
 
@@ -24,6 +24,7 @@ export class AdminLayout {
 
   readonly itemsMenu: ItemMenu[] = [
     { ruta: '/admin', tipoIcono: 'dashboard', etiqueta: 'Dashboard', exacta: true },
+    { ruta: '/admin/universidades', tipoIcono: 'universidades', etiqueta: 'Universidades', exacta: false },
     { ruta: '/admin/roles', tipoIcono: 'roles', etiqueta: 'Gestión de roles', exacta: false },
     { ruta: '/admin/validacion-egresados', tipoIcono: 'validacion', etiqueta: 'Validación de egresados', exacta: false },
     { ruta: '/admin/empresas', tipoIcono: 'empresas', etiqueta: 'Gestión de empresas', exacta: false },

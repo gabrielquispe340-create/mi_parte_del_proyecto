@@ -14,6 +14,13 @@ from app.models.candidato import (
 )
 from app.models.catalogo import FieldOfStudy, JobCategory, Language, Skill
 from app.models.empresa import Company, CompanyMember, CompanyVerification, Sector
+from app.models.institucion import (
+    CompanyInstitution,
+    Institution,
+    PlanPayment,
+    SaasPlan,
+    UniversitySignupRequest,
+)
 from app.models.notificacion import Notification
 from app.models.seguridad import AuditLog, LoginAttempt
 from app.models.usuario import AppUser, Role, UserRole
@@ -53,10 +60,12 @@ __all__ = [
     "CandidateSkill",
     "Certification",
     "Company",
+    "CompanyInstitution",
     "CompanyMember",
     "CompanyVerification",
     "EmploymentType",
     "FieldOfStudy",
+    "Institution",
     "JobCategory",
     "JobEducationPreference",
     "JobLanguageRequirement",
@@ -67,13 +76,16 @@ __all__ = [
     "Language",
     "LoginAttempt",
     "Notification",
+    "PlanPayment",
     "Role",
+    "SaasPlan",
     "ScreeningOption",
     "ScreeningQuestion",
     "Sector",
     "SeniorityLevel",
     "Skill",
     "SkillProficiencyLevel",
+    "UniversitySignupRequest",
     "UserRole",
     "WorkExperience",
     "WorkModality",

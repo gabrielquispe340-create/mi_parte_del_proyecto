@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Vacante } from '../../../core/models/vacante.models';
 import { VacanteService } from '../../../core/services/vacante.service';
+import { PaginadorComponent } from '../../../shared/components/paginador/paginador.component';
+import { AuthService } from '../../auth/auth.service';
 
 /**
  * Panel de moderación institucional de ofertas laborales (HU-12).
@@ -13,13 +15,14 @@ import { VacanteService } from '../../../core/services/vacante.service';
 @Component({
   selector: 'app-moderacion-vacantes',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, PaginadorComponent],
   templateUrl: './moderacion-vacantes.component.html',
   styleUrl: './moderacion-vacantes.component.scss',
 })
 export class ModeracionVacantesComponent implements OnInit {
   private readonly vacanteService = inject(VacanteService);
   private readonly cdr = inject(ChangeDetectorRef);
+  readonly auth = inject(AuthService);
 
   vacantes: Vacante[] = [];
   isLoading = false;
@@ -65,6 +68,12 @@ export class ModeracionVacantesComponent implements OnInit {
   irAPagina(nueva: number): void {
     if (nueva < 1 || nueva > this.totalPages || nueva === this.page) return;
     this.page = nueva;
+    this.cargarPendientes();
+  }
+
+  cambiarTamanio(tamanio: number): void {
+    this.pageSize = tamanio;
+    this.page = 1;
     this.cargarPendientes();
   }
 

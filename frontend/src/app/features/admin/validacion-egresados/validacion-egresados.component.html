@@ -1,7 +1,7 @@
 <div class="admin-container">
   <header class="admin-header">
     <div>
-      <div class="header-badge">Administración Institucional • UAGRM</div>
+      <div class="header-badge">Administración Institucional • {{ auth.institucion() || 'Todas las universidades' }}</div>
       <h1>Validación de Egresados</h1>
       <p class="subtitle">
         Revisa las solicitudes de egresados pendientes de verificación institucional y decide su aprobación o
@@ -53,7 +53,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (perfil of pendientes(); track perfil.id) {
+              @for (perfil of pendientesPagina(); track perfil.id) {
                 <tr>
                   <td>
                     <div class="persona-cell">
@@ -92,6 +92,8 @@
             </tbody>
           </table>
         </div>
+
+        <app-paginador [total]="pendientes().length" [(pagina)]="pagina" [(tamanio)]="tamanio" etiqueta="solicitudes" />
       }
     </div>
   }

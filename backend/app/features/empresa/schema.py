@@ -4,6 +4,13 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class InstitucionDeEmpresa(BaseModel):
+    id: uuid.UUID
+    nombre: str
+    sigla: str | None = None
+    estado: str  # pending | approved | rejected | suspended
+
+
 class EmpresaResponse(BaseModel):
     id: uuid.UUID
     usuario_id: uuid.UUID | None = None
@@ -23,6 +30,7 @@ class EmpresaResponse(BaseModel):
     activo: bool = True
     fecha_registro: datetime | None = None
     fecha_eliminacion: datetime | None = None
+    instituciones: list[InstitucionDeEmpresa] = []
 
     model_config = {"from_attributes": True}
 

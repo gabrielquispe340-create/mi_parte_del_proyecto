@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.tenancy import condicion_institucion
 from app.models.candidato import (
     CandidateEducation,
     CandidateLanguage,
@@ -31,11 +32,13 @@ class EgresadoRepository:
         self.db.flush()
         return perfil
 
-    def listar_pendientes_validacion(self) -> list[CandidateProfile]:
+    def listar_pendientes_validacion(self, institution_id: uuid.UUID | None = None) -> list[CandidateProfile]:
         stmt = select(CandidateProfile).where(
             CandidateProfile.verification_status.in_(["pending", "in_review"]),
             CandidateProfile.document_number.is_not(None),
         )
+        if institution_id is not None:
+            stmt = stmt.where(condicion_institucion(CandidateProfile.institution_id, institution_id))
         return list(self.db.scalars(stmt))
 
     # --- Formación académica ---

@@ -9,7 +9,7 @@
       </div>
       <div class="brand-text">
         <span class="nombre">EGRESA</span>
-        <span class="subnombre">UAGRM · ADMIN</span>
+        <span class="subnombre">{{ auth.institucion() ? 'ADMIN UNIVERSIDAD' : 'SUPERADMIN SAAS' }}</span>
       </div>
     </div>
 
@@ -26,6 +26,11 @@
               @case ('dashboard') {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+              }
+              @case ('universidades') {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V10m4 11V10m6 11V10m4 11V10M2 10l10-6 10 6H2z"/>
                 </svg>
               }
               @case ('roles') {
@@ -66,8 +71,10 @@
         <div class="datos-usuario">
           <span class="correo" [title]="auth.correo()">{{ auth.correo() || 'Administrador' }}</span>
           <span class="rol">{{ auth.rol() }}</span>
+          <span class="institucion" [title]="auth.institucion()">{{ auth.institucion() || 'Todas las universidades' }}</span>
         </div>
       </div>
+      <a routerLink="/cuenta/contrasena" class="btn-cuenta">🔑 Cambiar contraseña</a>
       <button type="button" class="btn-salir" (click)="cerrarSesion()">Cerrar sesión</button>
     </div>
   </aside>

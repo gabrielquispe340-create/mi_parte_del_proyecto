@@ -543,3 +543,27 @@
     }
   }
 }
+.universidades-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  max-width: 190px;
+
+  .sin-universidades {
+    color: #94a3b8;
+    font-size: 0.8rem;
+  }
+}
+
+.uni-chip {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  cursor: default;
+
+  &--approved { background: #dcfce7; color: #15803d; }
+  &--pending { background: #fef3c7; color: #b45309; }
+  &--rejected { background: #fee2e2; color: #b91c1c; }
+  &--suspended { background: #f1f5f9; color: #475569; text-decoration: line-through; }
+}

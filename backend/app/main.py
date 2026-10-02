@@ -15,9 +15,11 @@ from app.features.bitacora import router as bitacora
 from app.features.catalogo import router as catalogos
 from app.features.comunicacion import router as comunicacion
 from app.features.ia import router as ia
+from app.features.instituciones import router as instituciones
 from app.features.moderacion import router as moderacion
 from app.features.notificaciones import router as notificaciones
 from app.features.perfil import router as perfiles
+from app.features.planes import router as planes
 from app.features.postulaciones import router as postulaciones
 from app.features.reportes import router as reportes
 from app.features.roles import router as roles
@@ -69,6 +71,8 @@ routers = [
     validacion.router,
     bitacora.router,
     catalogos.router,
+    instituciones.router,
+    planes.router,
     roles.router,
     vacantes.router,
     postulaciones.router,

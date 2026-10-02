@@ -7,21 +7,23 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.features.bitacora.schema import BitacoraLogResponse
-from app.security.dependencies import require_roles
+from app.security.tenant import AlcanceStaff, get_alcance_staff
 from app.features.bitacora.service import BitacoraService
 
 router = APIRouter(prefix="/bitacora", tags=["bitacora"])
 
-_solo_admin = require_roles("platform_admin", "moderator")
+# El admin de una universidad solo ve la actividad de su staff y sus egresados;
+# el superadmin ve la bitácora completa.
 
 
-@router.get("", response_model=list[BitacoraLogResponse], dependencies=[Depends(_solo_admin)])
+@router.get("", response_model=list[BitacoraLogResponse])
 def listar_bitacora(
     usuario_id: uuid.UUID | None = None,
     modulo: str | None = None,
     accion: str | None = None,
     fecha_desde: datetime | None = None,
     fecha_hasta: datetime | None = None,
+    alcance: AlcanceStaff = Depends(get_alcance_staff),
     db: Session = Depends(get_db),
 ):
     return BitacoraService(db).listar(
@@ -30,21 +32,28 @@ def listar_bitacora(
         accion=accion,
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta,
+        institution_id=alcance.institution_id,
     )
 
 
-@router.get("/export/excel", dependencies=[Depends(_solo_admin)])
+@router.get("/export/excel")
 def exportar_excel(
     usuario_id: uuid.UUID | None = None,
     modulo: str | None = None,
     accion: str | None = None,
     fecha_desde: datetime | None = None,
     fecha_hasta: datetime | None = None,
+    alcance: AlcanceStaff = Depends(get_alcance_staff),
     db: Session = Depends(get_db),
 ):
     service = BitacoraService(db)
     logs = service.listar(
-        usuario_id=usuario_id, modulo=modulo, accion=accion, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta
+        usuario_id=usuario_id,
+        modulo=modulo,
+        accion=accion,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        institution_id=alcance.institution_id,
     )
     contenido = service.exportar_excel(logs)
     return Response(
@@ -54,18 +63,24 @@ def exportar_excel(
     )
 
 
-@router.get("/export/pdf", dependencies=[Depends(_solo_admin)])
+@router.get("/export/pdf")
 def exportar_pdf(
     usuario_id: uuid.UUID | None = None,
     modulo: str | None = None,
     accion: str | None = None,
     fecha_desde: datetime | None = None,
     fecha_hasta: datetime | None = None,
+    alcance: AlcanceStaff = Depends(get_alcance_staff),
     db: Session = Depends(get_db),
 ):
     service = BitacoraService(db)
     logs = service.listar(
-        usuario_id=usuario_id, modulo=modulo, accion=accion, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta
+        usuario_id=usuario_id,
+        modulo=modulo,
+        accion=accion,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        institution_id=alcance.institution_id,
     )
     contenido = service.exportar_pdf(logs)
     return Response(
