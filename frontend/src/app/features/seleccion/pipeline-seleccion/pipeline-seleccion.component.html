@@ -298,6 +298,36 @@
       </div>
     }
 
+    <!-- Indicador de Entrevista (HU-20) -->
+    @if (obtenerUltimaEntrevista(c.postulacion_id); as ent) {
+      <div class="interview-snippet" [class.interview-snippet--alert]="ent.requires_manual_review">
+        <div class="interview-status-tag" [attr.data-status]="ent.status">
+          @if (ent.status === 'pending_confirmation') {
+            <span>⏳ Entrevista propuesta (pte. confirmación)</span>
+          } @else if (ent.status === 'confirmed') {
+            <span>📅 Entrevista agendada: {{ formatHora(ent.scheduled_start) }}</span>
+          } @else if (ent.status === 'rejected') {
+            <span>❌ Entrevista rechazada ({{ ent.rejection_count }}x)</span>
+          } @else if (ent.status === 'cancelled') {
+            <span>🚫 Entrevista cancelada</span>
+          }
+        </div>
+
+        @if (ent.status === 'rejected' && ent.candidate_feedback) {
+          <p class="interview-feedback"><strong>Motivo:</strong> {{ ent.candidate_feedback }}</p>
+        }
+
+        @if (ent.requires_manual_review) {
+          <div class="manual-review-alert">
+            <span class="review-text">⚠️ Revisión manual requerida (3 rechazos)</span>
+            <button class="btn-review-unlock" (click)="aprobarRevisionEntrevista(ent, c)">
+              Aprobar revisión
+            </button>
+          </div>
+        }
+      </div>
+    }
+
     <!-- Barra de acciones ergonómica -->
     <div class="card-actions">
       @if (c.puede_avanzar) {
@@ -307,6 +337,41 @@
           </svg>
           <span>Avanzar</span>
         </button>
+      }
+
+      <!-- Acciones de Entrevista (HU-20) -->
+      @if (puedeAgendarEntrevista(c)) {
+        @if (obtenerUltimaEntrevista(c.postulacion_id); as ent) {
+          @if (ent.status === 'rejected' && !ent.requires_manual_review) {
+            <button class="btn-action btn-action--interview" (click)="abrirModalReprogramar(c, ent)" title="Reprogramar entrevista">
+              <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              <span>Reprogramar</span>
+            </button>
+          } @else if (ent.status === 'pending_confirmation' || ent.status === 'confirmed') {
+            <button class="btn-action btn-action--cancel-interview" (click)="cancelarEntrevista(ent, c)" title="Cancelar entrevista">
+              <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+              <span>Cancelar E.</span>
+            </button>
+          } @else if (ent.status === 'cancelled' || ent.status === 'completed') {
+            <button class="btn-action btn-action--interview" (click)="abrirModalAgendar(c)" title="Agendar nueva entrevista">
+              <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span>Entrevista</span>
+            </button>
+          }
+        } @else {
+          <button class="btn-action btn-action--interview" (click)="abrirModalAgendar(c)" title="Agendar entrevista">
+            <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span>Entrevista</span>
+          </button>
+        }
       }
 
       <button class="btn-action btn-action--notes" (click)="abrirModalNotas(c)" title="Observaciones internas del equipo">
@@ -622,3 +687,143 @@
     </div>
   </div>
 }
+
+<!-- ===== MODAL: AGENDAR / REPROGRAMAR ENTREVISTA (HU-20) ===== -->
+@if (mostrarModalEntrevista()) {
+  <div class="modal-backdrop" (click)="cerrarModalEntrevista()">
+    <div class="modal-panel modal-medium" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header__title-box">
+          <svg class="icon-md text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <h2>{{ modoModalEntrevista() === 'crear' ? 'Agendar Entrevista con Candidato' : 'Reprogramar Entrevista' }}</h2>
+        </div>
+        <button class="modal-close" (click)="cerrarModalEntrevista()" title="Cerrar ventana">
+          <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="candidato-card-preview">
+          <div class="avatar avatar--sm">{{ initials(candidatoParaEntrevista()?.candidato_nombre || '') }}</div>
+          <div class="candidato-info-text">
+            <strong>{{ candidatoParaEntrevista()?.candidato_nombre }}</strong>
+            <span>{{ candidatoParaEntrevista()?.candidato_carrera || 'Postulante' }}</span>
+          </div>
+        </div>
+
+        @if (errorEntrevista()) {
+          <div class="alert-banner error">{{ errorEntrevista() }}</div>
+        }
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="field-label">Fecha y Hora de Inicio *</label>
+            <input
+              type="datetime-local"
+              class="input-field"
+              [ngModel]="entrevistaFechaInicio()"
+              (ngModelChange)="entrevistaFechaInicio.set($event)"
+            />
+          </div>
+          <div class="form-group" style="width: 140px;">
+            <label class="field-label">Duración</label>
+            <select
+              class="input-field"
+              [ngModel]="entrevistaDuracionMinutos()"
+              (ngModelChange)="entrevistaDuracionMinutos.set(+$event)"
+            >
+              <option [value]="30">30 min</option>
+              <option [value]="45">45 min</option>
+              <option [value]="60">1 hora</option>
+              <option [value]="90">1h 30m</option>
+              <option [value]="120">2 horas</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label">Modalidad *</label>
+          <div class="radio-group-modern">
+            <label class="radio-card" [class.active]="entrevistaModalidad() === 'virtual'">
+              <input
+                type="radio"
+                name="modalidad"
+                value="virtual"
+                [checked]="entrevistaModalidad() === 'virtual'"
+                (change)="entrevistaModalidad.set('virtual')"
+              />
+              <div class="radio-card-content">
+                <strong>Virtual</strong>
+                <span>Enlace de videollamada</span>
+              </div>
+            </label>
+            <label class="radio-card" [class.active]="entrevistaModalidad() === 'onsite'">
+              <input
+                type="radio"
+                name="modalidad"
+                value="onsite"
+                [checked]="entrevistaModalidad() === 'onsite'"
+                (change)="entrevistaModalidad.set('onsite')"
+              />
+              <div class="radio-card-content">
+                <strong>Presencial</strong>
+                <span>Ubicación física</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        @if (entrevistaModalidad() === 'virtual') {
+          <div class="form-group">
+            <label class="field-label">Enlace de la Videollamada (Meeting URL) *</label>
+            <input
+              type="url"
+              class="input-field"
+              placeholder="https://meet.google.com/abc-defg-hij o https://zoom.us/..."
+              [ngModel]="entrevistaMeetingUrl()"
+              (ngModelChange)="entrevistaMeetingUrl.set($event)"
+            />
+          </div>
+        } @else {
+          <div class="form-group">
+            <label class="field-label">Dirección o Ubicación Presencial *</label>
+            <input
+              type="text"
+              class="input-field"
+              placeholder="Ej: Av. Busch, Edificio Central, Sala de Reuniones 2B"
+              [ngModel]="entrevistaUbicacion()"
+              (ngModelChange)="entrevistaUbicacion.set($event)"
+            />
+          </div>
+        }
+
+        <div class="form-group">
+          <label class="field-label">Notas o Instrucciones para el Candidato</label>
+          <textarea
+            class="textarea-field"
+            rows="3"
+            placeholder="Instrucciones previas, persona con quien se reunirá, documentos requeridos..."
+            [ngModel]="entrevistaNotas()"
+            (ngModelChange)="entrevistaNotas.set($event)"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" (click)="cerrarModalEntrevista()">Cancelar</button>
+        <button
+          class="btn btn-primary"
+          (click)="guardarEntrevista()"
+          [disabled]="procesandoEntrevista()"
+        >
+          {{ procesandoEntrevista() ? 'Guardando...' : (modoModalEntrevista() === 'crear' ? 'Proponer Entrevista' : 'Reprogramar Entrevista') }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   DetallePostulacion,
+  EntrevistaOut,
   FiltroPostulaciones,
   PostulacionItem,
   ResumenPostulaciones,
@@ -39,4 +40,17 @@ export class PostulacionesService {
   retirarPostulacion(id: string, motivo?: string): Observable<PostulacionItem> {
     return this.http.post<PostulacionItem>(`${this.baseUrl}/${id}/retirar`, { motivo });
   }
+
+  listarEntrevistas(idPostulacion: string): Observable<EntrevistaOut[]> {
+    return this.http.get<EntrevistaOut[]>(`${this.baseUrl}/${idPostulacion}/entrevistas`);
+  }
+
+  confirmarEntrevista(idEntrevista: string): Observable<EntrevistaOut> {
+    return this.http.post<EntrevistaOut>(`${this.baseUrl}/entrevistas/${idEntrevista}/confirmar`, {});
+  }
+
+  rechazarEntrevista(idEntrevista: string, motivo: string): Observable<EntrevistaOut> {
+    return this.http.post<EntrevistaOut>(`${this.baseUrl}/entrevistas/${idEntrevista}/rechazar`, { motivo });
+  }
 }
+

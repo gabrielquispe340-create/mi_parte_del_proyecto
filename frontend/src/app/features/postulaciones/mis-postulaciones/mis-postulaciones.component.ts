@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { ToastService } from '../../../core/services/toast.service';
 import {
   DetallePostulacion,
+  EntrevistaOut,
   FiltroPostulaciones,
   PostulacionItem,
   ResumenPostulaciones,
@@ -26,6 +27,14 @@ export class MisPostulacionesComponent implements OnInit {
   loading = signal<boolean>(true);
   resumen = signal<ResumenPostulaciones | null>(null);
   postulaciones = signal<PostulacionItem[]>([]);
+
+  // Entrevistas (HU-20)
+  entrevistasPostulacion = signal<EntrevistaOut[]>([]);
+  cargandoEntrevistas = signal<boolean>(false);
+  procesandoAccionEntrevista = signal<boolean>(false);
+  mostrarFormRechazo = signal<boolean>(false);
+  motivoRechazoEntrevista = signal<string>('');
+  errorEntrevista = signal<string | null>(null);
 
   // Filtros
   busqueda = '';
@@ -101,6 +110,7 @@ export class MisPostulacionesComponent implements OnInit {
     this.cargandoDetalle.set(true);
     this.pestanaActiva.set(pestana);
     this.detalleSeleccionado.set(null);
+    this.cargarEntrevistas(postulacion.id);
 
     this.postulacionesService.obtenerDetalle(postulacion.id).subscribe({
       next: (detalle) => {
@@ -233,5 +243,75 @@ export class MisPostulacionesComponent implements OnInit {
     if (paso < nivelActual) return 'completado';
     if (paso === nivelActual) return 'actual';
     return 'pendiente';
+  }
+
+  // ── Gestión de Entrevistas (HU-20) ───────────────────────────────────
+  cargarEntrevistas(postulacionId: string): void {
+    this.cargandoEntrevistas.set(true);
+    this.errorEntrevista.set(null);
+    this.mostrarFormRechazo.set(false);
+    this.motivoRechazoEntrevista.set('');
+    this.postulacionesService.listarEntrevistas(postulacionId).subscribe({
+      next: (data) => {
+        this.entrevistasPostulacion.set(data);
+        this.cargandoEntrevistas.set(false);
+      },
+      error: () => {
+        this.cargandoEntrevistas.set(false);
+      },
+    });
+  }
+
+  confirmarEntrevista(entrevista: EntrevistaOut): void {
+    this.procesandoAccionEntrevista.set(true);
+    this.errorEntrevista.set(null);
+    this.postulacionesService.confirmarEntrevista(entrevista.id).subscribe({
+      next: (actualizada) => {
+        this.procesandoAccionEntrevista.set(false);
+        this.toast.success('¡Entrevista confirmada exitosamente!');
+        if (this.detalleSeleccionado()) {
+          this.cargarEntrevistas(this.detalleSeleccionado()!.postulacion.id);
+          this.cargarPostulaciones();
+        }
+      },
+      error: (err) => {
+        this.procesandoAccionEntrevista.set(false);
+        const msg = err?.error?.detail || 'No se pudo confirmar la entrevista.';
+        this.errorEntrevista.set(msg);
+        this.toast.error(msg);
+      },
+    });
+  }
+
+  toggleFormRechazo(): void {
+    this.mostrarFormRechazo.update((v) => !v);
+  }
+
+  rechazarEntrevista(entrevista: EntrevistaOut): void {
+    const motivo = this.motivoRechazoEntrevista().trim();
+    if (!motivo) {
+      this.errorEntrevista.set('Por favor ingresa el motivo del rechazo para que la empresa pueda reprogramar.');
+      return;
+    }
+    this.procesandoAccionEntrevista.set(true);
+    this.errorEntrevista.set(null);
+    this.postulacionesService.rechazarEntrevista(entrevista.id, motivo).subscribe({
+      next: () => {
+        this.procesandoAccionEntrevista.set(false);
+        this.mostrarFormRechazo.set(false);
+        this.motivoRechazoEntrevista.set('');
+        this.toast.info('Has rechazado la propuesta de entrevista. La empresa ha sido notificada para reprogramar.');
+        if (this.detalleSeleccionado()) {
+          this.cargarEntrevistas(this.detalleSeleccionado()!.postulacion.id);
+          this.cargarPostulaciones();
+        }
+      },
+      error: (err) => {
+        this.procesandoAccionEntrevista.set(false);
+        const msg = err?.error?.detail || 'No se pudo registrar el rechazo de la entrevista.';
+        this.errorEntrevista.set(msg);
+        this.toast.error(msg);
+      },
+    });
   }
 }

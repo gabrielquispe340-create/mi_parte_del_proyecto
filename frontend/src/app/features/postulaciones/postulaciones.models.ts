@@ -102,3 +102,25 @@ export interface FiltroPostulaciones {
   fecha_hasta?: string;
   busqueda?: string;
 }
+
+export interface EntrevistaOut {
+  id: string;
+  application_id: string;
+  scheduled_start: string;
+  scheduled_end?: string | null;
+  modality: 'onsite' | 'virtual';
+  location?: string | null;
+  meeting_url?: string | null;
+  notes?: string | null;
+  status: 'pending_confirmation' | 'confirmed' | 'rejected' | 'cancelled' | 'completed';
+  candidate_feedback?: string | null;
+  rejection_count: number;
+  requires_manual_review: boolean;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  vacante_titulo?: string | null;
+  candidato_nombre?: string | null;
+  empresa_nombre?: string | null;
+}
+
