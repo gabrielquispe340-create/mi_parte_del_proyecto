@@ -1,6 +1,9 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_JWT_SECRET_POR_DEFECTO = "change-me-in-local-env-min-32-chars-please"
 
 
 class Settings(BaseSettings):
@@ -14,7 +17,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/egresa"
 
-    jwt_secret: str = "change-me-in-local-env-min-32-chars-please"
+    jwt_secret: str = _JWT_SECRET_POR_DEFECTO
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
     jwt_refresh_expire_minutes: int = 60 * 24 * 7
@@ -47,6 +50,15 @@ class Settings(BaseSettings):
     # Interruptor del servicio de IA (recomendaciones y afinidad). En false la plataforma
     # sigue funcionando y solo avisa que las recomendaciones no están disponibles.
     ia_recomendaciones_activas: bool = True
+
+    @model_validator(mode="after")
+    def _exigir_jwt_secret_en_produccion(self) -> "Settings":
+        # El repositorio es público: con el secreto por defecto cualquiera podría firmar tokens.
+        if self.environment == "production" and (
+            self.jwt_secret == _JWT_SECRET_POR_DEFECTO or len(self.jwt_secret) < 32
+        ):
+            raise ValueError("En producción hay que definir JWT_SECRET (32 caracteres o más).")
+        return self
 
 
 @lru_cache
