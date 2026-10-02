@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, shareReplay, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  EstadisticasPublicas,
   FiltrosBusquedaVacantes,
   FiltrosDisponibles,
   JobStatus,
@@ -246,6 +247,17 @@ export class VacanteService {
     return this.http
       .get<VacanteDetalle>(`${this.apiUrl}/buscar/${vacanteId}`, { headers: this._headers() })
       .pipe(catchError((error: HttpErrorResponse) => this._handleError(error, 'Error al obtener el detalle de la vacante')));
+  }
+
+  /** Obtiene las estadísticas agregadas públicas cacheadas (HU-34). */
+  obtenerEstadisticasPublicas(): Observable<EstadisticasPublicas> {
+    return this.http
+      .get<EstadisticasPublicas>(`${this.apiUrl}/estadisticas-publicas`)
+      .pipe(
+        catchError((error: HttpErrorResponse) =>
+          this._handleError(error, 'Error al obtener las estadísticas públicas')
+        )
+      );
   }
 
   // ─── Utilidades Privadas ────────────────────────────────────────────────

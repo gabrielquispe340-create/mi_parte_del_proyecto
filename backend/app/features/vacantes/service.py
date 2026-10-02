@@ -15,6 +15,7 @@ from app.features.vacantes.repository import VacanteRepository
 from app.features.vacantes.schema import (
     CarreraEnVacanteResponse,
     EmpresaEnVacanteResponse,
+    EstadisticasPublicasResponse,
     FiltrosDisponiblesResponse,
     HabilidadEnVacanteResponse,
     JobSkillItemResponse,
@@ -592,14 +593,21 @@ class VacanteService:
             responsibilities=vacante.responsibilities_json if isinstance(vacante.responsibilities_json, list) else [],
             requirements=vacante.requirements_json if isinstance(vacante.requirements_json, list) else [],
             benefits=vacante.benefits_json if isinstance(vacante.benefits_json, list) else [],
-            company_contact_email=empresa.contact_email if empresa else None,
-            company_phone=empresa.phone if empresa else None,
-            company_address=empresa.address if empresa else None,
+            # CP04 (HU-34): La información de contacto de la empresa es confidencial y solo se
+            # expone si el usuario está autenticado en la plataforma.
+            company_contact_email=empresa.contact_email if (empresa and usuario_id) else None,
+            company_phone=empresa.phone if (empresa and usuario_id) else None,
+            company_address=empresa.address if (empresa and usuario_id) else None,
         )
 
     def obtener_filtros_disponibles(self) -> FiltrosDisponiblesResponse:
         """Obtiene las opciones disponibles para los filtros de búsqueda."""
         return FiltrosDisponiblesResponse(**self.repo.obtener_filtros_disponibles())
+
+    def obtener_estadisticas_publicas(self) -> EstadisticasPublicasResponse:
+        """Obtiene estadísticas agregadas públicas con caché de 24 horas (HU-34)."""
+        stats = self.repo.obtener_estadisticas_agregadas()
+        return EstadisticasPublicasResponse(**stats)
 
     def _perfil_afinidad_de(
         self, usuario_id: uuid.UUID | None

@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { CommonModule } from '@angular/common';
 
@@ -16,6 +16,7 @@ export class RegistroEgresado implements OnInit {
   private fb = inject(FormBuilder);
   private http = inject(HttpClient);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   registroForm: FormGroup = this.fb.group({
     nombres: ['', Validators.required],
@@ -61,9 +62,14 @@ export class RegistroEgresado implements OnInit {
     
     this.http.post(`${environment.apiUrl}/auth/registro/egresado`, this.registroForm.value).subscribe({
       next: (res: any) => {
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'];
         this.mensajeExito = 'Tus datos fueron registrados exitosamente.';
         this.isLoading = false;
-        setTimeout(() => this.router.navigate(['/auth/login']), 3000);
+        setTimeout(() => {
+          this.router.navigate(['/auth/login'], {
+            queryParams: returnUrl ? { returnUrl } : undefined,
+          });
+        }, 2000);
       },
       error: (err) => {
         this.isLoading = false;

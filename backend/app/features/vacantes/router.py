@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.features.vacantes.schema import (
+    EstadisticasPublicasResponse,
     FiltrosDisponiblesResponse,
     VacanteCambioEstadoRequest,
     VacanteCreateRequest,
@@ -180,6 +181,16 @@ def obtener_detalle_busqueda_vacante(
 ):
     usuario_id = current_user.id_usuario if current_user else None
     return VacanteService(db).obtener_detalle_busqueda(vacante_id, usuario_id=usuario_id)
+
+
+@router.get(
+    "/estadisticas-publicas",
+    response_model=EstadisticasPublicasResponse,
+    summary="Estadísticas agregadas públicas (HU-34)",
+    description="Retorna conteo de vacantes activas y empresas registradas. Datos cacheados por 24 horas sin requerir autenticación.",
+)
+def obtener_estadisticas_publicas(db: Session = Depends(get_db)):
+    return VacanteService(db).obtener_estadisticas_publicas()
 
 
 @router.get(

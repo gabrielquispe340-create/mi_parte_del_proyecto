@@ -86,7 +86,7 @@
       </form>
       
       <div class="register-prompt">
-        ¿No tienes una cuenta? <a routerLink="/auth/registro">Regístrate como egresado</a>
+        ¿No tienes una cuenta? <a [routerLink]="['/auth/registro']" [queryParams]="returnUrl ? { returnUrl: returnUrl } : null">Regístrate como egresado</a>
       </div>
       <div class="register-prompt">
         ¿Eres una empresa? <a routerLink="/auth/registro-empresa">Regístrate aquí</a>

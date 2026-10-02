@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -14,6 +14,11 @@ import { AuthService } from '../auth.service';
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  get returnUrl(): string | null {
+    return this.route.snapshot.queryParams['returnUrl'] || null;
+  }
 
   readonly correo = signal('');
   readonly password = signal('');
@@ -38,6 +43,11 @@ export class Login {
     this.auth.login(this.correo().trim(), this.password()).subscribe({
       next: (respuesta) => {
         this.cargando.set(false);
+        const returnUrl = this.returnUrl;
+        if (returnUrl) {
+          void this.router.navigateByUrl(returnUrl);
+          return;
+        }
         const destino = ['platform_admin', 'moderator'].includes(respuesta.rol) ? '/admin' : '/dashboard';
         void this.router.navigate([destino]);
       },

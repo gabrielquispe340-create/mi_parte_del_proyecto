@@ -264,3 +264,9 @@ export interface FiltrosBusquedaVacantes {
   limit?: number;
   offset?: number;
 }
+
+export interface EstadisticasPublicas {
+  total_vacantes_activas: number;
+  total_empresas_registradas: number;
+  fecha_actualizacion: string;
+}

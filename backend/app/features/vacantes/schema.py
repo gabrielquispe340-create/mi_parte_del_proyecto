@@ -316,3 +316,11 @@ class VacantesBuscadasResponse(BaseModel):
     limit: int
     offset: int
     items: list[VacanteResumenResponse]
+
+
+class EstadisticasPublicasResponse(BaseModel):
+    """Estadísticas agregadas de acceso público para visitantes (HU-34)."""
+
+    total_vacantes_activas: int
+    total_empresas_registradas: int
+    fecha_actualizacion: datetime
