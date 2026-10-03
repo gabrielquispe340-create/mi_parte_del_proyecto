@@ -21,6 +21,7 @@
     </div>
 
     <div class="topbar__actions">
+      <app-notificaciones-campana></app-notificaciones-campana>
       <span class="role-badge role-badge--{{ role().toLowerCase() }}">{{ auth.rolLegible() || '—' }}</span>
       <a routerLink="/cuenta/contrasena" class="btn-logout btn-cuenta" title="Cambiar contraseña">
         <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

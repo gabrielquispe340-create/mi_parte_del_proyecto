@@ -1,0 +1,247 @@
+.notif-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.btn-bell {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .bell-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .badge-count {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 2px #ffffff;
+  }
+}
+
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 360px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeInDown 0.15s ease-out;
+
+  .dropdown-header {
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      h4 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .unread-pill {
+        background: #fee2e2;
+        color: #dc2626;
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 9999px;
+      }
+    }
+
+    .btn-mark-all {
+      background: none;
+      border: none;
+      color: #2563eb;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .dropdown-body {
+    max-height: 380px;
+    overflow-y: auto;
+
+    .loading-box {
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: #64748b;
+      font-size: 0.85rem;
+
+      .spinner-small {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #cbd5e1;
+        border-top-color: #2563eb;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+      }
+    }
+
+    .empty-notif {
+      padding: 2.5rem 1rem;
+      text-align: center;
+      color: #94a3b8;
+
+      .empty-icon {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.85rem;
+      }
+    }
+
+    .notif-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+
+      .notif-item {
+        padding: 0.85rem 1.1rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f8fafc;
+        transition: background 0.15s;
+
+        &:hover {
+          background: #f8fafc;
+        }
+
+        &.unread {
+          background: #eff6ff;
+
+          &:hover {
+            background: #dbeafe;
+          }
+        }
+
+        .item-icon {
+          font-size: 1.2rem;
+          line-height: 1;
+          margin-top: 0.1rem;
+          flex-shrink: 0;
+        }
+
+        .item-content {
+          flex: 1;
+
+          .item-title {
+            margin: 0 0 0.2rem 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #0f172a;
+          }
+
+          .item-body {
+            margin: 0 0 0.3rem 0;
+            font-size: 0.78rem;
+            color: #475569;
+            line-height: 1.35;
+          }
+
+          .item-time {
+            font-size: 0.7rem;
+            color: #94a3b8;
+          }
+        }
+
+        .unread-dot {
+          width: 8px;
+          height: 8px;
+          background: #2563eb;
+          border-radius: 50%;
+          margin-top: 0.4rem;
+          flex-shrink: 0;
+        }
+      }
+    }
+  }
+
+  .dropdown-footer {
+    padding: 0.75rem 1.1rem;
+    border-top: 1px solid #f1f5f9;
+    text-align: center;
+    background: #f8fafc;
+
+    .link-view-all {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #2563eb;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

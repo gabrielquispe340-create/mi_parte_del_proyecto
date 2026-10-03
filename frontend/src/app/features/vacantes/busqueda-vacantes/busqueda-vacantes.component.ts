@@ -12,11 +12,12 @@ import {
 import { VacanteService } from '../../../core/services/vacante.service';
 import { AuthService } from '../../auth/auth.service';
 import { PostulacionModalComponent } from '../../../shared/components/postulacion-modal/postulacion-modal.component';
+import { NotificacionesCampanaComponent } from '../../../shared/components/notificaciones-campana/notificaciones-campana.component';
 
 @Component({
   selector: 'app-busqueda-vacantes',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, PostulacionModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, PostulacionModalComponent, NotificacionesCampanaComponent],
   templateUrl: './busqueda-vacantes.component.html',
   styleUrl: './busqueda-vacantes.component.scss',
 })

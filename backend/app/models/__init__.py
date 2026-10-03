@@ -21,7 +21,7 @@ from app.models.institucion import (
     SaasPlan,
     UniversitySignupRequest,
 )
-from app.models.notificacion import Notification
+from app.models.notificacion import Notification, NotificationPreference
 from app.models.respaldo import SystemBackup
 from app.models.seguridad import AuditLog, LoginAttempt
 from app.models.usuario import AppUser, Role, UserRole
@@ -79,6 +79,7 @@ __all__ = [
     "Language",
     "LoginAttempt",
     "Notification",
+    "NotificationPreference",
     "PlanPayment",
     "Role",
     "SaasPlan",
