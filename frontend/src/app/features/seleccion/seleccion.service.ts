@@ -17,6 +17,8 @@ import {
   NotaInternaResponse,
   PipelineVacanteResponse,
   VacanteResumenSeleccion,
+  CompararCandidatosRequest,
+  CandidatoComparacionResponse,
 } from './seleccion.models';
 
 @Injectable({ providedIn: 'root' })
@@ -75,6 +77,10 @@ export class SeleccionService {
     return this.http.post<NotaInternaResponse>(`${this.base}/postulaciones/${idPostulacion}/notas`, data);
   }
 
+  compararCandidatos(idVacante: string, data: CompararCandidatosRequest): Observable<CandidatoComparacionResponse[]> {
+    return this.http.post<CandidatoComparacionResponse[]>(`${this.base}/vacantes/${idVacante}/comparar`, data);
+  }
+
   listarEntrevistas(idPostulacion: string): Observable<Entrevista[]> {
     return this.http.get<Entrevista[]>(`${this.base}/postulaciones/${idPostulacion}/entrevistas`);
   }
@@ -96,4 +102,3 @@ export class SeleccionService {
     return this.http.post<Entrevista>(`${this.base}/entrevistas/${idEntrevista}/revisar`, payload);
   }
 }
-

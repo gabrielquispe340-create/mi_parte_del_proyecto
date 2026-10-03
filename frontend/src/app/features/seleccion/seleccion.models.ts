@@ -94,6 +94,52 @@ export interface ConfigurarEtapasRequest {
   etapas: EtapaItem[];
 }
 
+
+export interface FormacionResponse {
+  id: string;
+  institucion: string;
+  programa: string;
+  estado_academico?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+}
+
+export interface ExperienciaResponse {
+  id: string;
+  empresa: string;
+  cargo: string;
+  descripcion?: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+}
+
+export interface HabilidadResponse {
+  id: string;
+  nombre: string;
+  categoria?: string;
+}
+
+export interface IdiomaResponse {
+  id: string;
+  idioma: string;
+  nivel: string;
+}
+
+export interface CompararCandidatosRequest {
+  postulaciones: string[];
+}
+
+export interface CandidatoComparacionResponse {
+  postulacion_id: string;
+  candidato_id: string;
+  candidato_nombre: string;
+  afinidad?: number | null;
+  formacion: FormacionResponse[];
+  experiencia: ExperienciaResponse[];
+  habilidades: HabilidadResponse[];
+  idiomas: IdiomaResponse[];
+}
+
 export interface Entrevista {
   id: string;
   application_id: string;
@@ -136,4 +182,3 @@ export interface EntrevistaReprogramar {
 export interface EntrevistaRevisar {
   aprobado: boolean;
 }
-
