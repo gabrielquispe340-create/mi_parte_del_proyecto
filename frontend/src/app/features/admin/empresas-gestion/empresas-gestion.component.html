@@ -2,7 +2,7 @@
   <!-- Encabezado de la Sección -->
   <header class="admin-header">
     <div>
-      <div class="header-badge">Administración Institucional • UAGRM</div>
+      <div class="header-badge">Administración Institucional • {{ auth.institucion() || 'Todas las universidades' }}</div>
       <h1>Gestión y Control de Empresas</h1>
       <p class="subtitle">
         Controla la recepción de notificaciones, permisos de postulación y estados de baja lógica de las empresas.
@@ -31,13 +31,13 @@
           d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
           clip-rule="evenodd" />
       </svg>
-      <input type="text" [(ngModel)]="searchTerm"
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="pagina.set(1)"
         placeholder="Buscar por Razón Social, NIT, Sector o Representante..." />
     </div>
 
     <div class="filter-group">
       <label for="filtroEstado">Mostrar:</label>
-      <select id="filtroEstado" [(ngModel)]="filtroEstado">
+      <select id="filtroEstado" [(ngModel)]="filtroEstado" (ngModelChange)="pagina.set(1)">
         <option value="TODAS">Todas las empresas ({{ empresas.length }})</option>
         <option value="ACTIVAS">Solo Activas</option>
         <option value="INACTIVAS">Dadas de Baja (Baja Lógica)</option>
@@ -69,6 +69,7 @@
           <tr>
             <th>Empresa / Razón Social</th>
             <th>Sector / Tamaño</th>
+            <th>Universidades</th>
             <th>Validación</th>
             <th class="text-center">🔔 Notificaciones</th>
             <th class="text-center">📨 Postulaciones</th>
@@ -77,7 +78,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let emp of empresasFiltradas" [class.is-inactive]="!emp.activo">
+          <tr *ngFor="let emp of empresasPagina" [class.is-inactive]="!emp.activo">
             <!-- Empresa -->
             <td>
               <div class="empresa-cell">
@@ -94,6 +95,17 @@
               <div class="sector-cell">
                 <span>{{ emp.sector || 'No especificado' }}</span>
                 <small *ngIf="emp.tamanio">{{ emp.tamanio }}</small>
+              </div>
+            </td>
+
+            <!-- Universidades donde recluta (multitenant) -->
+            <td>
+              <div class="universidades-cell">
+                <span *ngFor="let u of emp.instituciones" class="uni-chip" [ngClass]="'uni-chip--' + u.estado"
+                  [title]="u.nombre + ': ' + etiquetaVinculo[u.estado]">
+                  {{ u.sigla || u.nombre }}
+                </span>
+                <small *ngIf="!emp.instituciones?.length" class="sin-universidades">Sin universidades</small>
               </div>
             </td>
 
@@ -165,6 +177,8 @@
         </tbody>
       </table>
     </div>
+
+    <app-paginador [total]="empresasFiltradas.length" [(pagina)]="pagina" [(tamanio)]="tamanio" etiqueta="empresas" />
   </div>
 
   <!-- Modal de Confirmación de Baja Lógica (Soft Delete) -->

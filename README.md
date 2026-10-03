@@ -20,12 +20,26 @@ mobile/     Aplicación móvil Flutter (core, features/<módulo>)
 infra/      Docker Compose, Nginx, scripts de despliegue y respaldo
 ```
 
+## Producción (Railway)
+
+| Qué | URL |
+|---|---|
+| Web | https://egresa.up.railway.app |
+| API | https://backend-production-24e5.up.railway.app/api |
+| App móvil | APK generado con `flutter build apk` (ver [Móvil](#móvil)) |
+
+- Cada push a `preproduccion` que toca `backend/` o `frontend/` redespliega solo ese servicio.
+- Producción usa la **misma Supabase** que el desarrollo local: lo que se cree probando en
+  local también aparece en producción.
+- Las variables secretas (`DATABASE_URL`, `JWT_SECRET`, claves de Stripe) están cargadas en
+  Railway y no se versionan. En producción el backend no arranca sin un `JWT_SECRET` propio.
+
 ## Requisitos
 
 | Herramienta | Versión |
 |---|---|
 | Python | 3.13+ |
-| Node.js | 20+ |
+| Node.js | 22+ |
 | PostgreSQL | 16 |
 | Flutter | 3.11+ (opcional, solo móvil) |
 | Docker Desktop | 24+ (opcional, alternativa al setup nativo) |
@@ -60,8 +74,19 @@ Abre 👉 http://localhost:4200
 ```bash
 cd mobile
 flutter pub get
-flutter run
+flutter run        # desarrollo: usa el backend local
 ```
+
+Para generar el APK que se instala en el celular:
+
+```bash
+flutter build apk  # queda en mobile/build/app/outputs/flutter-apk/app-release.apk
+```
+
+El APK de release se conecta al backend de producción en Railway, así que funciona
+con cualquier conexión a internet (WiFi o datos), sin tener una PC prendida. Para
+probar un celular contra el backend de tu PC, compilá con `--dart-define=CELULAR_FISICO=true`
+(misma red WiFi; la IP está en `mobile/lib/core/services/api_config.dart`).
 
 ### Todo junto con Docker Compose
 
@@ -185,18 +210,81 @@ Para crear o restablecer los usuarios de inicio de sesión:
 ```powershell
 cd backend
 .\.venv\Scripts\activate
-python -m scripts.crear_usuarios_demo
+python -m scripts.sembrar_multitenant     # superadmin, admins, empresas y egresados del SaaS
+python -m scripts.crear_usuarios_demo     # cuentas del Sprint 0 (ver la nota de abajo)
 ```
 
-### Credenciales de prueba
+`sembrar_multitenant` es idempotente y vuelve a poner en sus cuentas la contraseña de
+`DEMO_PASSWORD`, que se define en `backend/.env` (no se versiona). `crear_usuarios_demo`
+restablece las cuentas del Sprint 0 con las contraseñas del propio script; ojo, también
+cambia la de `rrhh@tecnova.bo`.
 
-| Rol | Correo | Contraseña |
+En una base nueva, antes hay que correr las migraciones aditivas, en este orden:
+`migrar_multitenant`, `migrar_cambio_password`, `migrar_planes` y `migrar_respaldos`
+(todas con `python -m scripts.<nombre>`; en la Supabase compartida ya están aplicadas).
+
+### Cuentas de prueba
+
+> Son cuentas de demostración de la base compartida. Las claves reales (`DATABASE_URL`,
+> Stripe) **no** van acá: se piden por el grupo del equipo.
+
+Verificadas el 01/10/2026 contra la Supabase compartida.
+
+**Superadmin del SaaS.** Ve todas las universidades, aprueba altas, gestiona planes y
+pagos, y es el único que entra a Copias de seguridad: `superadmin@egresa.bo` / `Egresa2026!`.
+
+**Administradores de universidad.** Cada uno ve solo los datos de su universidad.
+
+| Universidad | Plan | Correo | Contraseña |
+|---|---|---|---|
+| UAGRM | Institucional (al día) | `admin@uagrm.bo`, `admin2@uagrm.bo` | `Admin1234!` |
+| UMSS | Profesional (al día) | `admin@umss.egresa.bo` | `Egresa2026!` |
+| UMSA | Básico (gratis) | `admin@umsa.egresa.bo` | `Egresa2026!` |
+| Unifranz | Profesional (pago pendiente) | `admin@unifranz.egresa.bo` | `Egresa2026!` |
+
+Moderador de UMSS: `moderador@umss.egresa.bo` / `Egresa2026!`.
+
+**Empresas.** Son globales: cada universidad decide si las habilita para reclutar.
+
+| Empresa | Correo | Contraseña |
 |---|---|---|
-| Administrador de plataforma | `admin@uagrm.bo` | `Admin1234!` |
-| Empresa (TECNOVA, verificada) | `rrhh@tecnova.bo` | `empresa1234` |
-| Egresado / Candidato | `egresado.prueba@uagrm.bo` | `Egresado1234!` |
+| TECNOVA | `rrhh@tecnova.bo` | `empresa1234` |
+| Andes Digital | `rrhh@andesdigital.bo` | `Egresa2026!` |
+| ValleFin | `seleccion@vallefin.bo` | `Egresa2026!` |
+| Oriente Logística | `empleos@orientelogistica.bo` | `Egresa2026!` |
+| Chiquitano Agro | `rrhh@chiquitanoagro.bo` | `Egresa2026!` |
+| Altiplano Analytics | `talento@altiplanoanalytics.bo` | `Egresa2026!` |
+| Empresa Prueba SRL | `empresa@prueba.com` | `Prueba123!` |
 
-Si alguna deja de funcionar (alguien del equipo pudo haberla cambiado probando), se resetea corriendo el script de arriba o pidiendo que se actualice manualmente — avisen en el grupo antes de cambiarlas para no romper la sesión de otro compañero.
+**Egresados.**
+
+| Universidad | Correo | Contraseña |
+|---|---|---|
+| UAGRM | `antonio@prueba.com` (perfil completo, ideal para la HU-23) | `Prueba123!` |
+| UAGRM | `egresado.prueba@uagrm.bo` | `Egresado1234!` |
+| UAGRM | `sofia.vargas@uagrm.egresa.bo`, `marco.rivero@uagrm.egresa.bo` | `Egresa2026!` |
+| UMSS | `valeria.quiroga@umss.egresa.bo`, `jorge.montano@umss.egresa.bo`, `paola.arce@umss.egresa.bo` | `Egresa2026!` |
+| UMSA | `andrea.gutierrez@umsa.egresa.bo`, `luis.mamani@umsa.egresa.bo`, `rodrigo.condori@umsa.egresa.bo` | `Egresa2026!` |
+| Unifranz | `camila.salvatierra@unifranz.egresa.bo`, `diego.antelo@unifranz.egresa.bo` | `Egresa2026!` |
+
+**Para probar las funciones nuevas:**
+
+- **Recomendaciones (HU-23):** entrá como egresado y abrí "Vacantes Recomendadas" en el
+  dashboard (`/recomendaciones`). Con `IA_RECOMENDACIONES_ACTIVAS=false` en el `.env` se
+  prueba el CP04 (servicio no disponible).
+- **Pago con tarjeta (Stripe, modo prueba):** entrá como admin de Unifranz → Universidades →
+  "Pagar con tarjeta". Tarjeta de prueba de Stripe `4242 4242 4242 4242`, cualquier fecha
+  futura y cualquier CVC. Las claves (`STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`) van en
+  `backend/.env` e `infra/docker/.env`.
+- **Altas de universidades:** hay solicitudes pendientes (UPDS y UCB) para aprobar desde
+  Universidades con el superadmin. La página pública es `/auth/registro-universidad`.
+- **Copias de seguridad:** con el superadmin, menú "Copias de seguridad". Ojo: restaurar
+  reemplaza los datos de la Supabase compartida para todo el equipo; para probar usá
+  "Verificar sin cambiar nada".
+- Las cuentas que se crean desde Gestión de roles (o al aprobar una universidad) tienen una
+  contraseña temporal y deben cambiarla en el primer ingreso.
+
+Si alguna deja de funcionar (alguien del equipo pudo haberla cambiado probando), se resetea corriendo los scripts de arriba o pidiendo que se actualice manualmente — avisen en el grupo antes de cambiarlas para no romper la sesión de otro compañero.
 
 Con el backend (`uvicorn app.main:app --reload`) y el frontend (`ng serve`)
 corriendo, inicia sesión en http://localhost:4200 (o http://localhost si

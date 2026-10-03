@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { PaginadorComponent, paginar } from '../../../shared/components/paginador/paginador.component';
 import { AuthService } from '../../auth/auth.service';
 import { Carrera, PerfilEgresado } from './validacion-egresados.model';
 import { ValidacionEgresadosService } from './validacion-egresados.service';
@@ -9,7 +10,7 @@ import { ValidacionEgresadosService } from './validacion-egresados.service';
 @Component({
   selector: 'app-validacion-egresados',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginadorComponent],
   templateUrl: './validacion-egresados.component.html',
   styleUrl: './validacion-egresados.component.scss',
 })
@@ -18,6 +19,10 @@ export class ValidacionEgresadosComponent implements OnInit {
   readonly cargando = signal(false);
   readonly error = signal<string | null>(null);
   readonly mensaje = signal<string | null>(null);
+  readonly pagina = signal(1);
+  readonly tamanio = signal(10);
+
+  readonly pendientesPagina = computed(() => paginar(this.pendientes(), this.pagina(), this.tamanio()));
 
   private readonly carreras = signal<Carrera[]>([]);
   readonly carrerasPorId = computed(() => new Map(this.carreras().map((c) => [c.id, c.nombre])));
@@ -26,7 +31,7 @@ export class ValidacionEgresadosComponent implements OnInit {
 
   constructor(
     private readonly service: ValidacionEgresadosService,
-    private readonly auth: AuthService,
+    readonly auth: AuthService,
   ) {
     this.service.listarCarreras().subscribe({
       next: (carreras) => this.carreras.set(carreras),
@@ -65,6 +70,12 @@ export class ValidacionEgresadosComponent implements OnInit {
   nombreCarrera(carreraId: string | null): string {
     if (carreraId === null) return '—';
     return this.carrerasPorId().get(carreraId) ?? `#${carreraId}`;
+  }
+
+  claseCompletitud(porcentaje: number): string {
+    if (porcentaje >= 80) return 'badge-verificada';
+    if (porcentaje >= 40) return 'badge-pendiente';
+    return 'badge-suspendida';
   }
 
   aprobar(perfil: PerfilEgresado): void {

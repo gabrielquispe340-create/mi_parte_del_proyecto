@@ -10,6 +10,7 @@ export interface RegistroEmpresaRequest {
   sitio_web?: string;
   descripcion?: string;
   representante_legal?: string;
+  instituciones_ids?: string[];
 }
 
 export interface MessageResponse {

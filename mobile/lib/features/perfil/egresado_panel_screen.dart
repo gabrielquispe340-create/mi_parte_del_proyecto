@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/models/perfil_egresado.dart';
 import '../../core/models/sesion.dart';
 import '../../core/services/perfil_service.dart';
+import '../auth/cambiar_password_screen.dart';
 import '../auth/login_screen.dart';
+import '../postulaciones/mis_postulaciones_screen.dart';
+import '../recomendaciones/recomendaciones_screen.dart';
 import '../vacantes/vacantes_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'mi_cv_screen.dart';
@@ -24,15 +27,18 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
   final _servicio = PerfilService();
   late Future<PerfilEgresado> _futuroPerfil;
 
+  /// Se reemplaza al cambiar la contraseña, porque el backend emite tokens nuevos.
+  late Sesion _sesion = widget.sesion;
+
   @override
   void initState() {
     super.initState();
-    _futuroPerfil = _servicio.obtenerMiPerfil(widget.sesion.accessToken);
+    _futuroPerfil = _servicio.obtenerMiPerfil(_sesion.accessToken);
   }
 
   void _recargar() {
     setState(() {
-      _futuroPerfil = _servicio.obtenerMiPerfil(widget.sesion.accessToken);
+      _futuroPerfil = _servicio.obtenerMiPerfil(_sesion.accessToken);
     });
   }
 
@@ -50,12 +56,22 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
               if (!context.mounted) return;
               final actualizado = await Navigator.of(context).push<PerfilEgresado>(
                 MaterialPageRoute(
-                  builder: (_) => EditarPerfilScreen(accessToken: widget.sesion.accessToken, perfil: perfilActual),
+                  builder: (_) => EditarPerfilScreen(accessToken: _sesion.accessToken, perfil: perfilActual),
                 ),
               );
               if (actualizado != null) {
                 setState(() => _futuroPerfil = Future.value(actualizado));
               }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.key_outlined),
+            tooltip: 'Cambiar contraseña',
+            onPressed: () async {
+              final nueva = await Navigator.of(context).push<Sesion>(
+                MaterialPageRoute(builder: (_) => CambiarPasswordScreen(accessToken: _sesion.accessToken)),
+              );
+              if (nueva != null) setState(() => _sesion = nueva);
             },
           ),
           IconButton(
@@ -106,6 +122,10 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
                 _accesoMiCv(context),
                 const SizedBox(height: 12),
                 _accesoVacantes(context),
+                const SizedBox(height: 12),
+                _accesoRecomendaciones(context),
+                const SizedBox(height: 12),
+                _accesoMisPostulaciones(context),
               ],
             ),
           );
@@ -144,6 +164,8 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
                         Text(perfil.tituloProfesional!, style: TextStyle(color: Colors.grey[700])),
                       if (perfil.ciudad != null && perfil.ciudad!.isNotEmpty)
                         Text(perfil.ciudad!, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+                      if (_sesion.institucionNombre != null)
+                        Text(_sesion.institucionNombre!, style: TextStyle(color: Colors.indigo.shade400, fontSize: 13)),
                     ],
                   ),
                 ),
@@ -217,7 +239,43 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => MiCvScreen(accessToken: widget.sesion.accessToken),
+              builder: (_) => MiCvScreen(accessToken: _sesion.accessToken),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _accesoMisPostulaciones(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.assignment_turned_in_outlined),
+        title: const Text('Mis postulaciones'),
+        subtitle: const Text('Seguí el estado de tus postulaciones y retiralas si querés'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => MisPostulacionesScreen(accessToken: _sesion.accessToken),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _accesoRecomendaciones(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.auto_awesome_outlined),
+        title: const Text('Vacantes recomendadas'),
+        subtitle: const Text('Ordenadas por afinidad con tu perfil, con el porqué de cada porcentaje'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => RecomendacionesScreen(accessToken: _sesion.accessToken),
             ),
           );
         },
@@ -235,7 +293,7 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => VacantesScreen(accessToken: widget.sesion.accessToken),
+              builder: (_) => VacantesScreen(accessToken: _sesion.accessToken),
             ),
           );
         },

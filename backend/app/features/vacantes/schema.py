@@ -1,9 +1,6 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-<<<<<<< HEAD
-from pydantic import BaseModel, ConfigDict
-=======
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -144,6 +141,74 @@ class VacanteCambioEstadoRequest(BaseModel):
     status: JobStatus
 
 
+# ─── Preguntas de filtro (screening) — HU-11 ────────────────────────────────
+
+
+class PreguntaFiltroOpcionRequest(BaseModel):
+    """Opción de respuesta para una pregunta de filtro de selección."""
+
+    option_text: str = Field(..., min_length=1, max_length=300)
+    is_accepted: bool = Field(default=True, description="Si esta opción cumple el requisito de la pregunta")
+    position: int = Field(default=0, ge=0)
+
+
+class PreguntaFiltroCreateRequest(BaseModel):
+    """Datos para crear una pregunta de filtro en una vacante."""
+
+    question_text: str = Field(..., min_length=3)
+    question_type: str = Field(..., description="'text', 'number' o 'single_choice'")
+    is_required: bool = Field(default=True)
+    is_knockout: bool = Field(
+        default=False,
+        description="Si es excluyente: una respuesta que no cumpla descarta automáticamente la postulación. "
+        "Solo aplicable a preguntas de tipo 'single_choice', donde cada opción define si cumple el requisito.",
+    )
+    position: int = Field(default=0, ge=0)
+    options: list[PreguntaFiltroOpcionRequest] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validar_tipo(self) -> "PreguntaFiltroCreateRequest":
+        if self.question_type not in ("text", "number", "single_choice"):
+            raise ValueError("question_type debe ser 'text', 'number' o 'single_choice'.")
+        if self.question_type == "single_choice" and len(self.options) < 2:
+            raise ValueError("Una pregunta de selección necesita al menos dos opciones.")
+        if self.question_type != "single_choice" and self.is_knockout:
+            raise ValueError("Solo una pregunta de tipo 'single_choice' puede marcarse como excluyente.")
+        return self
+
+
+class PreguntaFiltroUpdateRequest(BaseModel):
+    """Datos actualizables de una pregunta de filtro existente."""
+
+    question_text: str | None = Field(default=None, min_length=3)
+    is_required: bool | None = None
+    is_knockout: bool | None = None
+    position: int | None = Field(default=None, ge=0)
+    options: list[PreguntaFiltroOpcionRequest] | None = None
+
+
+class PreguntaFiltroOpcionResponse(BaseModel):
+    id: uuid.UUID
+    option_text: str
+    is_accepted: bool
+    position: int
+
+    model_config = {"from_attributes": True}
+
+
+class PreguntaFiltroResponse(BaseModel):
+    id: uuid.UUID
+    job_posting_id: uuid.UUID
+    question_text: str
+    question_type: str
+    is_required: bool
+    is_knockout: bool
+    position: int
+    options: list[PreguntaFiltroOpcionResponse] = []
+
+    model_config = {"from_attributes": True}
+
+
 class VacanteModeracionRequest(BaseModel):
     """Decisión de moderación institucional sobre una vacante pendiente de revisión (HU-12)."""
 
@@ -221,7 +286,6 @@ class VacantePaginadaResponse(BaseModel):
 # Endpoints bajo /vacantes/buscar, separados del listado público simple
 # (GET /vacantes) para no romper el contrato ya consumido por la app móvil
 # y el listado web existentes.
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
 
 
 class EmpresaEnVacanteResponse(BaseModel):
@@ -233,11 +297,7 @@ class EmpresaEnVacanteResponse(BaseModel):
     website: str | None = None
     description: str | None = None
 
-<<<<<<< HEAD
-    model_config = ConfigDict(from_attributes=True)
-=======
     model_config = {"from_attributes": True}
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
 
 
 class HabilidadEnVacanteResponse(BaseModel):
@@ -246,11 +306,7 @@ class HabilidadEnVacanteResponse(BaseModel):
     importance: str = "required"
     min_proficiency: str | None = None
 
-<<<<<<< HEAD
-    model_config = ConfigDict(from_attributes=True)
-=======
     model_config = {"from_attributes": True}
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
 
 
 class CarreraEnVacanteResponse(BaseModel):
@@ -259,11 +315,7 @@ class CarreraEnVacanteResponse(BaseModel):
     education_level: str | None = None
     is_required: bool = True
 
-<<<<<<< HEAD
-    model_config = ConfigDict(from_attributes=True)
-=======
     model_config = {"from_attributes": True}
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
 
 
 class VacanteResumenResponse(BaseModel):
@@ -293,17 +345,24 @@ class VacanteResumenResponse(BaseModel):
     education_preferences: list[CarreraEnVacanteResponse] = []
     afinidad_porcentaje: int | None = None
 
-<<<<<<< HEAD
-    model_config = ConfigDict(from_attributes=True)
-
-
-class VacanteDetalleResponse(VacanteResumenResponse):
-=======
     model_config = {"from_attributes": True}
 
 
+class CriterioAfinidadResponse(BaseModel):
+    """Por qué la afinidad da lo que da: un criterio de la HU-23 y cuánto lo cumple el egresado."""
+
+    clave: str  # carrera | habilidades | experiencia | idiomas
+    nombre: str
+    peso: int
+    cumplimiento: int  # 0-100
+    estado: str  # cumple | parcial | no_cumple
+    detalle: str
+    coincidencias: list[str] = []
+    faltantes: list[str] = []
+
+
 class VacanteDetalleBusquedaResponse(VacanteResumenResponse):
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
+    afinidad_criterios: list[CriterioAfinidadResponse] | None = None
     responsibilities: list[str] = []
     requirements: list[str] = []
     benefits: list[str] = []
@@ -334,16 +393,16 @@ class FiltrosDisponiblesResponse(BaseModel):
     salario_max_disponible: Decimal | None = None
 
 
-<<<<<<< HEAD
-class VacantesPaginadasResponse(BaseModel):
-=======
 class VacantesBuscadasResponse(BaseModel):
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
     total: int
     limit: int
     offset: int
     items: list[VacanteResumenResponse]
-<<<<<<< HEAD
 
-=======
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
+
+class EstadisticasPublicasResponse(BaseModel):
+    """Estadísticas agregadas de acceso público para visitantes (HU-34)."""
+
+    total_vacantes_activas: int
+    total_empresas_registradas: int
+    fecha_actualizacion: datetime

@@ -13,6 +13,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { SeleccionService } from '../seleccion.service';
 import {
   CandidatoPipelineItem,
+  Entrevista,
   EtapaItem,
   EtapaResponse,
   NotaInternaResponse,
@@ -38,6 +39,11 @@ export class PipelineSeleccionComponent implements OnInit {
   cargandoVacantes = signal(false);
   cargandoPipeline = signal(false);
   error = signal<string | null>(null);
+
+  // ── Pool de postulantes: filtro, orden y exportación (HU-16) ──────────
+  ordenarPor = signal<'fecha' | 'afinidad'>('fecha');
+  busquedaPool = signal<string>('');
+  exportando = signal(false);
 
   // ── Modal: Configurar Etapas ─────────────────────────────────────────
   mostrarModalEtapas = signal(false);
@@ -67,22 +73,49 @@ export class PipelineSeleccionComponent implements OnInit {
   guardandoNota = signal(false);
   errorNotas = signal<string | null>(null);
 
+  // ── Entrevistas (HU-20) ──────────────────────────────────────────────
+  mapaEntrevistas = signal<Record<string, Entrevista[]>>({});
+  candidatoParaEntrevista = signal<CandidatoPipelineItem | null>(null);
+  entrevistaSeleccionada = signal<Entrevista | null>(null);
+  mostrarModalEntrevista = signal(false);
+  modoModalEntrevista = signal<'crear' | 'reprogramar'>('crear');
+  entrevistaFechaInicio = signal<string>('');
+  entrevistaDuracionMinutos = signal<number>(60);
+  entrevistaModalidad = signal<'virtual' | 'onsite'>('virtual');
+  entrevistaUbicacion = signal<string>('');
+  entrevistaMeetingUrl = signal<string>('');
+  entrevistaNotas = signal<string>('');
+  procesandoEntrevista = signal(false);
+  errorEntrevista = signal<string | null>(null);
+
   // ── Computed ─────────────────────────────────────────────────────────
   vacanteActual = computed(() => this.pipeline()?.vacante ?? null);
   etapas = computed(() => this.pipeline()?.etapas ?? []);
   candidatos = computed(() => this.pipeline()?.candidatos ?? []);
 
+  /** Candidatos filtrados por el buscador de texto (nombre, carrera o titular) — HU-16. */
+  candidatosFiltrados = computed(() => {
+    const texto = this.busquedaPool().trim().toLowerCase();
+    if (!texto) return this.candidatos();
+    return this.candidatos().filter((c) =>
+      [c.candidato_nombre, c.candidato_carrera, c.candidato_titular]
+        .filter(Boolean)
+        .some((campo) => campo!.toLowerCase().includes(texto))
+    );
+  });
+
   candidatosPorEtapa = computed(() => {
     const mapa: Record<string, CandidatoPipelineItem[]> = {};
+    const candidatos = this.candidatosFiltrados();
     for (const etapa of this.etapas()) {
-      mapa[etapa.id] = this.candidatos().filter(
+      mapa[etapa.id] = candidatos.filter(
         (c) => c.etapa_actual_id === etapa.id && c.estado !== 'rejected' && c.estado !== 'withdrawn'
       );
     }
-    mapa['__sin_etapa__'] = this.candidatos().filter(
+    mapa['__sin_etapa__'] = candidatos.filter(
       (c) => !c.etapa_actual_id && c.estado !== 'rejected' && c.estado !== 'withdrawn'
     );
-    mapa['__descartados__'] = this.candidatos().filter(
+    mapa['__descartados__'] = candidatos.filter(
       (c) => c.estado === 'rejected' || c.estado === 'withdrawn'
     );
     return mapa;
@@ -125,14 +158,44 @@ export class PipelineSeleccionComponent implements OnInit {
 
   cargarPipeline(id: string): void {
     this.cargandoPipeline.set(true);
-    this.svc.obtenerPipeline(id).subscribe({
+    this.svc.obtenerPipeline(id, { ordenar_por: this.ordenarPor() }).subscribe({
       next: (data) => {
         this.pipeline.set(data);
+        this.cargarEntrevistasCandidatos(data.candidatos);
         this.cargandoPipeline.set(false);
       },
       error: (e: HttpErrorResponse) => {
         this.error.set(e.error?.detail ?? 'Error al cargar el pipeline.');
         this.cargandoPipeline.set(false);
+      },
+    });
+  }
+
+  cambiarOrden(orden: 'fecha' | 'afinidad'): void {
+    if (this.ordenarPor() === orden) return;
+    this.ordenarPor.set(orden);
+    const id = this.vacanteSeleccionadaId();
+    if (id) this.cargarPipeline(id);
+  }
+
+  exportarPool(): void {
+    const id = this.vacanteSeleccionadaId();
+    if (!id) return;
+    this.exportando.set(true);
+    this.svc.exportarPool(id, { ordenar_por: this.ordenarPor() }).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        const nombreVacante = this.vacanteActual()?.titulo?.replace(/\s+/g, '_') ?? 'vacante';
+        enlace.download = `postulantes_${nombreVacante}.csv`;
+        enlace.click();
+        window.URL.revokeObjectURL(url);
+        this.exportando.set(false);
+      },
+      error: () => {
+        this.error.set('No se pudo exportar el pool de postulantes.');
+        this.exportando.set(false);
       },
     });
   }
@@ -319,6 +382,182 @@ export class PipelineSeleccionComponent implements OnInit {
     });
   }
 
+  // ── Gestión de Entrevistas (HU-20) ───────────────────────────────────
+  cargarEntrevistasCandidatos(candidatos: CandidatoPipelineItem[]): void {
+    for (const c of candidatos) {
+      this.svc.listarEntrevistas(c.postulacion_id).subscribe({
+        next: (lista) => {
+          this.mapaEntrevistas.update((prev) => ({ ...prev, [c.postulacion_id]: lista }));
+        },
+        error: () => {},
+      });
+    }
+  }
+
+  obtenerUltimaEntrevista(postulacionId: string): Entrevista | null {
+    const list = this.mapaEntrevistas()[postulacionId];
+    return list && list.length > 0 ? list[0] : null;
+  }
+
+  puedeAgendarEntrevista(c: CandidatoPipelineItem): boolean {
+    if (c.estado === 'rejected' || c.estado === 'withdrawn') return false;
+    const nombreEtapa = (c.etapa_actual_nombre || '').toLowerCase();
+    return c.estado === 'interview' || nombreEtapa.includes('entrevista');
+  }
+
+  abrirModalAgendar(c: CandidatoPipelineItem): void {
+    this.candidatoParaEntrevista.set(c);
+    this.entrevistaSeleccionada.set(null);
+    this.modoModalEntrevista.set('crear');
+    this.errorEntrevista.set(null);
+
+    // Default: mañana a las 10:00
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(10, 0, 0, 0);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const defaultFecha = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    this.entrevistaFechaInicio.set(defaultFecha);
+    this.entrevistaDuracionMinutos.set(60);
+    this.entrevistaModalidad.set('virtual');
+    this.entrevistaMeetingUrl.set('');
+    this.entrevistaUbicacion.set('');
+    this.entrevistaNotas.set('');
+    this.mostrarModalEntrevista.set(true);
+  }
+
+  abrirModalReprogramar(c: CandidatoPipelineItem, entrevista: Entrevista): void {
+    this.candidatoParaEntrevista.set(c);
+    this.entrevistaSeleccionada.set(entrevista);
+    this.modoModalEntrevista.set('reprogramar');
+    this.errorEntrevista.set(null);
+
+    // Formatear fecha para datetime-local
+    const d = new Date(entrevista.scheduled_start);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const fechaLocal = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    this.entrevistaFechaInicio.set(fechaLocal);
+    this.entrevistaDuracionMinutos.set(60);
+    this.entrevistaModalidad.set(entrevista.modality);
+    this.entrevistaMeetingUrl.set(entrevista.meeting_url || '');
+    this.entrevistaUbicacion.set(entrevista.location || '');
+    this.entrevistaNotas.set(entrevista.notes || '');
+    this.mostrarModalEntrevista.set(true);
+  }
+
+  cerrarModalEntrevista(): void {
+    this.mostrarModalEntrevista.set(false);
+    this.candidatoParaEntrevista.set(null);
+    this.entrevistaSeleccionada.set(null);
+  }
+
+  guardarEntrevista(): void {
+    const c = this.candidatoParaEntrevista();
+    if (!c) return;
+
+    if (!this.entrevistaFechaInicio()) {
+      this.errorEntrevista.set('Debes seleccionar la fecha y hora de inicio.');
+      return;
+    }
+
+    const modalidad = this.entrevistaModalidad();
+    if (modalidad === 'virtual' && !this.entrevistaMeetingUrl().trim()) {
+      this.errorEntrevista.set('Debes ingresar el enlace de la reunión virtual.');
+      return;
+    }
+    if (modalidad === 'onsite' && !this.entrevistaUbicacion().trim()) {
+      this.errorEntrevista.set('Debes ingresar la dirección o ubicación física.');
+      return;
+    }
+
+    const startDate = new Date(this.entrevistaFechaInicio());
+    const endDate = new Date(startDate.getTime() + this.entrevistaDuracionMinutos() * 60000);
+
+    const payload = {
+      scheduled_start: startDate.toISOString(),
+      scheduled_end: endDate.toISOString(),
+      modality: modalidad,
+      location: modalidad === 'onsite' ? this.entrevistaUbicacion().trim() : null,
+      meeting_url: modalidad === 'virtual' ? this.entrevistaMeetingUrl().trim() : null,
+      notes: this.entrevistaNotas().trim() || null,
+    };
+
+    this.procesandoEntrevista.set(true);
+    this.errorEntrevista.set(null);
+
+    if (this.modoModalEntrevista() === 'crear') {
+      this.svc.proponerEntrevista(c.postulacion_id, payload).subscribe({
+        next: (ent) => {
+          this.procesandoEntrevista.set(false);
+          this.mostrarModalEntrevista.set(false);
+          // Refrescar lista de entrevistas del candidato
+          this.svc.listarEntrevistas(c.postulacion_id).subscribe({
+            next: (lista) => {
+              this.mapaEntrevistas.update((prev) => ({ ...prev, [c.postulacion_id]: lista }));
+            },
+          });
+        },
+        error: (e: HttpErrorResponse) => {
+          this.errorEntrevista.set(e.error?.detail ?? 'Error al agendar la entrevista.');
+          this.procesandoEntrevista.set(false);
+        },
+      });
+    } else {
+      const entrevista = this.entrevistaSeleccionada();
+      if (!entrevista) return;
+      this.svc.reprogramarEntrevista(entrevista.id, payload).subscribe({
+        next: (ent) => {
+          this.procesandoEntrevista.set(false);
+          this.mostrarModalEntrevista.set(false);
+          this.svc.listarEntrevistas(c.postulacion_id).subscribe({
+            next: (lista) => {
+              this.mapaEntrevistas.update((prev) => ({ ...prev, [c.postulacion_id]: lista }));
+            },
+          });
+        },
+        error: (e: HttpErrorResponse) => {
+          this.errorEntrevista.set(e.error?.detail ?? 'Error al reprogramar la entrevista.');
+          this.procesandoEntrevista.set(false);
+        },
+      });
+    }
+  }
+
+  cancelarEntrevista(entrevista: Entrevista, c: CandidatoPipelineItem): void {
+    if (!confirm('¿Estás seguro de cancelar esta entrevista? Se notificará a ambas partes.')) {
+      return;
+    }
+    this.svc.cancelarEntrevista(entrevista.id).subscribe({
+      next: () => {
+        this.svc.listarEntrevistas(c.postulacion_id).subscribe({
+          next: (lista) => {
+            this.mapaEntrevistas.update((prev) => ({ ...prev, [c.postulacion_id]: lista }));
+          },
+        });
+      },
+      error: (e: HttpErrorResponse) => {
+        alert(e.error?.detail ?? 'No se pudo cancelar la entrevista.');
+      },
+    });
+  }
+
+  aprobarRevisionEntrevista(entrevista: Entrevista, c: CandidatoPipelineItem): void {
+    this.svc.revisarEntrevista(entrevista.id, { aprobado: true }).subscribe({
+      next: () => {
+        this.svc.listarEntrevistas(c.postulacion_id).subscribe({
+          next: (lista) => {
+            this.mapaEntrevistas.update((prev) => ({ ...prev, [c.postulacion_id]: lista }));
+          },
+        });
+      },
+      error: (e: HttpErrorResponse) => {
+        alert(e.error?.detail ?? 'Error al aprobar la revisión.');
+      },
+    });
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────
   initials(nombre: string): string {
     return nombre
@@ -357,3 +596,4 @@ export class PipelineSeleccionComponent implements OnInit {
     });
   }
 }
+

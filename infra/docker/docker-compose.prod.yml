@@ -21,9 +21,17 @@ services:
       DATABASE_URL: postgresql+psycopg://postgres:${DB_PASSWORD}@db:5432/egresa
       JWT_SECRET: ${JWT_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      FRONTEND_URL: ${FRONTEND_URL:-}
+      IA_RECOMENDACIONES_ACTIVAS: ${IA_RECOMENDACIONES_ACTIVAS:-true}
       TZ: America/La_Paz
     expose:
       - "8000"
+    volumes:
+      # Copias de seguridad (Backup/Restore): sobreviven a recrear el contenedor.
+      - storage:/app/storage
 
   frontend:
     image: ${FRONTEND_IMAGE}
@@ -47,3 +55,4 @@ services:
 
 volumes:
   pgdata:
+  storage:

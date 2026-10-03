@@ -28,9 +28,17 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://postgres:${DB_PASSWORD:-postgres}@db:5432/egresa}
       JWT_SECRET: ${JWT_SECRET:-change-me-min-32-characters-please}
       CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-["http://localhost:4200","http://localhost"]}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      IA_RECOMENDACIONES_ACTIVAS: ${IA_RECOMENDACIONES_ACTIVAS:-true}
       TZ: America/La_Paz
     ports:
       - "8000:8000"
+    volumes:
+      # Copias de seguridad (Backup/Restore): sobreviven a recrear el contenedor.
+      - storage:/app/storage
 
   frontend:
     image: ${FRONTEND_IMAGE:-egresa-frontend}
@@ -47,3 +55,4 @@ services:
 
 volumes:
   pgdata:
+  storage:

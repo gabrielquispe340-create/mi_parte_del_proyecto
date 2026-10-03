@@ -10,7 +10,6 @@
         <span>Volver</span>
       </a>
       <div class="topbar__brand">
-        <div class="module-chip">MÓDULO 5.1.5 · POSTULACIÓN Y SEGUIMIENTO</div>
         <h1 class="topbar__title">Seguimiento de Postulaciones</h1>
         <p class="topbar__subtitle">Consulta el estado actual, las etapas del proceso y el historial de tus solicitudes laborales.</p>
       </div>
@@ -348,6 +347,178 @@
                   </button>
                 }
               </div>
+
+              <!-- Sección: Propuesta / Estado de Entrevista (HU-20) -->
+              @if (cargandoEntrevistas()) {
+                <div class="interview-loading-box">
+                  <div class="spinner-sm"></div>
+                  <span>Consultando agenda de entrevistas...</span>
+                </div>
+              } @else if (entrevistasPostulacion().length > 0) {
+                @for (ent of entrevistasPostulacion(); track ent.id) {
+                  <div class="interview-detail-card" [attr.data-status]="ent.status">
+                    <div class="interview-detail-card__header">
+                      <div class="interview-header-title">
+                        <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <div>
+                          <h4 class="interview-title">
+                            @if (ent.status === 'pending_confirmation') {
+                              Propuesta de Entrevista Recibida
+                            } @else if (ent.status === 'confirmed') {
+                              Entrevista Confirmada
+                            } @else if (ent.status === 'rejected') {
+                              Propuesta de Entrevista Rechazada
+                            } @else if (ent.status === 'cancelled') {
+                              Entrevista Cancelada
+                            } @else {
+                              Entrevista
+                            }
+                          </h4>
+                          <span class="interview-subtitle">
+                            {{ ent.rejection_count > 0 ? ('Propuesta reprogramada (' + ent.rejection_count + 'x)') : 'Coordinada por el equipo de selección' }}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span class="badge" [ngClass]="{
+                        'badge--yellow': ent.status === 'pending_confirmation',
+                        'badge--green': ent.status === 'confirmed',
+                        'badge--red': ent.status === 'rejected',
+                        'badge--gray': ent.status === 'cancelled'
+                      }">
+                        @if (ent.status === 'pending_confirmation') {
+                          ⏳ Pendiente de Confirmación
+                        } @else if (ent.status === 'confirmed') {
+                          ✅ Confirmada
+                        } @else if (ent.status === 'rejected') {
+                          ❌ Rechazada
+                        } @else if (ent.status === 'cancelled') {
+                          🚫 Cancelada
+                        }
+                      </span>
+                    </div>
+
+                    <div class="interview-detail-card__body">
+                      <div class="interview-grid">
+                        <div class="interview-info-item">
+                          <span class="info-label">Fecha y Hora:</span>
+                          <strong class="info-value">{{ formatearFechaHora(ent.scheduled_start) }}</strong>
+                          @if (ent.scheduled_end) {
+                            <span class="info-sub">hasta {{ formatearFechaHora(ent.scheduled_end) }}</span>
+                          }
+                        </div>
+
+                        <div class="interview-info-item">
+                          <span class="info-label">Modalidad:</span>
+                          <strong class="info-value">
+                            {{ ent.modality === 'virtual' ? '🌐 Virtual (Videollamada)' : '🏢 Presencial' }}
+                          </strong>
+                        </div>
+
+                        @if (ent.modality === 'virtual' && ent.meeting_url) {
+                          <div class="interview-info-item full-width">
+                            <span class="info-label">Enlace de Reunión:</span>
+                            @if (ent.status === 'confirmed' || ent.status === 'pending_confirmation') {
+                              <a [href]="ent.meeting_url" target="_blank" rel="noopener noreferrer" class="meeting-link">
+                                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                                <span>Unirse a la videollamada</span>
+                              </a>
+                            } @else {
+                              <span class="info-value text-muted">{{ ent.meeting_url }}</span>
+                            }
+                          </div>
+                        }
+
+                        @if (ent.modality === 'onsite' && ent.location) {
+                          <div class="interview-info-item full-width">
+                            <span class="info-label">Lugar / Ubicación:</span>
+                            <span class="info-value">{{ ent.location }}</span>
+                          </div>
+                        }
+
+                        @if (ent.notes) {
+                          <div class="interview-info-item full-width">
+                            <span class="info-label">Instrucciones o Notas:</span>
+                            <p class="notes-text">{{ ent.notes }}</p>
+                          </div>
+                        }
+
+                        @if (ent.status === 'rejected' && ent.candidate_feedback) {
+                          <div class="interview-info-item full-width alert-subbox">
+                            <span class="info-label text-danger">Motivo de rechazo indicado:</span>
+                            <p class="notes-text text-danger">{{ ent.candidate_feedback }}</p>
+                          </div>
+                        }
+                      </div>
+
+                      @if (errorEntrevista()) {
+                        <div class="interview-error-banner">
+                          {{ errorEntrevista() }}
+                        </div>
+                      }
+
+                      <!-- Acciones del Candidato para 'pending_confirmation' -->
+                      @if (ent.status === 'pending_confirmation') {
+                        <div class="interview-actions-box">
+                          @if (!mostrarFormRechazo()) {
+                            <div class="actions-buttons-row">
+                              <button
+                                class="btn btn--success"
+                                (click)="confirmarEntrevista(ent)"
+                                [disabled]="procesandoAccionEntrevista()"
+                              >
+                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span>{{ procesandoAccionEntrevista() ? 'Confirmando...' : 'Confirmar Asistencia' }}</span>
+                              </button>
+
+                              <button
+                                class="btn btn--danger-outline"
+                                (click)="toggleFormRechazo()"
+                                [disabled]="procesandoAccionEntrevista()"
+                              >
+                                <span>Rechazar o Pedir Reprogramación</span>
+                              </button>
+                            </div>
+                          } @else {
+                            <div class="reject-form-box">
+                              <label class="reject-label">Indica el motivo del rechazo para que la empresa pueda reprogramar:</label>
+                              <textarea
+                                class="reject-textarea"
+                                rows="3"
+                                placeholder="Ej: Tengo cruce de horarios con un examen en la universidad ese día. Podría a partir de las 15:00..."
+                                [ngModel]="motivoRechazoEntrevista()"
+                                (ngModelChange)="motivoRechazoEntrevista.set($event)"
+                              ></textarea>
+                              <div class="reject-actions-row">
+                                <button
+                                  class="btn btn--ghost btn--sm"
+                                  (click)="toggleFormRechazo()"
+                                  [disabled]="procesandoAccionEntrevista()"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  class="btn btn--danger btn--sm"
+                                  (click)="rechazarEntrevista(ent)"
+                                  [disabled]="procesandoAccionEntrevista() || !motivoRechazoEntrevista().trim()"
+                                >
+                                  {{ procesandoAccionEntrevista() ? 'Enviando...' : 'Confirmar Rechazo' }}
+                                </button>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              }
 
               <!-- Stepper Visual de Proceso -->
               <div class="stepper-section">

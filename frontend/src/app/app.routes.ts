@@ -1,10 +1,11 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { passwordPendienteGuard } from './core/guards/password-pendiente.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'auth/login',
+    redirectTo: 'vacantes',
     pathMatch: 'full',
   },
   {
@@ -13,27 +14,16 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
-<<<<<<< HEAD
-    path: 'registro-empresa',
-    redirectTo: 'auth/registro-empresa',
-    pathMatch: 'full',
-  },
-  {
-=======
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
     path: 'registro',
     redirectTo: 'auth/registro',
     pathMatch: 'full',
   },
   {
-<<<<<<< HEAD
-=======
     path: 'registro-empresa',
     redirectTo: 'auth/registro-empresa',
     pathMatch: 'full',
   },
   {
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
     path: 'auth/login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
   },
@@ -49,12 +39,35 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'registro-universidad',
+    redirectTo: 'auth/registro-universidad',
+    pathMatch: 'full',
+  },
+  {
+    path: 'auth/registro-universidad',
+    loadComponent: () =>
+      import('./features/auth/registro-universidad/registro-universidad').then((m) => m.RegistroUniversidad),
+  },
+  {
+    path: 'cuenta/contrasena',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auth/cambiar-password/cambiar-password').then((m) => m.CambiarPassword),
+  },
+  {
     path: 'admin',
+    canActivate: [passwordPendienteGuard],
+    canActivateChild: [passwordPendienteGuard],
     loadComponent: () => import('./features/admin/layout/admin-layout').then((m) => m.AdminLayout),
     children: [
       {
         path: '',
         loadComponent: () => import('./features/admin/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
+        path: 'universidades',
+        loadComponent: () =>
+          import('./features/admin/universidades/universidades.component').then((m) => m.UniversidadesComponent),
       },
       {
         path: 'roles',
@@ -83,29 +96,21 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'bitacora',
-        loadComponent: () => import('./features/admin/bitacora/bitacora.component').then((m) => m.BitacoraComponent),
+        path: 'respaldos',
+        loadComponent: () => import('./features/admin/respaldos/respaldos.component').then((m) => m.RespaldosComponent),
       },
       {
-        path: 'seleccion',
-        loadComponent: () =>
-          import('./features/seleccion/tablero-seleccion/tablero-seleccion.component').then(
-            (m) => m.TableroSeleccionComponent,
-          ),
+        path: 'bitacora',
+        loadComponent: () => import('./features/admin/bitacora/bitacora.component').then((m) => m.BitacoraComponent),
       },
     ],
   },
   {
     path: 'dashboard',
+    canActivate: [passwordPendienteGuard],
     loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
-<<<<<<< HEAD
-    path: 'seleccion',
-    loadComponent: () =>
-      import('./features/seleccion/tablero-seleccion/tablero-seleccion.component').then(
-        (m) => m.TableroSeleccionComponent,
-=======
     path: 'postulaciones',
     canActivate: [authGuard],
     data: { roles: ['candidate'] },
@@ -115,13 +120,19 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'recomendaciones',
+    canActivate: [authGuard],
+    data: { roles: ['candidate'] },
+    loadComponent: () =>
+      import('./features/ia/recomendaciones/recomendaciones.component').then((m) => m.RecomendacionesComponent),
+  },
+  {
     path: 'seleccion',
     canActivate: [authGuard],
     data: { roles: ['empresa'] },
     loadComponent: () =>
       import('./features/seleccion/pipeline-seleccion/pipeline-seleccion.component').then(
         (m) => m.PipelineSeleccionComponent,
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
       ),
   },
   {
@@ -146,8 +157,6 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
-<<<<<<< HEAD
-=======
     path: 'vacantes/crear',
     canActivate: [authGuard],
     data: { roles: ['EMPRESA'] },
@@ -167,15 +176,12 @@ export const routes: Routes = [
   },
   {
     path: 'vacantes/:id',
-    canActivate: [authGuard],
-    data: { roles: ['EGRESADO', 'ESTUDIANTE', 'EMPRESA', 'ADMINISTRADOR'] },
     loadComponent: () =>
       import('./features/vacantes/vacante-detalle/vacante-detalle.component').then(
         (m) => m.VacanteDetalleComponent,
       ),
   },
   {
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
     path: '**',
     redirectTo: 'auth/login',
   },

@@ -1,18 +1,5 @@
 import uuid
 from decimal import Decimal
-<<<<<<< HEAD
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.features.vacantes.schema import (
-    FiltrosDisponiblesResponse,
-    VacanteDetalleResponse,
-    VacantesPaginadasResponse,
-)
-from app.features.vacantes.service import VacanteService
-from app.security.dependencies import CurrentUser, get_current_user_optional
-=======
 from typing import List
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -21,7 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.features.vacantes.schema import (
+    EstadisticasPublicasResponse,
     FiltrosDisponiblesResponse,
+    PreguntaFiltroCreateRequest,
+    PreguntaFiltroResponse,
+    PreguntaFiltroUpdateRequest,
     VacanteCambioEstadoRequest,
     VacanteCreateRequest,
     VacanteDetalleBusquedaResponse,
@@ -33,14 +24,10 @@ from app.features.vacantes.schema import (
 from app.features.vacantes.service import VacanteService
 from app.models.vacante import ScreeningOption, ScreeningQuestion
 from app.security.dependencies import CurrentUser, get_current_user, get_current_user_optional, require_roles
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
 
 router = APIRouter(prefix="/vacantes", tags=["vacantes"])
 
 
-<<<<<<< HEAD
-@router.get("", response_model=VacantesPaginadasResponse)
-=======
 class ScreeningOptionSchema(BaseModel):
     id: uuid.UUID
     option_text: str
@@ -51,6 +38,7 @@ class ScreeningQuestionSchema(BaseModel):
     question_text: str
     question_type: str
     is_required: bool
+    is_knockout: bool = False
     options: List[ScreeningOptionSchema] = []
 
     class Config:
@@ -127,6 +115,7 @@ def listar_vacantes_publicas(
         salary_min=salary_min,
         page=page,
         page_size=page_size,
+        usuario_id=current_user.id_usuario,
     )
 
 
@@ -140,21 +129,14 @@ def listar_vacantes_publicas(
         "egresado, calcula un porcentaje de afinidad según su carrera y habilidades registradas."
     ),
 )
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
 def buscar_vacantes(
     q: str | None = Query(None, description="Búsqueda por palabra clave en título o descripción"),
     carrera_id: uuid.UUID | None = Query(None, description="Filtro por carrera o campo de estudio"),
     categoria_id: uuid.UUID | None = Query(None, description="Filtro por categoría de empleo"),
     ciudad: str | None = Query(None, description="Filtro por ciudad"),
-<<<<<<< HEAD
-    modalidad: str | None = Query(None, description="Filtro por modalidad (on_site, remote, hybrid)"),
-    jornada: str | None = Query(None, description="Filtro por jornada (full_time, part_time, internship, contractor)"),
-    seniority: str | None = Query(None, description="Filtro por nivel de experiencia (junior, mid, senior, etc.)"),
-=======
     modalidad: str | None = Query(None, description="Filtro por modalidad (onsite, remote, hybrid)"),
     jornada: str | None = Query(None, description="Filtro por jornada (permanent, part_time, internship, etc.)"),
     seniority: str | None = Query(None, description="Filtro por nivel de experiencia"),
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
     salario_min: Decimal | None = Query(None, description="Rango salarial mínimo"),
     salario_max: Decimal | None = Query(None, description="Rango salarial máximo"),
     ordenar_por: str = Query("fecha", description="Criterio de ordenamiento: 'fecha' o 'afinidad'"),
@@ -163,10 +145,6 @@ def buscar_vacantes(
     current_user: CurrentUser | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
-<<<<<<< HEAD
-    """Busca y filtra vacantes laborales publicadas y vigentes con cálculo opcional de afinidad para egresados."""
-=======
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
     usuario_id = current_user.id_usuario if current_user else None
     return VacanteService(db).buscar_vacantes(
         q=q,
@@ -185,16 +163,6 @@ def buscar_vacantes(
     )
 
 
-<<<<<<< HEAD
-@router.get("/filtros", response_model=FiltrosDisponiblesResponse)
-def obtener_filtros_disponibles(db: Session = Depends(get_db)):
-    """Retorna las opciones disponibles de filtrado (ciudades, modalidades, categorías, carreras, salarios)."""
-    return VacanteService(db).obtener_filtros_disponibles()
-
-
-@router.get("/{vacante_id}", response_model=VacanteDetalleResponse)
-def obtener_detalle_vacante(
-=======
 @router.get(
     "/buscar/filtros",
     response_model=FiltrosDisponiblesResponse,
@@ -212,18 +180,22 @@ def obtener_filtros_disponibles_busqueda(db: Session = Depends(get_db)):
     description="Como el detalle público, pero incluye afinidad calculada y datos de contacto de la empresa. Incrementa el contador de vistas.",
 )
 def obtener_detalle_busqueda_vacante(
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
     vacante_id: uuid.UUID,
     current_user: CurrentUser | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
-<<<<<<< HEAD
-    """Obtiene el detalle completo de una vacante e incrementa el contador de vistas."""
-    usuario_id = current_user.id_usuario if current_user else None
-    return VacanteService(db).obtener_detalle(vacante_id, usuario_id=usuario_id)
-=======
     usuario_id = current_user.id_usuario if current_user else None
     return VacanteService(db).obtener_detalle_busqueda(vacante_id, usuario_id=usuario_id)
+
+
+@router.get(
+    "/estadisticas-publicas",
+    response_model=EstadisticasPublicasResponse,
+    summary="Estadísticas agregadas públicas (HU-34)",
+    description="Retorna conteo de vacantes activas y empresas registradas. Datos cacheados por 24 horas sin requerir autenticación.",
+)
+def obtener_estadisticas_publicas(db: Session = Depends(get_db)):
+    return VacanteService(db).obtener_estadisticas_publicas()
 
 
 @router.get(
@@ -331,8 +303,54 @@ def obtener_preguntas_vacante(vacante_id: uuid.UUID, db: Session = Depends(get_d
                 "question_text": pregunta.question_text,
                 "question_type": pregunta.question_type,
                 "is_required": pregunta.is_required,
+                "is_knockout": pregunta.is_knockout,
                 "options": [{"id": o.id, "option_text": o.option_text} for o in opciones],
             }
         )
     return resultado
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
+
+
+@router.post(
+    "/{vacante_id}/preguntas",
+    response_model=PreguntaFiltroResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear una pregunta de filtro para la vacante (HU-11)",
+    description="Permite a la empresa propietaria definir una pregunta de filtro, opcionalmente excluyente.",
+)
+def crear_pregunta_filtro(
+    vacante_id: uuid.UUID,
+    payload: PreguntaFiltroCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(require_roles("empresa", "platform_admin")),
+):
+    return VacanteService(db).crear_pregunta_filtro(vacante_id, payload, current_user)
+
+
+@router.put(
+    "/{vacante_id}/preguntas/{pregunta_id}",
+    response_model=PreguntaFiltroResponse,
+    summary="Editar una pregunta de filtro (HU-11)",
+    description="Permite editar una pregunta mientras la vacante no tenga postulaciones registradas.",
+)
+def actualizar_pregunta_filtro(
+    vacante_id: uuid.UUID,
+    pregunta_id: uuid.UUID,
+    payload: PreguntaFiltroUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(require_roles("empresa", "platform_admin")),
+):
+    return VacanteService(db).actualizar_pregunta_filtro(vacante_id, pregunta_id, payload, current_user)
+
+
+@router.delete(
+    "/{vacante_id}/preguntas/{pregunta_id}",
+    summary="Eliminar una pregunta de filtro (HU-11)",
+    description="Permite eliminar una pregunta mientras la vacante no tenga postulaciones registradas.",
+)
+def eliminar_pregunta_filtro(
+    vacante_id: uuid.UUID,
+    pregunta_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(require_roles("empresa", "platform_admin")),
+):
+    return VacanteService(db).eliminar_pregunta_filtro(vacante_id, pregunta_id, current_user)

@@ -1,43 +1,215 @@
-<section class="dashboard">
+<div class="admin-container">
   <header class="cabecera">
-    <h1>Dashboard</h1>
-    <p>Resumen general de la plataforma · {{ saludo }}</p>
+    <div>
+      <span class="chip-alcance" [class.chip-alcance--global]="esSuperadmin()">
+        {{ esSuperadmin() ? 'Superadmin · Vista global' : 'Admin · ' + auth.institucion() }}
+      </span>
+      @if (planPropio(); as plan) {
+        <a routerLink="/admin/universidades" class="chip-plan" [class.chip-plan--alerta]="plan.estado_pago === 'pendiente' || plan.estado_pago === 'vencido'">
+          Plan {{ plan.nombre }}{{ plan.estado_pago === 'pendiente' || plan.estado_pago === 'vencido' ? ' · pago pendiente' : '' }}
+        </a>
+      }
+      <h1>{{ saludo() }} 👋</h1>
+      <p class="sub">
+        @if (esSuperadmin()) {
+          Así está EGRESA hoy en todas las universidades clientes.
+        } @else {
+          Así está tu universidad hoy. Solo ves los datos de {{ auth.institucion() }}.
+        }
+      </p>
+    </div>
+    <button type="button" class="btn-actualizar" (click)="cargar()" [disabled]="cargando()">
+      {{ cargando() ? 'Actualizando…' : '🔄 Actualizar' }}
+    </button>
   </header>
 
-  @if (cargando()) {
-    <p class="cargando">Cargando estadísticas…</p>
+  @if (cargando() && !panel()) {
+    <div class="estado">
+      <div class="spinner"></div>
+      <p>Cargando el panel…</p>
+    </div>
   } @else if (error()) {
-    <div class="alerta error">{{ error() }}</div>
-  } @else {
-    <div class="tarjetas">
-      @for (stat of estadisticas(); track stat.etiqueta) {
-        <article class="tarjeta">
-          <span class="valor">{{ stat.valor }}</span>
-          <span class="etiqueta">{{ stat.etiqueta }}</span>
-          <span class="detalle">{{ stat.detalle }}</span>
+    <div class="estado estado--error">
+      <p>{{ error() }}</p>
+      <button type="button" class="btn-actualizar" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (panel(); as p) {
+    <!-- 1. Lo que espera una decisión del admin -->
+    <section class="bloque">
+      <div class="bloque-titulo">
+        <h2>Requiere tu atención</h2>
+        @if (totalPendientes() === 0) {
+          <span class="pill pill--ok">✓ Todo al día</span>
+        } @else {
+          <span class="pill pill--alerta">{{ totalPendientes() }} pendiente(s)</span>
+        }
+      </div>
+
+      <div class="tareas">
+        @for (t of tareas(); track t.clave) {
+          <a class="tarea" [class.tarea--al-dia]="t.cantidad === 0" [routerLink]="t.ruta" [queryParams]="t.query">
+            <span class="tarea-icono" [attr.data-tipo]="t.clave">
+              @switch (t.clave) {
+                @case ('universidades') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V10m4 11V10m6 11V10m4 11V10M2 10l10-6 10 6H2z" />
+                  </svg>
+                }
+                @case ('egresados') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m-4-3.5a8 8 0 008 0" />
+                  </svg>
+                }
+                @case ('empresas') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                }
+                @case ('respaldos') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                  </svg>
+                }
+                @case ('vacantes') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
+                  </svg>
+                }
+              }
+            </span>
+            <span class="tarea-cuerpo">
+              <span class="tarea-cantidad">{{ t.cantidad }}</span>
+              <span class="tarea-titulo">{{ t.titulo }}</span>
+              <span class="tarea-ayuda">{{ t.cantidad === 0 ? 'Nada pendiente por ahora.' : t.ayuda }}</span>
+            </span>
+            <span class="tarea-cta">{{ t.cantidad === 0 ? 'Ver módulo' : 'Revisar ahora' }} →</span>
+          </a>
+        }
+      </div>
+    </section>
+
+    <!-- 2. Indicadores generales -->
+    <section class="kpis">
+      @for (k of kpis(); track k.etiqueta) {
+        <article class="kpi">
+          <span class="kpi-etiqueta">{{ k.etiqueta }}</span>
+          <span class="kpi-valor">{{ k.valor }}</span>
+          @if (k.progreso !== undefined) {
+            <span class="barra" [title]="k.progreso + '%'"><span [style.width.%]="k.progreso"></span></span>
+          }
+          <span class="kpi-detalle">{{ k.detalle }}</span>
         </article>
       }
-    </div>
+    </section>
 
-    <article class="panel-acciones">
-      <h2>Últimas acciones registradas</h2>
-      @if (ultimasAcciones().length === 0) {
-        <p class="vacio">Sin movimientos recientes en la bitácora.</p>
-      } @else {
-        <ul>
-          @for (accion of ultimasAcciones(); track accion.fecha) {
-            <li>
-              <span class="fecha">{{ accion.fecha }}</span>
-              <span class="cuerpo">
-                <strong>{{ accion.accion }}</strong>
-                @if (accion.detalles) {
-                  <em>{{ accion.detalles }}</em>
+    <div class="columnas">
+      <!-- 3. Comparativa por universidad -->
+      <section class="tarjeta">
+        <header class="tarjeta-cabecera">
+          <div>
+            <h2>{{ esSuperadmin() ? 'Universidades clientes' : 'Tu universidad' }}</h2>
+            <p>Egresados, empresas y movimiento de {{ esSuperadmin() ? 'cada universidad' : 'tu universidad' }}.</p>
+          </div>
+          <a routerLink="/admin/universidades" class="enlace">Ver detalle →</a>
+        </header>
+
+        @if (p.universidades.length === 0) {
+          <p class="vacio">Todavía no hay universidades habilitadas.</p>
+        } @else {
+          <div class="tabla-scroll">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Universidad</th>
+                  <th>Egresados verificados</th>
+
+                  <th class="num">Por validar</th>
+                  <th class="num">Empresas</th>
+                  <th class="num">Vacantes</th>
+                  <th class="num">Postulaciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (u of universidadesPagina(); track u.id) {
+                  <tr>
+                    <td>
+                      <div class="uni">
+                        <span class="uni-sigla">{{ u.sigla || '—' }}</span>
+                        <div class="uni-datos">
+                          <span class="uni-nombre">{{ u.nombre }}</span>
+                          <span class="uni-ciudad">{{ u.ciudad }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="progreso">
+                        <span class="barra"><span [style.width.%]="porcentaje(u.egresados_verificados, u.egresados_total)"></span></span>
+                        <span class="progreso-txt">{{ u.egresados_verificados }} / {{ u.egresados_total }}</span>
+                      </div>
+                    </td>
+                    <td class="num">
+                      @if (u.egresados_pendientes > 0) {
+                        <span class="pill pill--alerta">{{ u.egresados_pendientes }}</span>
+                      } @else {
+                        <span class="cero">0</span>
+                      }
+                    </td>
+                    <td class="num">
+                      {{ u.empresas_aprobadas }}
+                      @if (u.empresas_pendientes > 0) {
+                        <small class="extra" title="Solicitudes de acceso pendientes">+{{ u.empresas_pendientes }} pend.</small>
+                      }
+                    </td>
+                    <td class="num">{{ u.vacantes_publicadas }}</td>
+                    <td class="num">{{ u.postulaciones }}</td>
+                  </tr>
                 }
-              </span>
-            </li>
-          }
-        </ul>
-      }
-    </article>
+              </tbody>
+            </table>
+          </div>
+          <app-paginador
+            [total]="p.universidades.length"
+            [(pagina)]="paginaUniversidades"
+            [(tamanio)]="tamanioUniversidades"
+            [opcionesTamanio]="[5, 10, 20]"
+            etiqueta="universidades"
+          />
+        }
+      </section>
+
+      <!-- 4. Actividad reciente -->
+      <section class="tarjeta">
+        <header class="tarjeta-cabecera">
+          <div>
+            <h2>Actividad reciente</h2>
+            <p>
+              {{ p.accesos_hoy }} inicio(s) de sesión hoy
+              @if (p.accesos_fallidos_hoy > 0) {
+                · <span class="texto-peligro">{{ p.accesos_fallidos_hoy }} intento(s) fallido(s)</span>
+              }
+            </p>
+          </div>
+          <a routerLink="/admin/bitacora" class="enlace">Bitácora →</a>
+        </header>
+
+        @if (actividad().length === 0) {
+          <p class="vacio">Sin acciones de gestión registradas todavía.</p>
+        } @else {
+          <ul class="actividad">
+            @for (a of actividad(); track $index) {
+              <li>
+                <span class="punto" [attr.data-tono]="a.tono"></span>
+                <div class="actividad-cuerpo">
+                  <span class="actividad-texto">{{ a.texto }}</span>
+                  <span class="actividad-meta" [title]="a.fechaCompleta">
+                    {{ a.usuario ?? 'Usuario ya no disponible' }} · {{ a.hace }}
+                  </span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
   }
-</section>
+</div>

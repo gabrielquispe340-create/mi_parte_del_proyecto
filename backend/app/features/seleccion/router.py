@@ -1,24 +1,8 @@
+import csv
+import io
 import uuid
-<<<<<<< HEAD
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.features.seleccion.schema import (
-    CandidatoEnTableroDTO,
-    ConfigurarEtapasRequest,
-    DescartarCandidatoRequest,
-    EtapaResponse,
-    HistorialPostulacionResponse,
-    MoverCandidatoRequest,
-    NotaInternaCreateRequest,
-    NotaInternaResponse,
-    TableroSeleccionResponse,
-)
-from app.features.seleccion.service import SeleccionService
-from app.security.dependencies import CurrentUser, get_current_user, get_current_user_optional
-=======
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.common.request_context import get_client_ip
@@ -36,100 +20,11 @@ from app.features.seleccion.schema import (
 )
 from app.features.seleccion.service import SeleccionService
 from app.security.dependencies import CurrentUser, require_roles
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad
 
 router = APIRouter(prefix="/seleccion", tags=["proceso-seleccion"])
 
 _solo_empresa = require_roles("empresa", "platform_admin")
 
-<<<<<<< HEAD
-@router.get("/vacantes/{vacante_id}/tablero", response_model=TableroSeleccionResponse)
-def obtener_tablero_seleccion(
-    vacante_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: CurrentUser | None = Depends(get_current_user_optional),
-):
-    """Obtiene el tablero Kanban de selección con columnas por etapa y candidatos postulados."""
-    return SeleccionService(db).obtener_tablero(vacante_id)
-
-
-@router.get("/vacantes/{vacante_id}/etapas", response_model=list[EtapaResponse])
-def obtener_etapas_vacante(
-    vacante_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: CurrentUser | None = Depends(get_current_user_optional),
-):
-    """Obtiene las etapas configuradas para una vacante."""
-    return SeleccionService(db).obtener_etapas(vacante_id)
-
-
-@router.put("/vacantes/{vacante_id}/etapas", response_model=list[EtapaResponse])
-def configurar_etapas_vacante(
-    vacante_id: uuid.UUID,
-    req: ConfigurarEtapasRequest,
-    db: Session = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
-):
-    """Configura, agrega o reordena las etapas del proceso de selección para una vacante."""
-    return SeleccionService(db).configurar_etapas(vacante_id, req)
-
-
-@router.post("/postulaciones/{application_id}/mover", response_model=CandidatoEnTableroDTO)
-def mover_candidato_etapa(
-    application_id: uuid.UUID,
-    req: MoverCandidatoRequest,
-    db: Session = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
-):
-    """Mueve a un candidato a una nueva etapa, registra la auditoría y le notifica."""
-    return SeleccionService(db).mover_candidato(application_id, req, current_user.id_usuario)
-
-
-@router.post("/postulaciones/{application_id}/descartar", response_model=CandidatoEnTableroDTO)
-def descartar_candidato(
-    application_id: uuid.UUID,
-    req: DescartarCandidatoRequest,
-    db: Session = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
-):
-    """Descarta a un candidato en el proceso de selección y bloquea futuros avances."""
-    return SeleccionService(db).descartar_candidato(application_id, req, current_user.id_usuario)
-
-
-@router.get("/postulaciones/{application_id}/historial", response_model=HistorialPostulacionResponse)
-def obtener_historial_postulacion(
-    application_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
-):
-    """Obtiene el historial de auditoría de avances y descartes de un postulante."""
-    return SeleccionService(db).obtener_historial(application_id)
-
-
-@router.get("/postulaciones/{application_id}/notas", response_model=list[NotaInternaResponse])
-def obtener_notas_internas(
-    application_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
-):
-    """Obtiene las observaciones internas privadas de la empresa para un postulante."""
-    return SeleccionService(db).obtener_notas(application_id)
-
-
-@router.post(
-    "/postulaciones/{application_id}/notas",
-    response_model=NotaInternaResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-def registrar_nota_interna(
-    application_id: uuid.UUID,
-    req: NotaInternaCreateRequest,
-    db: Session = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
-):
-    """Registra una nueva observación interna privada para el postulante."""
-    return SeleccionService(db).agregar_nota(application_id, req, current_user.id_usuario)
-=======
 
 @router.get("/vacantes", response_model=list[VacanteResumenSeleccion])
 def listar_vacantes_seleccion(
@@ -171,11 +66,71 @@ def configurar_etapas_vacante(
 @router.get("/vacantes/{id_vacante}/pipeline", response_model=PipelineVacanteResponse)
 def obtener_pipeline_vacante(
     id_vacante: uuid.UUID,
+    carrera_id: uuid.UUID | None = Query(None, description="Filtra candidatos por carrera (HU-16)"),
+    habilidad_id: uuid.UUID | None = Query(None, description="Filtra candidatos por habilidad declarada (HU-16)"),
+    ordenar_por: str = Query("fecha", description="'fecha' o 'afinidad' (HU-16)"),
     current_user: CurrentUser = Depends(_solo_empresa),
     db: Session = Depends(get_db),
 ) -> PipelineVacanteResponse:
-    """HU-17: Obtener el tablero/pipeline de postulantes organizados por etapas para la vacante."""
-    return SeleccionService(db).obtener_pipeline_vacante(current_user.id_usuario, id_vacante)
+    """HU-17: Obtener el tablero/pipeline de postulantes organizados por etapas para la vacante.
+
+    HU-16: admite filtrar el pool por carrera/habilidad y ordenar por fecha o afinidad.
+    """
+    return SeleccionService(db).obtener_pipeline_vacante(
+        current_user.id_usuario,
+        id_vacante,
+        carrera_id=carrera_id,
+        habilidad_id=habilidad_id,
+        ordenar_por=ordenar_por,
+    )
+
+
+@router.get("/vacantes/{id_vacante}/pipeline/exportar")
+def exportar_pool_postulantes(
+    id_vacante: uuid.UUID,
+    carrera_id: uuid.UUID | None = Query(None),
+    habilidad_id: uuid.UUID | None = Query(None),
+    ordenar_por: str = Query("fecha"),
+    current_user: CurrentUser = Depends(_solo_empresa),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """HU-16: Exporta el pool de postulantes de la vacante en formato CSV."""
+    pipeline = SeleccionService(db).obtener_pipeline_vacante(
+        current_user.id_usuario,
+        id_vacante,
+        carrera_id=carrera_id,
+        habilidad_id=habilidad_id,
+        ordenar_por=ordenar_por,
+    )
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(
+        ["Nombre", "Titular profesional", "Carrera", "Email", "Teléfono", "Ciudad", "Afinidad (%)", "Estado", "Etapa", "Fecha de postulación"]
+    )
+    for c in pipeline.candidatos:
+        writer.writerow(
+            [
+                c.candidato_nombre,
+                c.candidato_titular or "",
+                c.candidato_carrera or "",
+                c.candidato_email or "",
+                c.candidato_telefono or "",
+                c.candidato_ciudad or "",
+                c.candidato_afinidad if c.candidato_afinidad is not None else "",
+                c.estado_label,
+                c.etapa_actual_nombre or "",
+                c.fecha_postulacion.strftime("%Y-%m-%d %H:%M"),
+            ]
+        )
+    buffer.seek(0)
+
+    nombre_archivo = f"postulantes_{pipeline.vacante.titulo.replace(' ', '_')}.csv"
+    return StreamingResponse(
+        iter([buffer.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
 
 
 @router.post("/postulaciones/{id_postulacion}/avanzar", response_model=CandidatoPipelineItem)
@@ -240,4 +195,3 @@ def agregar_nota_interna(
         data=data,
         ip=ip,
     )
->>>>>>> 8a7aaf477858b3da8e1335d385ccfa4cc3d228ad

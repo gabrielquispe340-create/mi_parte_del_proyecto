@@ -3,7 +3,13 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
-import { AsignarRolRespuesta, Rol, UsuarioAdmin } from './gestion-roles.model';
+import {
+  AsignarRolRespuesta,
+  NuevoUsuarioStaff,
+  Rol,
+  UniversidadCliente,
+  UsuarioAdmin,
+} from './gestion-roles.model';
 
 const API_BASE = environment.apiUrl;
 
@@ -21,6 +27,14 @@ export class GestionRolesService {
 
   listarUsuarios(token: string): Observable<UsuarioAdmin[]> {
     return this.http.get<UsuarioAdmin[]>(`${API_BASE}/admin/usuarios`, { headers: this.headers(token) });
+  }
+
+  crearUsuario(token: string, datos: NuevoUsuarioStaff): Observable<UsuarioAdmin> {
+    return this.http.post<UsuarioAdmin>(`${API_BASE}/admin/usuarios`, datos, { headers: this.headers(token) });
+  }
+
+  listarUniversidades(): Observable<UniversidadCliente[]> {
+    return this.http.get<UniversidadCliente[]>(`${API_BASE}/catalogos/instituciones`);
   }
 
   asignarRol(token: string, usuarioId: string, rol: string): Observable<AsignarRolRespuesta> {

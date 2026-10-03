@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.common.exceptions import UnauthorizedException
+from app.common.exceptions import BusinessException, UnauthorizedException
 from app.common.request_context import get_client_ip
 from app.core.database import get_db
 from app.features.auth.schema import (
+    CambiarPasswordRequest,
     LoginRequest,
     MessageResponse,
     RefreshRequest,
@@ -14,6 +15,7 @@ from app.features.auth.schema import (
 )
 from app.features.bitacora.service import BitacoraService
 from app.features.auth.service import AuthService
+from app.security.dependencies import CurrentUser, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -62,3 +64,26 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)) -
 @router.post("/refresh", response_model=TokenResponse)
 def refrescar_token(data: RefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
     return AuthService(db).refrescar_token(data.refresh_token)
+
+
+@router.post("/cambiar-password", response_model=TokenResponse)
+def cambiar_password(
+    data: CambiarPasswordRequest,
+    request: Request,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    ip = get_client_ip(request)
+    servicio = AuthService(db)
+    try:
+        tokens = servicio.cambiar_password(current_user.id_usuario, data.password_actual, data.password_nueva)
+    except BusinessException:
+        BitacoraService(db).registrar(
+            modulo="auth", accion="cambiar_password", usuario_id=current_user.id_usuario, ip=ip, resultado=False
+        )
+        db.commit()
+        raise
+
+    BitacoraService(db).registrar(modulo="auth", accion="cambiar_password", usuario_id=current_user.id_usuario, ip=ip)
+    db.commit()
+    return tokens

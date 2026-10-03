@@ -24,6 +24,10 @@ class CandidateProfile(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("app_user.id", ondelete="RESTRICT"), unique=True, nullable=False
     )
+    # Universidad (tenant) a la que pertenece el egresado.
+    institution_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("educational_institution.id", ondelete="SET NULL"), nullable=True
+    )
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
@@ -57,6 +61,7 @@ class CandidateProfile(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("AppUser")
+    institution = relationship("Institution")
     educations: Mapped[list["CandidateEducation"]] = relationship(
         back_populates="candidate", cascade="all, delete-orphan"
     )
@@ -71,10 +76,7 @@ class CandidateEducation(Base):
     candidate_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("candidate_profile.id", ondelete="CASCADE"), nullable=False
     )
-    # FK real hacia educational_institution(id) en la base de datos, pero esa tabla no
-    # está mapeada en este backend (no se usa aún); se declara sin ForeignKey() de SQLAlchemy
-    # para no romper la resolución de dependencias del ORM. La constraint sigue existiendo
-    # y siendo validada por Postgres; este campo se deja siempre en None desde el código.
+    # FK real hacia educational_institution(id) validada por Postgres.
     institution_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     field_of_study_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("field_of_study.id", ondelete="SET NULL"), nullable=True

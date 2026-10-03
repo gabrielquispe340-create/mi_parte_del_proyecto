@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.common.exceptions import BadRequestException, NotFoundException
+from app.core.tenancy import institucion_efectiva
 from app.features.bitacora.service import BitacoraService
 from app.features.postulaciones.repository import PostulacionRepository
 from app.features.postulaciones.schema import (
@@ -25,8 +26,9 @@ from app.features.postulaciones.schema import (
 )
 from app.models.candidato import CandidateProfile
 from app.models.empresa import Company
-from app.models.postulacion import Application, ApplicationAnswer
-from app.models.vacante import JobPosting, ScreeningQuestion
+from app.models.postulacion import Application, ApplicationAnswer, ApplicationStatusHistory
+from app.models.vacante import JobPosting, ScreeningOption, ScreeningQuestion
+from app.security.tenant import empresa_habilitada_en
 
 
 class PostulacionService:
@@ -49,9 +51,16 @@ class PostulacionService:
         if not vacante:
             raise HTTPException(status_code=404, detail="La vacante no existe.")
 
+        if not empresa_habilitada_en(self.db, vacante.company_id, institucion_efectiva(candidate.institution_id)):
+            raise HTTPException(status_code=403, detail="Esta empresa no recluta egresados de tu universidad.")
+
         existing_app = (
             self.db.query(Application)
-            .filter(Application.candidate_id == candidate.id, Application.job_id == data.job_id)
+            .filter(
+                Application.candidate_id == candidate.id,
+                Application.job_id == data.job_id,
+                Application.current_status != "withdrawn",
+            )
             .first()
         )
         if existing_app:
@@ -72,6 +81,14 @@ class PostulacionService:
         self.db.add(new_app)
         self.db.flush()
 
+        knockout_questions = {
+            q.id: q
+            for q in self.db.query(ScreeningQuestion).filter(
+                ScreeningQuestion.job_posting_id == data.job_id, ScreeningQuestion.is_knockout == True
+            )
+        }
+        motivo_descarte: str | None = None
+
         for ans in data.answers:
             self.db.add(
                 ApplicationAnswer(
@@ -83,14 +100,36 @@ class PostulacionService:
                 )
             )
 
+            pregunta = knockout_questions.get(ans.question_id)
+            if pregunta is not None and ans.selected_option_id is not None:
+                opcion = self.db.query(ScreeningOption).filter(ScreeningOption.id == ans.selected_option_id).first()
+                if opcion is not None and not opcion.is_accepted:
+                    motivo_descarte = f"Respuesta excluyente en: {pregunta.question_text}"
+
+        if motivo_descarte:
+            new_app.current_status = "rejected"
+            self.db.add(
+                ApplicationStatusHistory(
+                    application_id=new_app.id,
+                    from_status="applied",
+                    to_status="rejected",
+                    reason=motivo_descarte,
+                )
+            )
+
         self.db.commit()
         self.db.refresh(new_app)
 
+        mensaje = (
+            f"Tu postulación fue descartada automáticamente: {motivo_descarte}"
+            if motivo_descarte
+            else "Postulación exitosa"
+        )
         return PostulacionResponse(
             id=new_app.id,
             job_id=new_app.job_id,
             current_status=new_app.current_status,
-            message="Postulación exitosa",
+            message=mensaje,
         )
 
     def obtener_mis_postulaciones(self, user_id: str) -> List[PostulacionListResponse]:

@@ -6,6 +6,15 @@ import { AuthService } from '../auth/auth.service';
 import { VacanteService } from '../../core/services/vacante.service';
 import { environment } from '../../../environments/environment';
 import { PostulacionService, PostulacionListResponse } from '../../core/services/postulacion.service';
+import { SeleccionService } from '../seleccion/seleccion.service';
+
+interface InstitucionEmpresa {
+  id: string;
+  nombre: string;
+  sigla: string | null;
+  estado: 'pending' | 'approved' | 'rejected' | 'suspended' | null;
+  motivo_rechazo: string | null;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -20,6 +29,7 @@ export class DashboardComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly http = inject(HttpClient);
   private readonly postulacionService = inject(PostulacionService);
+  private readonly seleccionService = inject(SeleccionService);
 
   role = computed(() => this.auth.rol() || '—');
   isAdmin = computed(() => this.auth.rol() === 'platform_admin' || this.auth.rol() === 'moderator');
@@ -28,6 +38,17 @@ export class DashboardComponent implements OnInit {
 
   vacantesPublicadas = 0;
   vacantesEnRevision = 0;
+  postulantesRecibidos = 0;
+  postulantesEnProceso = 0;
+
+  institucionesEmpresa = signal<InstitucionEmpresa[]>([]);
+  solicitando = signal<string | null>(null);
+  readonly etiquetaEstado: Record<string, string> = {
+    pending: 'Pendiente',
+    approved: 'Aprobada',
+    rejected: 'Rechazada',
+    suspended: 'Suspendida',
+  };
 
   perfilPorcentaje = signal<number>(0);
   postulaciones = signal<PostulacionListResponse[]>([]);
@@ -49,6 +70,17 @@ export class DashboardComponent implements OnInit {
           this.cdr.markForCheck();
         },
       });
+      this.seleccionService.listarVacantes().subscribe({
+        next: (vacantes) => {
+          this.postulantesRecibidos = vacantes.reduce((acc, v) => acc + v.total_postulantes, 0);
+          this.postulantesEnProceso = vacantes.reduce((acc, v) => acc + v.total_activos, 0);
+          this.cdr.markForCheck();
+        },
+        error: () => console.error('Error cargando metricas de seleccion en dashboard'),
+      });
+      this.http.get<InstitucionEmpresa[]>(`${environment.apiUrl}/instituciones/empresa`).subscribe({
+        next: (data) => this.institucionesEmpresa.set(data),
+      });
     }
 
     if (this.isEgresado()) {
@@ -62,5 +94,18 @@ export class DashboardComponent implements OnInit {
         error: () => console.error('Error cargando postulaciones en dashboard'),
       });
     }
+  }
+
+  solicitarAcceso(institucionId: string): void {
+    this.solicitando.set(institucionId);
+    this.http
+      .post<InstitucionEmpresa>(`${environment.apiUrl}/instituciones/empresa/${institucionId}/solicitar`, {})
+      .subscribe({
+        next: (actualizada) => {
+          this.institucionesEmpresa.update((lista) => lista.map((u) => (u.id === actualizada.id ? actualizada : u)));
+          this.solicitando.set(null);
+        },
+        error: () => this.solicitando.set(null),
+      });
   }
 }

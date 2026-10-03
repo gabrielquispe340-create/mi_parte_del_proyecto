@@ -18,6 +18,15 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     rol: str
     roles: list[str] = []
+    institucion_id: uuid.UUID | None = None
+    institucion_nombre: str | None = None
+    # La cuenta tiene una contraseña temporal (creada por un admin) y debe cambiarla.
+    debe_cambiar_password: bool = False
+
+
+class CambiarPasswordRequest(BaseModel):
+    password_actual: str = Field(min_length=1)
+    password_nueva: str = Field(min_length=8)
 
 
 class RegistroEgresadoRequest(BaseModel):
@@ -26,6 +35,8 @@ class RegistroEgresadoRequest(BaseModel):
     ci: str = Field(min_length=5, max_length=50)
     correo: EmailStr
     password: str = Field(min_length=8)
+    # Opcional por compatibilidad con clientes previos al SaaS: si falta se usa la UAGRM.
+    institucion_id: uuid.UUID | None = None
     carrera_id: uuid.UUID | None = None
     anio_egreso: int | None = None
     matricula: str | None = None
@@ -44,6 +55,9 @@ class RegistroEmpresaRequest(BaseModel):
     sitio_web: str | None = None
     descripcion: str | None = None
     representante_legal: str | None = None
+    # Universidades en las que la empresa quiere reclutar; cada una queda pendiente
+    # de aprobación por su administrador.
+    instituciones_ids: list[uuid.UUID] = []
 
 
 class MessageResponse(BaseModel):

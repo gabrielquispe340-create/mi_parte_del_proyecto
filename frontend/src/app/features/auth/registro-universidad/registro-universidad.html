@@ -1,0 +1,145 @@
+<div class="pagina">
+  <header class="hero">
+    <div class="hero-contenido">
+      <a routerLink="/auth/login" class="marca"><span>✦</span> EGRESA</a>
+      <h1>Sumá tu universidad a EGRESA</h1>
+      <p>
+        Conectá a tus egresados con empresas que buscan talento, validá sus títulos y seguí su
+        empleabilidad desde un espacio propio. Elegí un plan: revisamos la solicitud y te
+        entregamos el acceso del administrador.
+      </p>
+    </div>
+  </header>
+
+  <main class="contenido">
+    @if (enviada(); as s) {
+      <section class="tarjeta exito">
+        <div class="exito-icono">✓</div>
+        <h2>¡Solicitud enviada!</h2>
+        <p>
+          Recibimos la solicitud de <strong>{{ s.nombre }} ({{ s.sigla }})</strong> con el plan
+          <strong>{{ s.plan_nombre }}</strong>.
+        </p>
+        <p>
+          El equipo de EGRESA la va a revisar y se va a comunicar con
+          <strong>{{ s.responsable_nombre }}</strong> a <strong>{{ s.responsable_correo }}</strong> para
+          entregarle el acceso de administrador. Ese correo va a ser su usuario.
+        </p>
+        <a routerLink="/auth/login" class="btn-primario">Volver al inicio de sesión</a>
+      </section>
+    } @else {
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+
+      <!-- 1. Plan -->
+      <section class="paso">
+        <h2><span class="num">1</span> Elegí un plan</h2>
+        @if (cargando()) {
+          <p class="cargando">Cargando planes…</p>
+        } @else {
+          <div class="planes">
+            @for (p of planes(); track p.codigo) {
+              <button
+                type="button"
+                class="plan"
+                [class.elegido]="plan() === p.codigo"
+                [attr.aria-pressed]="plan() === p.codigo"
+                (click)="plan.set(p.codigo)"
+              >
+                @if (p.codigo === recomendado) {
+                  <span class="cinta">Recomendado</span>
+                }
+                <span class="plan-nombre">{{ p.nombre }}</span>
+                <span class="plan-precio">{{ textoPrecio(p.precio_anual_bs) }}</span>
+                <ul>
+                  <li><span class="ok">✓</span> {{ textoLimite(p.max_egresados) }} egresados</li>
+                  <li>
+                    <span class="ok">✓</span>
+                    {{ textoLimite(p.max_moderadores) }} {{ p.max_moderadores === 1 ? 'moderador' : 'moderadores' }}
+                  </li>
+                  <li><span class="ok">✓</span> Validación de egresados y bolsa de empleo</li>
+                  <li [class.no]="!p.reportes">
+                    <span [class.ok]="p.reportes">{{ p.reportes ? '✓' : '—' }}</span>
+                    <span>Reportes de empleabilidad <small>(próximamente)</small></span>
+                  </li>
+                  <li [class.no]="!p.marca_propia">
+                    <span [class.ok]="p.marca_propia">{{ p.marca_propia ? '✓' : '—' }}</span>
+                    <span>Logo y colores propios <small>(próximamente)</small></span>
+                  </li>
+                </ul>
+                <span class="plan-elegir">{{ plan() === p.codigo ? 'Plan elegido' : 'Elegir este plan' }}</span>
+              </button>
+            }
+          </div>
+          <p class="nota">Los planes pagos se activan al registrar el pago; mientras tanto rigen los límites del Básico.</p>
+        }
+      </section>
+
+      <form class="tarjeta formulario" (ngSubmit)="enviar()">
+        <!-- 2. Universidad -->
+        <section class="paso">
+          <h2><span class="num">2</span> Tu universidad</h2>
+          <div class="campos">
+            <label class="ancho">
+              <span>Universidad</span>
+              <select name="catalogo" [ngModel]="catalogo()" (ngModelChange)="elegirDelCatalogo($event)">
+                <option value="" disabled>Buscala en la lista…</option>
+                @for (i of disponibles(); track i.id) {
+                  <option [value]="i.id">{{ i.nombre }}{{ i.ciudad ? ' — ' + i.ciudad : '' }}</option>
+                }
+                <option [value]="OTRA">Otra (no está en la lista)</option>
+              </select>
+            </label>
+
+            @if (catalogo()) {
+              <label class="ancho">
+                <span>Nombre oficial</span>
+                <input name="nombre" [(ngModel)]="nombre" maxlength="200" placeholder="Universidad …" />
+              </label>
+              <label>
+                <span>Sigla</span>
+                <input name="sigla" [(ngModel)]="sigla" maxlength="20" placeholder="Ej. UPDS" class="mayus" />
+              </label>
+              <label>
+                <span>Ciudad</span>
+                <input name="ciudad" [(ngModel)]="ciudad" maxlength="100" placeholder="Ej. Santa Cruz de la Sierra" />
+              </label>
+            }
+          </div>
+        </section>
+
+        <!-- 3. Responsable -->
+        <section class="paso">
+          <h2><span class="num">3</span> Responsable</h2>
+          <p class="ayuda">Va a ser el administrador de la universidad en EGRESA. Su correo será el usuario de acceso.</p>
+          <div class="campos">
+            <label class="ancho">
+              <span>Nombre completo</span>
+              <input name="responsableNombre" [(ngModel)]="responsableNombre" maxlength="150" />
+            </label>
+            <label>
+              <span>Correo institucional</span>
+              <input type="email" name="responsableCorreo" [(ngModel)]="responsableCorreo" placeholder="nombre@universidad.edu.bo" />
+            </label>
+            <label>
+              <span>Teléfono <small>(opcional)</small></span>
+              <input name="responsableTelefono" [(ngModel)]="responsableTelefono" maxlength="40" placeholder="+591 …" />
+            </label>
+          </div>
+        </section>
+
+        <div class="enviar">
+          @if (planElegido(); as p) {
+            <span class="resumen">Plan <strong>{{ p.nombre }}</strong> · {{ textoPrecio(p.precio_anual_bs) }}</span>
+          }
+          <button type="submit" class="btn-primario" [disabled]="enviando() || cargando()">
+            {{ enviando() ? 'Enviando…' : 'Enviar solicitud' }}
+          </button>
+        </div>
+      </form>
+
+      <p class="volver">¿Ya tenés acceso? <a routerLink="/auth/login">Iniciá sesión</a></p>
+    }
+  </main>
+</div>
