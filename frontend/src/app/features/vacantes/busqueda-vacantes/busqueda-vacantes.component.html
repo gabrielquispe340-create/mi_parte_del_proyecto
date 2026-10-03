@@ -1,14 +1,53 @@
 <div class="vacantes-page">
-  <!-- Header / Hero de Búsqueda -->
-  <header class="vacantes-hero">
-    <div class="hero-content">
-      <div class="badge-tag">Oportunidades Laborales UAGRM</div>
-      <h1>Encuentra tu próximo empleo profesional</h1>
-      <p class="hero-subtitle">
-        Conéctate con empresas líderes que buscan egresados y talento universitario verificado.
-      </p>
+  <!-- Topbar (mismo encabezado que Postulaciones y Recomendaciones) -->
+  <header class="topbar">
+    <div class="topbar__left">
+      @if (auth.estaAutenticado()) {
+      <a routerLink="/dashboard" class="btn-back" title="Volver al Dashboard">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        <span>Volver</span>
+      </a>
+      } @else {
+      <a routerLink="/auth/login" class="btn-back" title="Iniciar sesión">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        <span>Iniciar sesión</span>
+      </a>
+      }
+      <div>
+        <h1 class="topbar__title">Búsqueda de Vacantes</h1>
+        <p class="topbar__subtitle">Ofertas publicadas por empresas habilitadas por tu universidad.</p>
+      </div>
+    </div>
+  </header>
 
-      <!-- Barra de Búsqueda Principal -->
+  <!-- Barra de Búsqueda Principal -->
+  <section class="search-section">
+      <!-- Franja de Estadísticas Públicas Agregadas (HU-34) -->
+      @if (stats(); as s) {
+      <div class="stats-banner" id="stats-publicas-banner">
+        <div class="stats-item">
+          <span class="stats-icon">💼</span>
+          <span class="stats-number">{{ s.total_vacantes_activas }}</span>
+          <span class="stats-label">vacantes activas</span>
+        </div>
+        <div class="stats-divider">•</div>
+        <div class="stats-item">
+          <span class="stats-icon">🏢</span>
+          <span class="stats-number">{{ s.total_empresas_registradas }}</span>
+          <span class="stats-label">empresas verificadas</span>
+        </div>
+        <div class="stats-divider">•</div>
+        <div class="stats-item stats-updated">
+          <span class="stats-icon">📅</span>
+          <span class="stats-label">Corte: {{ s.fecha_actualizacion | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+      }
+
       <div class="search-bar-container">
         <div class="search-input-wrapper">
           <span class="search-icon">🔍</span>
@@ -22,8 +61,7 @@
           Buscar Ofertas
         </button>
       </div>
-    </div>
-  </header>
+  </section>
 
   <!-- Contenedor Principal con Sidebar y Resultados -->
   <main class="vacantes-main">
@@ -122,7 +160,7 @@
         <!-- Barra de control de resultados -->
         <div class="results-header">
           <div class="results-count">
-            <strong>{{ totalVacantes }}</strong> {{ totalVacantes === 1 ? 'vacante disponible' : 'vacantes disponibles'
+            <strong>{{ totalVacantes() }}</strong> {{ totalVacantes() === 1 ? 'vacante disponible' : 'vacantes disponibles'
             }}
           </div>
 
@@ -138,7 +176,7 @@
         </div>
 
         <!-- Loading State -->
-        @if (isLoading) {
+        @if (isLoading()) {
         <div class="loading-container">
           <div class="spinner"></div>
           <p>Buscando ofertas de empleo...</p>
@@ -146,17 +184,17 @@
         }
 
         <!-- Error State -->
-        @if (errorMessage && !isLoading) {
+        @if (errorMessage() && !isLoading()) {
         <div class="error-card">
-          <p>{{ errorMessage }}</p>
+          <p>{{ errorMessage() }}</p>
           <button class="btn-retry" (click)="ejecutarBusqueda()">Reintentar</button>
         </div>
         }
 
         <!-- Lista de Tarjetas de Vacantes -->
-        @if (!isLoading && !errorMessage && vacantes.length > 0) {
+        @if (!isLoading() && !errorMessage() && vacantes().length > 0) {
         <div class="vacantes-list">
-          @for (vacante of vacantes; track vacante.id) {
+          @for (vacante of vacantes(); track vacante.id) {
           <article class="vacante-card" (click)="verDetalle(vacante.id)">
             <div class="card-top">
               <div class="company-avatar">
@@ -230,7 +268,7 @@
         }
 
         <!-- Empty State -->
-        @if (!isLoading && !errorMessage && vacantes.length === 0) {
+        @if (!isLoading() && !errorMessage() && vacantes().length === 0) {
         <div class="empty-state">
           <div class="empty-icon">🔎</div>
           <h3>No se encontraron vacantes con los filtros seleccionados</h3>
@@ -269,14 +307,14 @@
 
       <!-- Body del Modal -->
       <div class="modal-body">
-        @if (isLoadingDetalle) {
+        @if (isLoadingDetalle()) {
         <div class="loading-container">
           <div class="spinner"></div>
           <p>Cargando información completa...</p>
         </div>
         }
 
-        @if (vacanteSeleccionada && !isLoadingDetalle) {
+        @if (vacanteSeleccionada && !isLoadingDetalle()) {
         <!-- Afinidad y Salario Highlight -->
         <div class="highlight-banner">
           @if (vacanteSeleccionada.afinidad_porcentaje !== null && vacanteSeleccionada.afinidad_porcentaje !==
@@ -365,15 +403,51 @@
           }
         </div>
         }
+
+        <!-- Contacto de la Empresa (CP04 HU-34) -->
+        <div class="detail-section company-contact-box">
+          <h3>Información de Contacto</h3>
+          @if (auth.estaAutenticado()) {
+            @if (vacanteSeleccionada.company_contact_email || vacanteSeleccionada.company_phone || vacanteSeleccionada.company_address) {
+              <div class="contact-data-list">
+                @if (vacanteSeleccionada.company_contact_email) {
+                  <p class="contact-item">✉ <strong>Email:</strong> {{ vacanteSeleccionada.company_contact_email }}</p>
+                }
+                @if (vacanteSeleccionada.company_phone) {
+                  <p class="contact-item">📞 <strong>Teléfono:</strong> {{ vacanteSeleccionada.company_phone }}</p>
+                }
+                @if (vacanteSeleccionada.company_address) {
+                  <p class="contact-item">📍 <strong>Dirección:</strong> {{ vacanteSeleccionada.company_address }}</p>
+                }
+              </div>
+            } @else {
+              <p class="text-muted">La empresa no ha proporcionado datos públicos de contacto directo.</p>
+            }
+          } @else {
+            <div class="contact-restricted-alert">
+              <span class="lock-icon">🔒</span>
+              <p>Los datos de contacto directo de la empresa están reservados para egresados registrados.
+                 <a [routerLink]="['/auth/registro']" [queryParams]="{ returnUrl: '/vacantes/' + vacanteSeleccionada.id }" (click)="cerrarModalDetalle()">Crea tu cuenta</a>
+                 o <a [routerLink]="['/auth/login']" [queryParams]="{ returnUrl: '/vacantes/' + vacanteSeleccionada.id }" (click)="cerrarModalDetalle()">inicia sesión</a> para visualizarlos.
+              </p>
+            </div>
+          }
+        </div>
         }
       </div>
 
       <!-- Footer del Modal con Acción de Postulación -->
       <div class="modal-footer">
         <button class="btn-secondary" (click)="cerrarModalDetalle()">Cerrar</button>
-        <button class="btn-primary large" (click)="postularse()">
-          ✉ Postularme a esta vacante
-        </button>
+        @if (!estaAutenticado) {
+          <button class="btn-primary large" (click)="irARegistro(vacanteSeleccionada?.id)">
+            📝 Regístrate para postular
+          </button>
+        } @else {
+          <button class="btn-primary large" (click)="postularse()">
+            📩 Postularme
+          </button>
+        }
       </div>
 
     </div>

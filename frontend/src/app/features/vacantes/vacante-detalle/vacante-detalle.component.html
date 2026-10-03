@@ -9,12 +9,19 @@
         </svg>
         <span>Volver a Mis Vacantes</span>
       </a>
-    } @else {
+    } @else if (estaAutenticado) {
       <a routerLink="/dashboard" class="back-link">
         <svg viewBox="0 0 20 20" fill="currentColor" class="icon" aria-hidden="true">
           <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
         </svg>
         <span>Volver al Dashboard</span>
+      </a>
+    } @else {
+      <a routerLink="/vacantes" class="back-link">
+        <svg viewBox="0 0 20 20" fill="currentColor" class="icon" aria-hidden="true">
+          <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
+        </svg>
+        <span>Volver al Catálogo de Vacantes</span>
       </a>
     }
   </nav>
@@ -130,6 +137,24 @@
           </article>
         }
 
+        <!-- Información de Contacto de la Empresa (Solo visible con sesión - CP04 HU-34) -->
+        @if (estaAutenticado && (vacante.company_contact_email || vacante.company_phone || vacante.company_address)) {
+          <article class="content-card">
+            <h2 class="section-title">Información de Contacto de la Empresa</h2>
+            <div class="prose-text">
+              @if (vacante.company_contact_email) {
+                <p><strong>Email:</strong> {{ vacante.company_contact_email }}</p>
+              }
+              @if (vacante.company_phone) {
+                <p><strong>Teléfono:</strong> {{ vacante.company_phone }}</p>
+              }
+              @if (vacante.company_address) {
+                <p><strong>Dirección:</strong> {{ vacante.company_address }}</p>
+              }
+            </div>
+          </article>
+        }
+
       </main>
 
       <!-- ── Columna Lateral: Resumen de Condiciones ──────────────────────── -->
@@ -212,6 +237,10 @@
                 </svg>
                 <span>Postularme a esta vacante</span>
               </button>
+            } @else if (!estaAutenticado) {
+              <a [routerLink]="['/auth/registro']" [queryParams]="{ returnUrl: '/vacantes/' + vacante.id }" class="btn btn--primary btn--full">
+                <span>Regístrate para postularte</span>
+              </a>
             }
 
             @if (isEmpresa) {

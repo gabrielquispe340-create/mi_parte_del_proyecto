@@ -92,6 +92,11 @@ $text-muted: #64748b;
 
   svg { width: 15px; height: 15px; }
   &:hover { border-color: #fca5a5; color: #dc2626; background: #fff5f5; }
+
+  &.btn-cuenta {
+    text-decoration: none;
+    &:hover { border-color: #a5b4fc; color: #4c5bd4; background: #eef2ff; }
+  }
 }
 
 // ── Main content ─────────────────────────────────────────────────────────────
@@ -238,22 +243,6 @@ $text-muted: #64748b;
   margin-bottom: 0.5rem;
 }
 
-.module-tag {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  background: #f1f5f9;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-
-  &--primary {
-    background: #eff6ff;
-    color: #1e40af;
-  }
-}
-
 .module-title {
   font-size: 1.125rem;
   font-weight: 700;
@@ -325,4 +314,86 @@ $text-muted: #64748b;
   .panel-header { flex-direction: column; padding: 1.25rem; }
   .module-actions { flex-direction: column; width: 100%; .btn { width: 100%; } }
   .card-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+// ── Multitenant: universidades de la empresa ─────────────────────────────────
+.universidades-empresa {
+  margin-top: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+
+  &__header {
+    margin-bottom: 1rem;
+  }
+
+  &__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+}
+
+.universidad-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  flex-wrap: wrap;
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 220px;
+  }
+
+  &__sigla {
+    min-width: 2.75rem;
+    height: 2.75rem;
+    padding: 0 0.4rem;
+    border-radius: 0.625rem;
+    background: #eef2ff;
+    color: #4338ca;
+    font-weight: 800;
+    font-size: 0.72rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__nombre {
+    display: block;
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.9rem;
+  }
+
+  &__motivo {
+    display: block;
+    font-size: 0.78rem;
+    color: #b91c1c;
+  }
+}
+
+.estado-chip {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+  border-radius: 9999px;
+
+  &--approved { background: #dcfce7; color: #15803d; }
+  &--pending { background: #fef3c7; color: #b45309; }
+  &--rejected { background: #fee2e2; color: #b91c1c; }
+  &--suspended { background: #f1f5f9; color: #475569; }
+}
+
+.btn--sm {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
 }

@@ -2,10 +2,21 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.features.catalogo.schema import CarreraResponse, CategoriaOfertaResponse, CiudadResponse, HabilidadResponse
+from app.features.catalogo.schema import (
+    CarreraResponse,
+    CategoriaOfertaResponse,
+    CiudadResponse,
+    HabilidadResponse,
+    InstitucionResponse,
+)
 from app.features.catalogo.service import CatalogoService
 
 router = APIRouter(prefix="/catalogos", tags=["catalogos"])
+
+
+@router.get("/instituciones", response_model=list[InstitucionResponse])
+def listar_instituciones(db: Session = Depends(get_db)):
+    return CatalogoService(db).listar_instituciones()
 
 
 @router.get("/carreras", response_model=list[CarreraResponse])

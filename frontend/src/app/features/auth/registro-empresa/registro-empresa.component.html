@@ -130,10 +130,33 @@
         </div>
       </section>
 
-      <!-- SECCIÓN 3: CREDENCIALES DE ACCESO -->
+      <!-- SECCIÓN 3: UNIVERSIDADES DONDE RECLUTA (multitenant) -->
       <section class="form-section">
         <h3 class="section-title">
           <span class="step-num">3</span>
+          Universidades donde querés reclutar
+        </h3>
+        <p class="universidades-ayuda">
+          Cada universidad revisa y aprueba tu solicitud por separado. Podés agregar más desde tu panel después.
+        </p>
+        <div class="universidades-lista">
+          @for (institucion of instituciones; track institucion.id) {
+            <label class="universidad-opcion" [class.seleccionada]="institucionesSeleccionadas.has(institucion.id)">
+              <input type="checkbox" [checked]="institucionesSeleccionadas.has(institucion.id)"
+                (change)="alternarInstitucion(institucion.id)" />
+              <span class="universidad-nombre">{{ institucion.nombre }}</span>
+              @if (institucion.sigla) {
+                <span class="universidad-sigla">{{ institucion.sigla }}</span>
+              }
+            </label>
+          }
+        </div>
+      </section>
+
+      <!-- SECCIÓN 4: CREDENCIALES DE ACCESO -->
+      <section class="form-section">
+        <h3 class="section-title">
+          <span class="step-num">4</span>
           Credenciales de la Cuenta
         </h3>
 

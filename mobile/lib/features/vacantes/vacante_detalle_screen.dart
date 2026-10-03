@@ -27,9 +27,9 @@ class VacanteDetalleScreen extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _chip(vacante.seniorityLevel),
-              _chip(vacante.employmentType),
-              _chip(vacante.workModality),
+              _chip(vacante.nivelLegible),
+              _chip(vacante.jornadaLegible),
+              _chip(vacante.modalidadLegible),
               _chip('${vacante.positionsAvailable} vacante(s)'),
               if (vacante.afinidadPorcentaje != null)
                 Chip(

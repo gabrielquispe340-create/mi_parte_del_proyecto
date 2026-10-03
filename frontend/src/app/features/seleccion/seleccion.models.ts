@@ -40,6 +40,7 @@ export interface CandidatoPipelineItem {
   candidato_email?: string | null;
   candidato_telefono?: string | null;
   candidato_ciudad?: string | null;
+  candidato_universidad?: string | null;
   candidato_carrera_id?: string | null;
   candidato_afinidad?: number | null;
   estado: string;
@@ -139,3 +140,45 @@ export interface CandidatoComparacionResponse {
   idiomas: IdiomaResponse[];
 }
 
+export interface Entrevista {
+  id: string;
+  application_id: string;
+  scheduled_start: string;
+  scheduled_end?: string | null;
+  modality: 'onsite' | 'virtual';
+  location?: string | null;
+  meeting_url?: string | null;
+  notes?: string | null;
+  status: 'pending_confirmation' | 'confirmed' | 'rejected' | 'cancelled' | 'completed';
+  candidate_feedback?: string | null;
+  rejection_count: number;
+  requires_manual_review: boolean;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  vacante_titulo?: string | null;
+  candidato_nombre?: string | null;
+  empresa_nombre?: string | null;
+}
+
+export interface EntrevistaCrear {
+  scheduled_start: string;
+  scheduled_end?: string | null;
+  modality: 'onsite' | 'virtual';
+  location?: string | null;
+  meeting_url?: string | null;
+  notes?: string | null;
+}
+
+export interface EntrevistaReprogramar {
+  scheduled_start: string;
+  scheduled_end?: string | null;
+  modality: 'onsite' | 'virtual';
+  location?: string | null;
+  meeting_url?: string | null;
+  notes?: string | null;
+}
+
+export interface EntrevistaRevisar {
+  aprobado: boolean;
+}

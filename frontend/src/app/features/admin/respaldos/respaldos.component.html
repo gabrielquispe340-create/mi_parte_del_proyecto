@@ -1,0 +1,213 @@
+<div class="admin-container">
+  <header class="admin-header">
+    <div class="header-badge">Plataforma SaaS · Superadmin</div>
+    <h1>Copias de seguridad</h1>
+    <p class="subtitle">
+      Respaldá y restaurá <strong>toda la plataforma</strong>: los datos de todas las universidades, empresas, egresados
+      y vacantes. Descargá cada copia y guardala fuera del servidor.
+    </p>
+  </header>
+
+  <section class="acciones-principales">
+    <div class="tarjeta-accion">
+      <h2>Crear una copia ahora</h2>
+      <p>Guarda una foto completa y consistente de la base de datos. Tarda unos 15 segundos.</p>
+      <div class="fila-crear">
+        <input
+          type="text"
+          [(ngModel)]="nota"
+          maxlength="300"
+          placeholder="Nota opcional (ej. antes de la demo del sprint)"
+          [disabled]="creando()"
+        />
+        <button type="button" class="btn btn-primario" [disabled]="creando()" (click)="crear()">
+          {{ creando() ? 'Creando copia…' : '💾 Crear copia' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="tarjeta-accion" [class.tarjeta-accion--alerta]="hayQueRespaldar()">
+      <h2>Última copia</h2>
+      @if (ultimo(); as u) {
+        <p class="dato-grande">{{ fecha(u.fecha) }}</p>
+        <p>
+          @if (diasDesdeUltimo() === 0) {
+            Hoy.
+          } @else {
+            Hace {{ diasDesdeUltimo() }} {{ diasDesdeUltimo() === 1 ? 'día' : 'días' }}.
+          }
+          @if (hayQueRespaldar()) {
+            Conviene hacer una copia al menos una vez por semana.
+          }
+        </p>
+      } @else {
+        <p class="dato-grande">Ninguna</p>
+        <p>Todavía no hay copias. Creá la primera ahora.</p>
+      }
+      <label class="btn btn-secundario btn-subir" [class.deshabilitado]="subiendo()">
+        {{ subiendo() ? 'Subiendo…' : '⬆ Subir una copia (.zip)' }}
+        <input type="file" accept=".zip,application/zip" (change)="subir($event)" [disabled]="subiendo()" hidden />
+      </label>
+    </div>
+  </section>
+
+  @if (cargando()) {
+    <div class="estado"><div class="spinner"></div><p>Cargando copias…</p></div>
+  } @else if (error()) {
+    <div class="estado estado--error">{{ error() }}</div>
+  } @else {
+    <section class="tabla">
+      <div class="fila fila--cabecera">
+        <span>Fecha</span>
+        <span>Tipo</span>
+        <span>Contenido</span>
+        <span>Creada por</span>
+        <span class="col-acciones">Acciones</span>
+      </div>
+      @for (r of respaldosPagina(); track r.id) {
+        <div class="fila">
+          <span>
+            <strong>{{ fecha(r.fecha) }}</strong>
+            @if (r.nota) {
+              <small class="nota">{{ r.nota }}</small>
+            }
+            @if (r.ultima_restauracion) {
+              <small class="restaurada">Restaurada el {{ fecha(r.ultima_restauracion) }}</small>
+            }
+          </span>
+          <span><span class="chip-tipo" [attr.data-tipo]="r.tipo">{{ etiquetaTipo[r.tipo] }}</span></span>
+          <span class="contenido">
+            {{ r.tablas }} tablas · {{ numero(r.filas) }} filas · {{ tamanioLegible(r.tamanio_bytes) }}
+            @if (!r.disponible) {
+              <small class="no-disponible">El archivo ya no está en el servidor</small>
+            }
+          </span>
+          <span class="creador" [title]="r.creado_por ?? ''">{{ r.creado_por ?? '—' }}</span>
+          <span class="col-acciones">
+            @if (eliminandoId() === r.id) {
+              <span class="confirmar-eliminar">
+                ¿Eliminar?
+                <button type="button" class="btn btn-peligro btn-chico" (click)="confirmarEliminar(r)">Sí</button>
+                <button type="button" class="btn btn-secundario btn-chico" (click)="eliminandoId.set(null)">No</button>
+              </span>
+            } @else {
+              <button
+                type="button"
+                class="btn btn-secundario btn-chico"
+                [disabled]="!r.disponible || descargandoId() === r.id"
+                (click)="descargar(r)"
+              >
+                {{ descargandoId() === r.id ? '…' : '⬇ Descargar' }}
+              </button>
+              <button type="button" class="btn btn-alerta btn-chico" [disabled]="!r.disponible" (click)="abrirRestauracion(r)">
+                ↺ Restaurar…
+              </button>
+              <button type="button" class="btn btn-icono" title="Eliminar copia" (click)="eliminandoId.set(r.id)">🗑</button>
+            }
+          </span>
+        </div>
+      } @empty {
+        <p class="vacio">Todavía no hay copias de seguridad.</p>
+      }
+    </section>
+    @if (respaldos().length > 0) {
+      <div class="paginacion">
+        <app-paginador
+          [total]="respaldos().length"
+          [(pagina)]="pagina"
+          [(tamanio)]="tamanio"
+          [opcionesTamanio]="[10, 25, 50]"
+          etiqueta="copias"
+        />
+      </div>
+    }
+  }
+</div>
+
+@if (restaurando(); as r) {
+  <div class="modal-fondo">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-restaurar">
+      @if (r.resultado; as res) {
+        <div class="modal-icono-ok">✓</div>
+        <h2 id="titulo-restaurar">{{ res.simulacro ? 'La copia está bien' : 'Plataforma restaurada' }}</h2>
+        <p class="modal-sub">{{ res.mensaje }}</p>
+        @if (res.vaciadas_extra.length > 0) {
+          <p class="banner banner-info">
+            Estas tablas no estaban en la copia y quedaron vacías: {{ res.vaciadas_extra.join(', ') }}.
+          </p>
+        }
+        @if (!res.simulacro) {
+          @if (res.respaldo_previo) {
+            <p class="banner banner-info">
+              Antes de restaurar se guardó una copia automática ({{ fecha(res.respaldo_previo.fecha) }}). Si necesitás
+              volver atrás, restaurá esa.
+            </p>
+          }
+          <p class="banner banner-aviso">Si algo no se ve bien, cerrá sesión y volvé a entrar.</p>
+        }
+        <div class="modal-acciones">
+          <button type="button" class="btn btn-primario" (click)="cerrarRestauracion()">Listo</button>
+        </div>
+      } @else {
+        <h2 id="titulo-restaurar">Restaurar la copia del {{ fecha(r.respaldo.fecha) }}</h2>
+        <div class="advertencia">
+          <strong>⚠ Esto reemplaza los datos de TODA la plataforma</strong>
+          <ul>
+            <li>Todas las universidades, empresas, egresados, vacantes y postulaciones vuelven a como estaban en la copia.</li>
+            <li>Lo que se haya cargado después se pierde. La bitácora no: sus entradas se conservan.</li>
+            <li>Antes de restaurar se guarda una copia automática para poder volver atrás.</li>
+          </ul>
+        </div>
+        <p class="modal-sub">
+          ¿No estás seguro? Usá <strong>Verificar sin cambiar nada</strong>: hace la restauración completa de prueba y la
+          deshace al final.
+        </p>
+        @if (r.error) {
+          <p class="banner banner-error" role="alert">{{ r.error }}</p>
+        }
+        <label class="campo">
+          <span>Tu contraseña</span>
+          <input
+            type="password"
+            autocomplete="current-password"
+            [ngModel]="r.password"
+            (ngModelChange)="actualizar('password', $event)"
+            [disabled]="r.procesando !== 'no'"
+          />
+        </label>
+        <label class="campo">
+          <span>Para restaurar, escribí <strong>{{ palabraConfirmacion }}</strong></span>
+          <input
+            type="text"
+            autocomplete="off"
+            [ngModel]="r.confirmacion"
+            (ngModelChange)="actualizar('confirmacion', $event)"
+            [disabled]="r.procesando !== 'no'"
+          />
+        </label>
+        @if (r.procesando !== 'no') {
+          <p class="progreso">
+            <span class="spinner spinner--chico"></span>
+            {{ r.procesando === 'simulacro' ? 'Verificando la copia…' : 'Restaurando… no cierres esta ventana (puede tardar un minuto).' }}
+          </p>
+        }
+        <div class="modal-acciones">
+          <button type="button" class="btn btn-secundario" [disabled]="r.procesando !== 'no'" (click)="cerrarRestauracion()">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-secundario" [disabled]="r.procesando !== 'no'" (click)="ejecutar(true)">
+            Verificar sin cambiar nada
+          </button>
+          <button
+            type="button"
+            class="btn btn-peligro"
+            [disabled]="r.procesando !== 'no' || !puedeRestaurar(r)"
+            (click)="ejecutar(false)"
+          >
+            Restaurar
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

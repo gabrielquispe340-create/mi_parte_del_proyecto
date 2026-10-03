@@ -132,7 +132,7 @@ class _VacantesScreenState extends State<VacantesScreen> {
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Text(
-                        '${vacante.companyName} · ${vacante.city}\n${vacante.workModality} · ${vacante.employmentType}',
+                        '${vacante.companyName} · ${vacante.city}\n${vacante.modalidadLegible} · ${vacante.jornadaLegible}',
                       ),
                     ),
                     isThreeLine: true,

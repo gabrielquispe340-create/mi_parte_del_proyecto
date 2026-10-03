@@ -6,10 +6,12 @@ from app.features.catalogo.schema import (
     CategoriaOfertaResponse,
     CiudadResponse,
     HabilidadResponse,
+    InstitucionResponse,
 )
 from app.models.candidato import CandidateProfile
 from app.models.catalogo import FieldOfStudy, JobCategory, Skill
 from app.models.empresa import Company
+from app.models.institucion import Institution
 
 
 class CatalogoService:
@@ -34,6 +36,16 @@ class CatalogoService:
             select(JobCategory).where(JobCategory.is_active.is_(True)).order_by(JobCategory.name)
         ).all()
         return [CategoriaOfertaResponse(id=r.id, nombre=r.name) for r in registros]
+
+    def listar_instituciones(self) -> list[InstitucionResponse]:
+        """Universidades cliente del SaaS (tenants), para registro de egresados y empresas."""
+        registros = self.db.scalars(
+            select(Institution).where(Institution.is_tenant.is_(True)).order_by(Institution.name)
+        ).all()
+        return [
+            InstitucionResponse(id=r.id, nombre=r.name, sigla=r.slug.upper() if r.slug else None, ciudad=r.city)
+            for r in registros
+        ]
 
     def listar_ciudades(self) -> list[CiudadResponse]:
         stmt = select(distinct(CandidateProfile.city)).where(CandidateProfile.city.is_not(None))

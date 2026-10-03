@@ -7,6 +7,10 @@ import {
   CandidatoPipelineItem,
   ConfigurarEtapasRequest,
   DescartarCandidatoRequest,
+  Entrevista,
+  EntrevistaCrear,
+  EntrevistaReprogramar,
+  EntrevistaRevisar,
   EtapaResponse,
   FiltrosPoolPostulantes,
   NotaInternaRequest,
@@ -21,7 +25,6 @@ import {
 export class SeleccionService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/seleccion`;
-
 
   listarVacantes(): Observable<VacanteResumenSeleccion[]> {
     return this.http.get<VacanteResumenSeleccion[]>(`${this.base}/vacantes`);
@@ -76,5 +79,26 @@ export class SeleccionService {
 
   compararCandidatos(idVacante: string, data: CompararCandidatosRequest): Observable<CandidatoComparacionResponse[]> {
     return this.http.post<CandidatoComparacionResponse[]>(`${this.base}/vacantes/${idVacante}/comparar`, data);
+  }
+
+  listarEntrevistas(idPostulacion: string): Observable<Entrevista[]> {
+    return this.http.get<Entrevista[]>(`${this.base}/postulaciones/${idPostulacion}/entrevistas`);
+  }
+
+  proponerEntrevista(idPostulacion: string, data: EntrevistaCrear): Observable<Entrevista> {
+    return this.http.post<Entrevista>(`${this.base}/postulaciones/${idPostulacion}/entrevistas`, data);
+  }
+
+  reprogramarEntrevista(idEntrevista: string, data: EntrevistaReprogramar): Observable<Entrevista> {
+    return this.http.put<Entrevista>(`${this.base}/entrevistas/${idEntrevista}/reprogramar`, data);
+  }
+
+  cancelarEntrevista(idEntrevista: string): Observable<Entrevista> {
+    return this.http.post<Entrevista>(`${this.base}/entrevistas/${idEntrevista}/cancelar`, {});
+  }
+
+  revisarEntrevista(idEntrevista: string, data: EntrevistaRevisar | boolean = true): Observable<Entrevista> {
+    const payload = typeof data === 'boolean' ? { aprobado: data } : data;
+    return this.http.post<Entrevista>(`${this.base}/entrevistas/${idEntrevista}/revisar`, payload);
   }
 }

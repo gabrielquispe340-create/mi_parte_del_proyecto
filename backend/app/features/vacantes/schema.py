@@ -348,7 +348,21 @@ class VacanteResumenResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CriterioAfinidadResponse(BaseModel):
+    """Por qué la afinidad da lo que da: un criterio de la HU-23 y cuánto lo cumple el egresado."""
+
+    clave: str  # carrera | habilidades | experiencia | idiomas
+    nombre: str
+    peso: int
+    cumplimiento: int  # 0-100
+    estado: str  # cumple | parcial | no_cumple
+    detalle: str
+    coincidencias: list[str] = []
+    faltantes: list[str] = []
+
+
 class VacanteDetalleBusquedaResponse(VacanteResumenResponse):
+    afinidad_criterios: list[CriterioAfinidadResponse] | None = None
     responsibilities: list[str] = []
     requirements: list[str] = []
     benefits: list[str] = []
@@ -384,3 +398,11 @@ class VacantesBuscadasResponse(BaseModel):
     limit: int
     offset: int
     items: list[VacanteResumenResponse]
+
+
+class EstadisticasPublicasResponse(BaseModel):
+    """Estadísticas agregadas de acceso público para visitantes (HU-34)."""
+
+    total_vacantes_activas: int
+    total_empresas_registradas: int
+    fecha_actualizacion: datetime

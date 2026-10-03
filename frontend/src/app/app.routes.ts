@@ -1,10 +1,11 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { passwordPendienteGuard } from './core/guards/password-pendiente.guard';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'auth/login',
+    redirectTo: 'vacantes',
     pathMatch: 'full',
   },
   {
@@ -38,12 +39,35 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'registro-universidad',
+    redirectTo: 'auth/registro-universidad',
+    pathMatch: 'full',
+  },
+  {
+    path: 'auth/registro-universidad',
+    loadComponent: () =>
+      import('./features/auth/registro-universidad/registro-universidad').then((m) => m.RegistroUniversidad),
+  },
+  {
+    path: 'cuenta/contrasena',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auth/cambiar-password/cambiar-password').then((m) => m.CambiarPassword),
+  },
+  {
     path: 'admin',
+    canActivate: [passwordPendienteGuard],
+    canActivateChild: [passwordPendienteGuard],
     loadComponent: () => import('./features/admin/layout/admin-layout').then((m) => m.AdminLayout),
     children: [
       {
         path: '',
         loadComponent: () => import('./features/admin/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
+        path: 'universidades',
+        loadComponent: () =>
+          import('./features/admin/universidades/universidades.component').then((m) => m.UniversidadesComponent),
       },
       {
         path: 'roles',
@@ -72,6 +96,10 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'respaldos',
+        loadComponent: () => import('./features/admin/respaldos/respaldos.component').then((m) => m.RespaldosComponent),
+      },
+      {
         path: 'bitacora',
         loadComponent: () => import('./features/admin/bitacora/bitacora.component').then((m) => m.BitacoraComponent),
       },
@@ -79,6 +107,7 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    canActivate: [passwordPendienteGuard],
     loadComponent: () => import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
@@ -89,6 +118,13 @@ export const routes: Routes = [
       import('./features/postulaciones/mis-postulaciones/mis-postulaciones.component').then(
         (m) => m.MisPostulacionesComponent,
       ),
+  },
+  {
+    path: 'recomendaciones',
+    canActivate: [authGuard],
+    data: { roles: ['candidate'] },
+    loadComponent: () =>
+      import('./features/ia/recomendaciones/recomendaciones.component').then((m) => m.RecomendacionesComponent),
   },
   {
     path: 'seleccion',
@@ -140,8 +176,6 @@ export const routes: Routes = [
   },
   {
     path: 'vacantes/:id',
-    canActivate: [authGuard],
-    data: { roles: ['EGRESADO', 'ESTUDIANTE', 'EMPRESA', 'ADMINISTRADOR'] },
     loadComponent: () =>
       import('./features/vacantes/vacante-detalle/vacante-detalle.component').then(
         (m) => m.VacanteDetalleComponent,

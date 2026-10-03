@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
+  EstadisticasPublicas,
   FiltrosBusquedaVacantes,
   FiltrosDisponibles,
   VacanteDetalle,
@@ -21,14 +22,20 @@ import { PostulacionModalComponent } from '../../../shared/components/postulacio
 })
 export class BusquedaVacantesComponent implements OnInit {
   private readonly vacanteService = inject(VacanteService);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
   readonly auth = inject(AuthService);
 
+  // Estadísticas públicas agregadas (HU-34)
+  readonly stats = signal<EstadisticasPublicas | null>(null);
+  readonly isLoadingStats = signal(false);
+
   // Estados de datos
-  vacantes: VacanteResumen[] = [];
+  readonly vacantes = signal<VacanteResumen[]>([]);
   filtrosDisponibles: FiltrosDisponibles | null = null;
-  totalVacantes = 0;
-  isLoading = false;
-  errorMessage: string | null = null;
+  readonly totalVacantes = signal(0);
+  readonly isLoading = signal(false);
+  readonly errorMessage = signal<string | null>(null);
 
   // Filtros aplicados
   filtroTexto = '';
@@ -44,7 +51,7 @@ export class BusquedaVacantesComponent implements OnInit {
 
   // Modal de detalle de vacante
   vacanteSeleccionada: VacanteDetalle | null = null;
-  isLoadingDetalle = false;
+  readonly isLoadingDetalle = signal(false);
   showModalDetalle = false;
 
   // Postulación feedback
@@ -52,8 +59,27 @@ export class BusquedaVacantesComponent implements OnInit {
   mostrarModalPostulacion = false;
 
   ngOnInit(): void {
+    // Las estadísticas son de toda la plataforma; el egresado solo ve las vacantes de su
+    // universidad, así que para él la franja mostraría un total que no coincide con su listado.
+    if (this.auth.rol() !== 'candidate') {
+      this.cargarEstadisticas();
+    }
     this.cargarFiltrosDisponibles();
     this.ejecutarBusqueda();
+  }
+
+  cargarEstadisticas(): void {
+    this.isLoadingStats.set(true);
+    this.vacanteService.obtenerEstadisticasPublicas().subscribe({
+      next: (data) => {
+        this.stats.set(data);
+        this.isLoadingStats.set(false);
+      },
+      error: (err) => {
+        console.error('Error al cargar estadísticas públicas', err);
+        this.isLoadingStats.set(false);
+      },
+    });
   }
 
   cargarFiltrosDisponibles(): void {
@@ -68,8 +94,9 @@ export class BusquedaVacantesComponent implements OnInit {
   }
 
   ejecutarBusqueda(): void {
-    this.isLoading = true;
-    this.errorMessage = null;
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+    this.cdr.markForCheck();
 
     const filtros: FiltrosBusquedaVacantes = {
       q: this.filtroTexto,
@@ -88,13 +115,15 @@ export class BusquedaVacantesComponent implements OnInit {
 
     this.vacanteService.buscarVacantes(filtros).subscribe({
       next: (resp) => {
-        this.vacantes = resp.items;
-        this.totalVacantes = resp.total;
-        this.isLoading = false;
+        this.vacantes.set(resp.items);
+        this.totalVacantes.set(resp.total);
+        this.isLoading.set(false);
+        this.cdr.markForCheck();
       },
-      error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = 'No se pudieron cargar las ofertas de empleo. Intenta nuevamente.';
+      error: () => {
+        this.isLoading.set(false);
+        this.errorMessage.set('No se pudieron cargar las ofertas de empleo. Intenta nuevamente.');
+        this.cdr.markForCheck();
       },
     });
   }
@@ -123,26 +152,48 @@ export class BusquedaVacantesComponent implements OnInit {
       this.filtroCategoriaId ||
       this.filtroSeniority ||
       this.filtroSalarioMin !== null ||
-      this.filtroSalarioMax !== null
+      this.filtroSalarioMax !== null,
     );
   }
 
   verDetalle(vacanteId: string): void {
-    this.isLoadingDetalle = true;
+    this.isLoadingDetalle.set(true);
     this.showModalDetalle = true;
     this.vacanteSeleccionada = null;
+    this.cdr.markForCheck();
 
     this.vacanteService.obtenerDetalle(vacanteId).subscribe({
       next: (detalle) => {
         this.vacanteSeleccionada = detalle;
-        this.isLoadingDetalle = false;
+        this.isLoadingDetalle.set(false);
+        this.cdr.markForCheck();
       },
       error: () => {
-        this.isLoadingDetalle = false;
+        this.isLoadingDetalle.set(false);
+        this.cdr.markForCheck();
         this.mostrarToast('No se pudo cargar el detalle de la vacante.', true);
         this.cerrarModalDetalle();
       },
     });
+  }
+
+  get estaAutenticado(): boolean {
+    const token = this.auth.token();
+    if (!token) return false;
+    try {
+      // Decodificar el payload del JWT (parte central entre los dos puntos)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const ahora = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < ahora) {
+        // Token expirado: limpiar sesión y devolver false
+        this.auth.cerrarSesion();
+        return false;
+      }
+      return true;
+    } catch {
+      // Token malformado: tratar como no autenticado
+      return false;
+    }
   }
 
   cerrarModalDetalle(): void {
@@ -150,9 +201,16 @@ export class BusquedaVacantesComponent implements OnInit {
     this.vacanteSeleccionada = null;
   }
 
+  irARegistro(vacanteId?: string): void {
+    const id = vacanteId || this.vacanteSeleccionada?.id;
+    const returnUrl = id ? `/vacantes/${id}` : '/vacantes';
+    this.cerrarModalDetalle();
+    void this.router.navigate(['/auth/registro'], { queryParams: { returnUrl } });
+  }
+
   postularse(): void {
-    if (!this.auth.estaAutenticado()) {
-      this.mostrarToast('Debes iniciar sesión como egresado para postularte.', true);
+    if (!this.estaAutenticado) {
+      this.irARegistro(this.vacanteSeleccionada?.id);
       return;
     }
     this.mostrarModalPostulacion = true;
@@ -191,8 +249,13 @@ export class BusquedaVacantesComponent implements OnInit {
         return 'Medio Tiempo';
       case 'internship':
         return 'Pasantía';
+      case 'temporary':
+        return 'Temporal';
+      case 'contract':
       case 'contractor':
         return 'Por Contrato';
+      case 'freelance':
+        return 'Freelance / Consultoría';
       default:
         return jornada;
     }
@@ -224,4 +287,3 @@ export class BusquedaVacantesComponent implements OnInit {
     }, 4000);
   }
 }
-

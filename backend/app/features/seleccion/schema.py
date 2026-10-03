@@ -54,6 +54,7 @@ class CandidatoPipelineItem(BaseModel):
     candidato_email: str | None = None
     candidato_telefono: str | None = None
     candidato_ciudad: str | None = None
+    candidato_universidad: str | None = None
     candidato_carrera_id: uuid.UUID | None = None
     candidato_afinidad: int | None = None
     estado: str

@@ -152,6 +152,33 @@
     font-size: 0.68rem;
     color: rgba(255, 255, 255, 0.55);
   }
+
+  .institucion {
+    font-size: 0.68rem;
+    color: #fbbf24;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.btn-cuenta {
+  display: block;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+  }
 }
 
 .btn-salir {

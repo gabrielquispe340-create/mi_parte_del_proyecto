@@ -14,7 +14,15 @@ from app.models.candidato import (
 )
 from app.models.catalogo import FieldOfStudy, JobCategory, Language, Skill
 from app.models.empresa import Company, CompanyMember, CompanyVerification, Sector
+from app.models.institucion import (
+    CompanyInstitution,
+    Institution,
+    PlanPayment,
+    SaasPlan,
+    UniversitySignupRequest,
+)
 from app.models.notificacion import Notification
+from app.models.respaldo import SystemBackup
 from app.models.seguridad import AuditLog, LoginAttempt
 from app.models.usuario import AppUser, Role, UserRole
 from app.models.vacante import (
@@ -31,6 +39,7 @@ from app.models.vacante import (
     SkillProficiencyLevel,
     WorkModality,
 )
+from app.models.entrevista import Interview
 from app.models.postulacion import (
     Application,
     ApplicationAnswer,
@@ -42,6 +51,7 @@ from app.models.postulacion import (
 __all__ = [
     "AppUser",
     "Application",
+    "Interview",
     "ApplicationAnswer",
     "ApplicationNote",
     "ApplicationStageHistory",
@@ -53,10 +63,12 @@ __all__ = [
     "CandidateSkill",
     "Certification",
     "Company",
+    "CompanyInstitution",
     "CompanyMember",
     "CompanyVerification",
     "EmploymentType",
     "FieldOfStudy",
+    "Institution",
     "JobCategory",
     "JobEducationPreference",
     "JobLanguageRequirement",
@@ -67,13 +79,17 @@ __all__ = [
     "Language",
     "LoginAttempt",
     "Notification",
+    "PlanPayment",
     "Role",
+    "SaasPlan",
     "ScreeningOption",
     "ScreeningQuestion",
     "Sector",
     "SeniorityLevel",
     "Skill",
     "SkillProficiencyLevel",
+    "SystemBackup",
+    "UniversitySignupRequest",
     "UserRole",
     "WorkExperience",
     "WorkModality",

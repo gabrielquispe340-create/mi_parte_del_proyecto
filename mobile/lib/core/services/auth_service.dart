@@ -48,4 +48,34 @@ class AuthService {
         : 'Correo o contraseña incorrectos.';
     throw AuthException(mensaje);
   }
+
+  /// POST /auth/cambiar-password: cambia la contraseña del usuario autenticado.
+  /// El backend devuelve tokens nuevos, que reemplazan a los de la sesión actual.
+  Future<Sesion> cambiarPassword(String accessToken, String passwordActual, String passwordNueva) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/auth/cambiar-password');
+
+    late final http.Response respuesta;
+    try {
+      respuesta = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $accessToken'},
+            body: jsonEncode({'password_actual': passwordActual, 'password_nueva': passwordNueva}),
+          )
+          .timeout(const Duration(seconds: 15));
+    } catch (_) {
+      throw const AuthException(
+        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+      );
+    }
+
+    final cuerpo = jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>;
+
+    if (respuesta.statusCode == 200) {
+      return Sesion.fromJson(cuerpo);
+    }
+
+    final detalle = cuerpo['detail'];
+    throw AuthException(detalle is String ? detalle : 'No se pudo cambiar la contraseña.');
+  }
 }

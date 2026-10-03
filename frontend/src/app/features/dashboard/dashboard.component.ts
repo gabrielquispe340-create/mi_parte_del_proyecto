@@ -8,6 +8,14 @@ import { environment } from '../../../environments/environment';
 import { PostulacionService, PostulacionListResponse } from '../../core/services/postulacion.service';
 import { SeleccionService } from '../seleccion/seleccion.service';
 
+interface InstitucionEmpresa {
+  id: string;
+  nombre: string;
+  sigla: string | null;
+  estado: 'pending' | 'approved' | 'rejected' | 'suspended' | null;
+  motivo_rechazo: string | null;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -32,6 +40,15 @@ export class DashboardComponent implements OnInit {
   vacantesEnRevision = 0;
   postulantesRecibidos = 0;
   postulantesEnProceso = 0;
+
+  institucionesEmpresa = signal<InstitucionEmpresa[]>([]);
+  solicitando = signal<string | null>(null);
+  readonly etiquetaEstado: Record<string, string> = {
+    pending: 'Pendiente',
+    approved: 'Aprobada',
+    rejected: 'Rechazada',
+    suspended: 'Suspendida',
+  };
 
   perfilPorcentaje = signal<number>(0);
   postulaciones = signal<PostulacionListResponse[]>([]);
@@ -61,6 +78,9 @@ export class DashboardComponent implements OnInit {
         },
         error: () => console.error('Error cargando metricas de seleccion en dashboard'),
       });
+      this.http.get<InstitucionEmpresa[]>(`${environment.apiUrl}/instituciones/empresa`).subscribe({
+        next: (data) => this.institucionesEmpresa.set(data),
+      });
     }
 
     if (this.isEgresado()) {
@@ -74,5 +94,18 @@ export class DashboardComponent implements OnInit {
         error: () => console.error('Error cargando postulaciones en dashboard'),
       });
     }
+  }
+
+  solicitarAcceso(institucionId: string): void {
+    this.solicitando.set(institucionId);
+    this.http
+      .post<InstitucionEmpresa>(`${environment.apiUrl}/instituciones/empresa/${institucionId}/solicitar`, {})
+      .subscribe({
+        next: (actualizada) => {
+          this.institucionesEmpresa.update((lista) => lista.map((u) => (u.id === actualizada.id ? actualizada : u)));
+          this.solicitando.set(null);
+        },
+        error: () => this.solicitando.set(null),
+      });
   }
 }

@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, shareReplay, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  EstadisticasPublicas,
   FiltrosBusquedaVacantes,
   FiltrosDisponibles,
   JobStatus,
@@ -283,6 +284,19 @@ export class VacanteService {
     return this.http
       .delete<{ mensaje: string }>(`${this.apiUrl}/${vacanteId}/preguntas/${preguntaId}`, { headers: this._headers() })
       .pipe(catchError((error: HttpErrorResponse) => this._handleError(error, 'Error al eliminar la pregunta de filtro')));
+  }
+
+  // ─── Estadísticas públicas — HU-34 ──────────────────────────────────────
+
+  /** Obtiene las estadísticas agregadas públicas cacheadas (HU-34). */
+  obtenerEstadisticasPublicas(): Observable<EstadisticasPublicas> {
+    return this.http
+      .get<EstadisticasPublicas>(`${this.apiUrl}/estadisticas-publicas`)
+      .pipe(
+        catchError((error: HttpErrorResponse) =>
+          this._handleError(error, 'Error al obtener las estadísticas públicas')
+        )
+      );
   }
 
   // ─── Utilidades Privadas ────────────────────────────────────────────────

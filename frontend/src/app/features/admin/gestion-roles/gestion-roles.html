@@ -6,6 +6,7 @@
       responsable y surte efecto cuando el usuario vuelve a iniciar sesión.
     </p>
   </div>
+  <button type="button" class="btn-nuevo" (click)="abrirNuevo()">+ Nuevo usuario</button>
 </header>
 
 <section class="tarjeta">
@@ -23,7 +24,7 @@
         type="text"
         placeholder="Buscar por correo o rol…"
         [ngModel]="busqueda()"
-        (ngModelChange)="busqueda.set($event)"
+        (ngModelChange)="buscar($event)"
       />
     </div>
     <button type="button" class="btn-refrescar" (click)="cargar()" [disabled]="cargando()">
@@ -43,41 +44,161 @@
   }
 
   <ul class="lista-usuarios">
-    @for (usuario of filtrados(); track usuario.id) {
+    @for (usuario of usuariosPagina(); track usuario.id) {
       <li class="usuario-fila">
         <div class="usuario-datos">
           <span class="correo" [title]="usuario.correo">{{ usuario.correo }}</span>
           <span class="estado" [class.inactivo]="usuario.estado !== 'activo'">{{ usuario.estado }}</span>
+          <span class="institucion">
+            {{ usuario.institucion || (usuario.es_miembro_empresa ? 'Empresa (todas las universidades)' : 'Plataforma global') }}
+          </span>
         </div>
 
-        <span class="rol-chip">{{ rolPrincipal(usuario) }}</span>
+        <span class="rol-chip" [class.rol-chip--empresa]="usuario.es_miembro_empresa" [title]="rolPrincipal(usuario)">
+          {{ rolPrincipal(usuario) }}
+        </span>
 
-        <select
-          class="selector-rol"
-          [ngModel]="rolActual(usuario)"
-          (ngModelChange)="seleccionarRol(usuario.id, $event)"
-          [disabled]="guardandoId() === usuario.id"
-        >
-          <option value="" disabled>Sin rol</option>
-          @for (rol of rolesAsignables(); track rol.id) {
-            <option [value]="rol.nombre">{{ etiquetasRol[rol.nombre] ?? rol.nombre }}</option>
-          }
-        </select>
+        @if (usuario.es_miembro_empresa) {
+          <!-- Cambiarle el rol a una cuenta de empresa le cortaría el acceso a su empresa. -->
+          <span class="nota-empresa">
+            Se gestiona en <a routerLink="/admin/empresas">Gestión de empresas</a>
+          </span>
+        } @else {
+          <select
+            class="selector-rol"
+            [ngModel]="rolActual(usuario)"
+            (ngModelChange)="seleccionarRol(usuario.id, $event)"
+            [disabled]="guardandoId() === usuario.id"
+          >
+            <option value="" disabled>Sin rol</option>
+            @for (rol of rolesAsignables(); track rol.id) {
+              <option [value]="rol.nombre">{{ etiquetasRol[rol.nombre] ?? rol.nombre }}</option>
+            }
+          </select>
 
-        <button
-          type="button"
-          class="btn-guardar"
-          [disabled]="!cambioPendiente(usuario) || guardandoId() === usuario.id"
-          (click)="guardar(usuario)"
-        >
-          {{ guardandoId() === usuario.id ? 'Guardando…' : 'Guardar' }}
-        </button>
+          <button
+            type="button"
+            class="btn-guardar"
+            [disabled]="!cambioPendiente(usuario) || guardandoId() === usuario.id"
+            (click)="guardar(usuario)"
+          >
+            {{ guardandoId() === usuario.id ? 'Guardando…' : 'Guardar' }}
+          </button>
+        }
       </li>
     }
   </ul>
+
+  <div class="paginacion">
+    <app-paginador [total]="filtrados().length" [(pagina)]="pagina" [(tamanio)]="tamanio" etiqueta="usuarios" />
+  </div>
 </section>
 
 <footer class="nota-pie">
   Los permisos viajan dentro del token JWT: tras un cambio, el usuario debe volver a
   iniciar sesión para que surtan efecto.
 </footer>
+
+@if (modalAbierto()) {
+  <div class="modal-fondo">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-nuevo-usuario">
+      @if (credenciales(); as c) {
+        <!-- Paso 2: usuario creado, mostrar credenciales una sola vez -->
+        <div class="modal-icono modal-icono--ok">✓</div>
+        <h2 id="titulo-nuevo-usuario">Usuario creado</h2>
+        <p class="modal-sub">
+          Pasale estos datos a la persona. <strong>La contraseña no se vuelve a mostrar.</strong>
+        </p>
+
+        <dl class="credenciales">
+          <div><dt>Rol</dt><dd>{{ c.rol }}{{ c.institucion ? ' · ' + c.institucion : '' }}</dd></div>
+          <div><dt>Correo</dt><dd>{{ c.correo }}</dd></div>
+          <div><dt>Contraseña</dt><dd class="password">{{ c.password }}</dd></div>
+        </dl>
+
+        @if (estadoCopia() === 'ok') {
+          <p class="banner banner-ok">Credenciales copiadas al portapapeles.</p>
+        } @else if (estadoCopia() === 'error') {
+          <p class="banner banner-error">No se pudo copiar automáticamente: seleccioná los datos y copialos a mano.</p>
+        }
+
+        <div class="modal-acciones">
+          <button type="button" class="btn-refrescar" (click)="copiarCredenciales()">📋 Copiar credenciales</button>
+          <button type="button" class="btn-guardar" (click)="cerrarNuevo()">Listo</button>
+        </div>
+      } @else {
+        <!-- Paso 1: formulario -->
+        <h2 id="titulo-nuevo-usuario">Nuevo usuario institucional</h2>
+        <p class="modal-sub">
+          @if (esSuperadmin()) {
+            Creá el administrador o un moderador de una universidad cliente.
+          } @else {
+            Creá un moderador para {{ auth.institucion() }}.
+          }
+          Los egresados y las empresas se registran solos desde la página de inicio.
+        </p>
+
+        @if (errorNuevo()) {
+          <p class="banner banner-error" role="alert">{{ errorNuevo() }}</p>
+        }
+
+        <form class="formulario" (ngSubmit)="crearUsuario()">
+          <label>
+            <span>Correo</span>
+            <input
+              type="email"
+              name="correo"
+              placeholder="nombre@universidad.edu.bo"
+              [(ngModel)]="nuevo.correo"
+              autocomplete="off"
+              required
+            />
+          </label>
+
+          @if (esSuperadmin()) {
+            <label>
+              <span>Rol</span>
+              <select name="rol" [(ngModel)]="nuevo.rol">
+                <option value="platform_admin">Administrador universitario</option>
+                <option value="moderator">Moderador</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Universidad</span>
+              <select name="institucion" [(ngModel)]="nuevo.institucion_id" required>
+                <option [ngValue]="null" disabled>Elegí una universidad…</option>
+                @for (u of universidades(); track u.id) {
+                  <option [ngValue]="u.id">{{ u.nombre }}{{ u.sigla ? ' (' + u.sigla + ')' : '' }}</option>
+                }
+              </select>
+            </label>
+          } @else {
+            <div class="dato-fijo">
+              <span>Rol y universidad</span>
+              <strong>Moderador · {{ auth.institucion() }}</strong>
+            </div>
+          }
+
+          <label>
+            <span>Contraseña inicial</span>
+            <div class="campo-password">
+              <input type="text" name="password" [(ngModel)]="nuevo.password" minlength="8" autocomplete="off" required />
+              <button type="button" class="btn-refrescar" (click)="regenerarPassword()" title="Generar otra contraseña">
+                ↻ Generar
+              </button>
+            </div>
+            <small>Generada automáticamente; podés cambiarla. Mínimo 8 caracteres.</small>
+          </label>
+
+          <div class="modal-acciones">
+            <button type="button" class="btn-refrescar" (click)="cerrarNuevo()" [disabled]="creando()">Cancelar</button>
+            <button type="submit" class="btn-guardar" [disabled]="creando()">
+              {{ creando() ? 'Creando…' : 'Crear usuario' }}
+            </button>
+          </div>
+        </form>
+      }
+    </div>
+  </div>
+}
