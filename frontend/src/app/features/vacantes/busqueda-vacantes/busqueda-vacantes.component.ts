@@ -59,7 +59,11 @@ export class BusquedaVacantesComponent implements OnInit {
   mostrarModalPostulacion = false;
 
   ngOnInit(): void {
-    this.cargarEstadisticas();
+    // Las estadísticas son de toda la plataforma; el egresado solo ve las vacantes de su
+    // universidad, así que para él la franja mostraría un total que no coincide con su listado.
+    if (this.auth.rol() !== 'candidate') {
+      this.cargarEstadisticas();
+    }
     this.cargarFiltrosDisponibles();
     this.ejecutarBusqueda();
   }

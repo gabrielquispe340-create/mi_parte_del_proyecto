@@ -35,6 +35,11 @@ def empresa_vinculada_a(institution_id: uuid.UUID, estados: tuple[str, ...] = ("
     )
 
 
+def empresa_no_suspendida():
+    """Condición: la empresa de la vacante no está dada de baja (la baja lógica es account_status='suspended')."""
+    return JobPosting.company.has(Company.account_status != "suspended")
+
+
 class VacanteRepository:
     """Acceso a datos y persistencia para ofertas laborales y habilidades asociadas."""
 
@@ -267,7 +272,7 @@ class VacanteRepository:
         institution_id: uuid.UUID | None = None,
     ) -> tuple[list[JobPosting], int]:
         """Busca vacantes publicadas aplicando filtros combinados y paginación por límite/desplazamiento."""
-        stmt = select(JobPosting).where(JobPosting.status == JobStatus.PUBLISHED.value)
+        stmt = select(JobPosting).where(JobPosting.status == JobStatus.PUBLISHED.value, empresa_no_suspendida())
 
         if institution_id is not None:
             stmt = stmt.where(empresa_vinculada_a(institution_id))
@@ -338,7 +343,7 @@ class VacanteRepository:
         self, vacante_id: uuid.UUID, institution_id: uuid.UUID | None = None
     ) -> JobPosting | None:
         """Obtiene una vacante con las relaciones necesarias para calcular afinidad (skills + carreras)."""
-        stmt = select(JobPosting).where(JobPosting.id == vacante_id)
+        stmt = select(JobPosting).where(JobPosting.id == vacante_id, empresa_no_suspendida())
         if institution_id is not None:
             stmt = stmt.where(empresa_vinculada_a(institution_id))
         stmt = stmt.options(
