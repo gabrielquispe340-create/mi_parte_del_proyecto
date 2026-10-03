@@ -176,6 +176,45 @@ def test_cp04_visitante_no_ve_contacto_empresa_en_detalle(setup_datos_hu34):
     assert data.get("company_address") is None
 
 
+def test_vacante_de_empresa_dada_de_baja_no_es_publica(db_session: Session):
+    """Las vacantes de una empresa dada de baja (suspended) no salen en el listado ni en el detalle,
+    igual que las estadísticas públicas, que tampoco las cuentan."""
+    titulo = f"Vacante de empresa dada de baja {uuid.uuid4().hex[:8]}"
+    empresa_user = AppUser(
+        email=f"baja_hu34_{uuid.uuid4().hex[:6]}@test.bo",
+        password_hash="fakehash",
+        account_status="active",
+    )
+    db_session.add(empresa_user)
+    db_session.flush()
+    company = Company(
+        legal_name="Empresa Dada de Baja SRL",
+        tax_id=f"NIT-{uuid.uuid4().hex[:8]}",
+        verification_status="verified",
+        account_status="suspended",
+    )
+    db_session.add(company)
+    db_session.flush()
+    vacante = JobPosting(
+        company_id=company.id,
+        title=titulo,
+        description="Vacante que quedó publicada antes de la baja de la empresa",
+        seniority_level="junior",
+        employment_type="permanent",
+        work_modality="remote",
+        city="Santa Cruz",
+        status="published",
+        created_by=empresa_user.id,
+    )
+    db_session.add(vacante)
+    db_session.commit()
+
+    listado = client.get("/api/vacantes/buscar", params={"q": titulo})
+    assert listado.status_code == 200
+    assert listado.json()["total"] == 0
+    assert client.get(f"/api/vacantes/buscar/{vacante.id}").status_code == 404
+
+
 def test_cp04_con_token_si_ve_contacto(setup_datos_hu34):
     """CP04: Un usuario autenticado con sesión sí puede visualizar la información de contacto."""
     vacante_id = str(setup_datos_hu34["vacante"].id)
