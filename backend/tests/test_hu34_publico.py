@@ -5,9 +5,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.core.tenancy import INSTITUCION_POR_DEFECTO_ID
 from app.main import app
 from app.models.candidato import CandidateProfile
 from app.models.empresa import Company, CompanyMember
+from app.models.institucion import CompanyInstitution
 from app.models.usuario import AppUser, Role, UserRole
 from app.models.vacante import JobPosting
 from app.security.jwt_provider import create_access_token
@@ -67,6 +69,12 @@ def setup_datos_hu34(db_session: Session):
         is_active=True,
     )
     db_session.add(member)
+
+    # SaaS multi-universidad: el egresado (sin universidad = UAGRM por defecto) solo ve
+    # vacantes de empresas habilitadas en su universidad.
+    db_session.add(
+        CompanyInstitution(company_id=company.id, institution_id=INSTITUCION_POR_DEFECTO_ID, status="approved")
+    )
 
     # 3. Usuario egresado/candidato
     cand_user = AppUser(
