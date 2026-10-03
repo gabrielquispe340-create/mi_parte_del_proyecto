@@ -29,6 +29,17 @@ DDL = [
         CONSTRAINT ck_interview_modality CHECK (modality IN ('onsite', 'virtual')),
         CONSTRAINT ck_interview_status CHECK (status IN ('pending_confirmation', 'confirmed', 'rejected', 'cancelled', 'completed'))
     )""",
+    # La Supabase compartida ya tenía una tabla `interview` del diseño original (sin estas
+    # columnas y con otros estados), así que el CREATE TABLE de arriba no la modifica.
+    "ALTER TABLE interview ADD COLUMN IF NOT EXISTS notes TEXT",
+    "ALTER TABLE interview ADD COLUMN IF NOT EXISTS candidate_feedback TEXT",
+    "ALTER TABLE interview ADD COLUMN IF NOT EXISTS rejection_count INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE interview ADD COLUMN IF NOT EXISTS requires_manual_review BOOLEAN NOT NULL DEFAULT FALSE",
+    # Estados de HU-20 sin dejar de aceptar los del diseño original (aditivo).
+    "ALTER TABLE interview DROP CONSTRAINT IF EXISTS ck_iv_status",
+    """ALTER TABLE interview ADD CONSTRAINT ck_iv_status CHECK (status IN (
+        'pending_confirmation', 'confirmed', 'rejected', 'cancelled', 'completed', 'scheduled', 'no_show'
+    ))""",
     "CREATE INDEX IF NOT EXISTS ix_interview_application_id ON interview (application_id)",
     "CREATE INDEX IF NOT EXISTS ix_interview_status ON interview (status)",
 ]
