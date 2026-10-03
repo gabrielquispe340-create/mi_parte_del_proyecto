@@ -75,7 +75,7 @@
         <span class="avatar">{{ correoInicial }}</span>
         <div class="datos-usuario">
           <span class="correo" [title]="auth.correo()">{{ auth.correo() || 'Administrador' }}</span>
-          <span class="rol">{{ auth.rol() }}</span>
+          <span class="rol">{{ auth.rolLegible() }}</span>
           <span class="institucion" [title]="auth.institucion()">{{ auth.institucion() || 'Todas las universidades' }}</span>
         </div>
       </div>

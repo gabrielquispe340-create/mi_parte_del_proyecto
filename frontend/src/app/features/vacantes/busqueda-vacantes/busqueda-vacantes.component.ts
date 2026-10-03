@@ -152,10 +152,9 @@ export class BusquedaVacantesComponent implements OnInit {
       this.filtroCategoriaId ||
       this.filtroSeniority ||
       this.filtroSalarioMin !== null ||
-      this.filtroSalarioMax !== null
+      this.filtroSalarioMax !== null,
     );
   }
-
 
   verDetalle(vacanteId: string): void {
     this.isLoadingDetalle.set(true);
@@ -250,8 +249,13 @@ export class BusquedaVacantesComponent implements OnInit {
         return 'Medio Tiempo';
       case 'internship':
         return 'Pasantía';
+      case 'temporary':
+        return 'Temporal';
+      case 'contract':
       case 'contractor':
         return 'Por Contrato';
+      case 'freelance':
+        return 'Freelance / Consultoría';
       default:
         return jornada;
     }
@@ -283,4 +287,3 @@ export class BusquedaVacantesComponent implements OnInit {
     }, 4000);
   }
 }
-
