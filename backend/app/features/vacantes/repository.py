@@ -1,12 +1,13 @@
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import delete, distinct, func, or_, select, update
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.catalogo import FieldOfStudy, JobCategory
+from app.models.empresa import Company
 from app.models.institucion import CompanyInstitution
 from app.models.vacante import JobEducationPreference, JobPosting, JobSkill, JobStatus
 
@@ -14,6 +15,11 @@ from app.models.vacante import JobEducationPreference, JobPosting, JobSkill, Job
 _FILTROS_CACHE: dict | None = None
 _FILTROS_CACHE_TIME: float = 0.0
 _CACHE_TTL_SECONDS: float = 300.0
+
+# Caché en memoria para estadísticas públicas agregadas (24 horas TTL) — HU-34
+_STATS_CACHE: dict | None = None
+_STATS_CACHE_TIME: float = 0.0
+_STATS_TTL_SECONDS: float = 86400.0
 
 
 def empresa_vinculada_a(institution_id: uuid.UUID, estados: tuple[str, ...] = ("approved",)):
@@ -397,4 +403,52 @@ class VacanteRepository:
 
         _FILTROS_CACHE = resultado
         _FILTROS_CACHE_TIME = ahora
+        return resultado
+
+    def obtener_estadisticas_agregadas(self) -> dict:
+        """Obtiene estadísticas públicas agregadas con caché en memoria de 24 horas (HU-34).
+
+        Criterios:
+        - Vacantes activas: status='published' AND (application_deadline IS NULL
+          OR application_deadline >= now()) AND company.account_status='active'.
+        - Empresas registradas: verification_status='verified' AND account_status='active'.
+        """
+        global _STATS_CACHE, _STATS_CACHE_TIME
+
+        ahora = time.time()
+        if _STATS_CACHE is not None and (ahora - _STATS_CACHE_TIME) < _STATS_TTL_SECONDS:
+            return _STATS_CACHE
+
+        now_utc = datetime.now(timezone.utc)
+
+        # 1. Total vacantes activas
+        stmt_vacantes = (
+            select(func.count(JobPosting.id))
+            .join(Company, JobPosting.company_id == Company.id)
+            .where(
+                JobPosting.status == JobStatus.PUBLISHED.value,
+                or_(
+                    JobPosting.application_deadline.is_(None),
+                    JobPosting.application_deadline >= now_utc,
+                ),
+                Company.account_status == "active",
+            )
+        )
+        total_vacantes = self.db.scalar(stmt_vacantes) or 0
+
+        # 2. Total empresas registradas y verificadas
+        stmt_empresas = select(func.count(Company.id)).where(
+            Company.verification_status == "verified",
+            Company.account_status == "active",
+        )
+        total_empresas = self.db.scalar(stmt_empresas) or 0
+
+        resultado = {
+            "total_vacantes_activas": total_vacantes,
+            "total_empresas_registradas": total_empresas,
+            "fecha_actualizacion": now_utc,
+        }
+
+        _STATS_CACHE = resultado
+        _STATS_CACHE_TIME = ahora
         return resultado

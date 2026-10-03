@@ -5,7 +5,7 @@ import { passwordPendienteGuard } from './core/guards/password-pendiente.guard';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'auth/login',
+    redirectTo: 'vacantes',
     pathMatch: 'full',
   },
   {
@@ -176,8 +176,6 @@ export const routes: Routes = [
   },
   {
     path: 'vacantes/:id',
-    canActivate: [authGuard],
-    data: { roles: ['EGRESADO', 'ESTUDIANTE', 'EMPRESA', 'ADMINISTRADOR'] },
     loadComponent: () =>
       import('./features/vacantes/vacante-detalle/vacante-detalle.component').then(
         (m) => m.VacanteDetalleComponent,

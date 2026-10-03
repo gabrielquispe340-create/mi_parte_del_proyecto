@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -14,6 +14,11 @@ import { AuthService, inicioSegunRol } from '../auth.service';
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  get returnUrl(): string | null {
+    return this.route.snapshot.queryParams['returnUrl'] || null;
+  }
 
   readonly correo = signal('');
   readonly password = signal('');
@@ -39,7 +44,17 @@ export class Login {
       next: (respuesta) => {
         this.cargando.set(false);
         // Una contraseña temporal (creada por un admin) se reemplaza antes de entrar.
-        const destino = respuesta.debe_cambiar_password ? '/cuenta/contrasena' : inicioSegunRol(respuesta.rol);
+        if (respuesta.debe_cambiar_password) {
+          void this.router.navigate(['/cuenta/contrasena']);
+          return;
+        }
+        // HU-34: si llegó desde una oferta pública, vuelve a esa oferta (solo rutas internas).
+        const returnUrl = this.returnUrl;
+        if (returnUrl?.startsWith('/') && !returnUrl.startsWith('//')) {
+          void this.router.navigateByUrl(returnUrl);
+          return;
+        }
+        const destino = inicioSegunRol(respuesta.rol);
         void this.router.navigate([destino]);
       },
       error: (err: HttpErrorResponse) => {

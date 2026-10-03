@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Vacante } from '../../../core/models/vacante.models';
-import { AuthService } from '../../../core/services/auth.service';
+import { AuthService } from '../../auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { VacanteService } from '../../../core/services/vacante.service';
 
@@ -23,24 +22,31 @@ export class VacanteDetalleComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
-  vacante: Vacante | null = null;
+  vacante: any | null = null;
   cargando = true;
   errorMsg: string | null = null;
 
+  get estaAutenticado(): boolean {
+    return this.auth.estaAutenticado();
+  }
+
   get userRole(): string | null {
-    return this.auth.getUserRole();
+    return this.auth.rol() || null;
   }
 
   get isEmpresa(): boolean {
-    return this.userRole === 'EMPRESA';
+    const r = (this.userRole || '').toUpperCase();
+    return r === 'EMPRESA';
   }
 
   get isCandidato(): boolean {
-    return this.userRole === 'EGRESADO' || this.userRole === 'ESTUDIANTE';
+    const r = (this.userRole || '').toUpperCase();
+    return r === 'CANDIDATE' || r === 'EGRESADO' || r === 'ESTUDIANTE';
   }
 
   get isAdmin(): boolean {
-    return this.userRole === 'ADMINISTRADOR';
+    const r = (this.userRole || '').toUpperCase();
+    return r === 'PLATFORM_ADMIN' || r === 'MODERATOR' || r === 'ADMINISTRADOR';
   }
 
   ngOnInit(): void {
@@ -57,9 +63,21 @@ export class VacanteDetalleComponent implements OnInit {
     this.cargando = true;
     this.errorMsg = null;
 
-    this.vacanteService.obtenerVacante(id).subscribe({
+    this.vacanteService.obtenerDetalle(id).subscribe({
       next: (data) => {
-        this.vacante = data;
+        const dataAny = data as any;
+        this.vacante = {
+          ...dataAny,
+          company_name: dataAny.company?.trade_name || dataAny.company?.legal_name || dataAny.company_name || 'Empresa',
+          responsibilities_json: dataAny.responsibilities || dataAny.responsibilities_json || [],
+          requirements_json: dataAny.requirements || dataAny.requirements_json || [],
+          benefits_json: dataAny.benefits || dataAny.benefits_json || [],
+          skills: (dataAny.skills || []).map((s: any) => ({
+            ...s,
+            skill_name: s.name || s.skill_name || 'Habilidad',
+            min_proficiency: s.min_proficiency || 'General',
+          })),
+        };
         this.cargando = false;
       },
       error: (err) => {
@@ -70,6 +88,11 @@ export class VacanteDetalleComponent implements OnInit {
   }
 
   postular(): void {
+    if (!this.estaAutenticado) {
+      const returnUrl = this.vacante ? `/vacantes/${this.vacante.id}` : '/vacantes';
+      void this.router.navigate(['/auth/registro'], { queryParams: { returnUrl } });
+      return;
+    }
     this.toast.info(
       'La postulación a vacantes estará disponible próximamente en el Sprint de Postulaciones.'
     );

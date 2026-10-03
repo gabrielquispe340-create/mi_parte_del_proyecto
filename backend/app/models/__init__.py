@@ -39,6 +39,7 @@ from app.models.vacante import (
     SkillProficiencyLevel,
     WorkModality,
 )
+from app.models.entrevista import Interview
 from app.models.postulacion import (
     Application,
     ApplicationAnswer,
@@ -50,6 +51,7 @@ from app.models.postulacion import (
 __all__ = [
     "AppUser",
     "Application",
+    "Interview",
     "ApplicationAnswer",
     "ApplicationNote",
     "ApplicationStageHistory",
