@@ -9,7 +9,7 @@ import { CandidatoComparacionResponse } from '../seleccion.models';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './comparacion-modal.component.html',
-  styleUrls: ['./comparacion-modal.component.scss']
+  styleUrls: ['./comparacion-modal.component.scss'],
 })
 export class ComparacionModalComponent implements OnInit {
   @Input({ required: true }) idVacante!: string;
@@ -49,7 +49,7 @@ export class ComparacionModalComponent implements OnInit {
       error: (e: HttpErrorResponse) => {
         this.error.set(e.error?.detail ?? 'Error al cargar la comparación.');
         this.cargando.set(false);
-      }
+      },
     });
   }
 
@@ -67,7 +67,7 @@ export class ComparacionModalComponent implements OnInit {
   confirmarDescarte(): void {
     const id = this.postulacionADescartar();
     if (!id) return;
-    
+
     this.procesandoDescarte.set(true);
     this.errorDescarte.set(null);
     this.svc.descartarCandidato(id, { motivo: 'Descartado desde vista de comparación' }).subscribe({
@@ -75,10 +75,10 @@ export class ComparacionModalComponent implements OnInit {
         this.procesandoDescarte.set(false);
         this.cerrarConfirmacionDescarte();
 
-        const remaining = this.candidatos().filter(c => c.postulacion_id !== id);
+        const remaining = this.candidatos().filter((c) => c.postulacion_id !== id);
         this.candidatos.set(remaining);
         this.candidateDiscarded.emit(id);
-        
+
         if (remaining.length < 2) {
           this.close.emit();
         }
@@ -86,8 +86,10 @@ export class ComparacionModalComponent implements OnInit {
       error: (e: HttpErrorResponse) => {
         this.procesandoDescarte.set(false);
         this.cerrarConfirmacionDescarte();
-        this.errorDescarte.set(e.error?.detail ?? 'No se pudo descartar al candidato. Intentá de nuevo.');
-      }
+        this.errorDescarte.set(
+          e.error?.detail ?? 'No se pudo descartar al candidato. Intentá de nuevo.',
+        );
+      },
     });
   }
 
