@@ -46,9 +46,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
+  gap: 0.4rem;
   height: 2.25rem;
+  padding: 0 0.85rem;
   border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   background: #f1f5f9;
   color: #475569;
   text-decoration: none;
@@ -63,6 +66,27 @@
     background: #e2e8f0;
     color: #0f172a;
   }
+}
+
+/* Íconos dentro del texto (empresa, ciudad): sin tamaño propio el SVG ocupa todo el ancho. */
+.icon-inline {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+}
+
+.btn-icon,
+.tab-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.icon-md {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
 }
 
 .badge-role {
