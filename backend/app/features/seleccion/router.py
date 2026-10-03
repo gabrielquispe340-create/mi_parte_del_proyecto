@@ -17,6 +17,8 @@ from app.features.seleccion.schema import (
     NotaInternaResponse,
     PipelineVacanteResponse,
     VacanteResumenSeleccion,
+    CompararCandidatosRequest,
+    CandidatoComparacionResponse,
 )
 from app.features.seleccion.service import SeleccionService
 from app.security.dependencies import CurrentUser, require_roles
@@ -195,3 +197,22 @@ def agregar_nota_interna(
         data=data,
         ip=ip,
     )
+
+
+@router.post("/vacantes/{id_vacante}/comparar", response_model=list[CandidatoComparacionResponse])
+def comparar_candidatos_vacante(
+    id_vacante: uuid.UUID,
+    data: CompararCandidatosRequest,
+    request: Request,
+    current_user: CurrentUser = Depends(_solo_empresa),
+    db: Session = Depends(get_db),
+) -> list[CandidatoComparacionResponse]:
+    """HU-18: Comparar perfiles de postulantes lado a lado."""
+    ip = get_client_ip(request)
+    return SeleccionService(db).obtener_comparacion_candidatos(
+        user_id=current_user.id_usuario,
+        job_id=id_vacante,
+        data=data,
+        ip=ip,
+    )
+

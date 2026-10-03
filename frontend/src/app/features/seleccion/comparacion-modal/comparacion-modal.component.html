@@ -1,0 +1,102 @@
+<div class="modal-overlay">
+  <div class="modal-content comparison-modal">
+    <div class="modal-header">
+      <h2>Comparación de Candidatos</h2>
+      <button class="btn-close" (click)="close.emit()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="cargando()" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando perfiles...</p>
+      </div>
+
+      <div *ngIf="error()" class="error-state">
+        <p>{{ error() }}</p>
+      </div>
+
+      <div *ngIf="!cargando() && !error()" class="comparison-grid" [style.grid-template-columns]="'repeat(' + candidatos().length + ', 1fr)'">
+        
+        <!-- Headers -->
+        <div class="candidate-col" *ngFor="let cand of candidatos()">
+          <div class="candidate-header">
+            <h3>{{ cand.candidato_nombre }}</h3>
+            <span class="afinidad-badge" *ngIf="cand.afinidad !== null">{{ cand.afinidad }}% afinidad</span>
+          </div>
+
+          <div class="candidate-actions">
+            <button class="btn btn-danger btn-sm" (click)="abrirConfirmacionDescarte(cand.postulacion_id, cand.candidato_nombre)">
+              <i class="fas fa-times"></i> Descartar
+            </button>
+          </div>
+
+          <!-- Experiencia -->
+          <div class="section-card">
+            <h4><i class="fas fa-briefcase"></i> Experiencia</h4>
+            <div *ngIf="cand.experiencia.length === 0" class="empty-state">Sin experiencia registrada</div>
+            <ul class="item-list">
+              <li *ngFor="let exp of cand.experiencia">
+                <strong>{{ exp.cargo }}</strong> en {{ exp.empresa }}
+                <div class="dates">{{ exp.fecha_inicio | date:'MMM yyyy' }} - {{ exp.fecha_fin ? (exp.fecha_fin | date:'MMM yyyy') : 'Presente' }}</div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Formación -->
+          <div class="section-card">
+            <h4><i class="fas fa-graduation-cap"></i> Formación</h4>
+            <div *ngIf="cand.formacion.length === 0" class="empty-state">Sin formación registrada</div>
+            <ul class="item-list">
+              <li *ngFor="let edu of cand.formacion">
+                <strong>{{ edu.programa }}</strong>
+                <div>{{ edu.institucion }} ({{ edu.estado_academico }})</div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Habilidades -->
+          <div class="section-card">
+            <h4><i class="fas fa-star"></i> Habilidades</h4>
+            <div *ngIf="cand.habilidades.length === 0" class="empty-state">Sin habilidades</div>
+            <div class="tags">
+              <span class="tag" *ngFor="let hab of cand.habilidades">{{ hab.nombre }}</span>
+            </div>
+          </div>
+
+          <!-- Idiomas -->
+          <div class="section-card">
+            <h4><i class="fas fa-language"></i> Idiomas</h4>
+            <div *ngIf="cand.idiomas.length === 0" class="empty-state">Sin idiomas</div>
+            <ul class="item-list">
+              <li *ngFor="let lang of cand.idiomas">
+                <strong>{{ lang.idioma }}</strong>: {{ lang.nivel }}
+              </li>
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación custom para no usar window.confirm() -->
+<div class="modal-overlay custom-confirm-modal" *ngIf="postulacionADescartar() !== null" style="z-index: 9999;">
+  <div class="modal-panel" style="max-width: 450px; background: white; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+    <div style="color: #ef4444; margin-bottom: 15px;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </div>
+    <h3 style="margin-bottom: 10px; font-size: 1.25rem;">Descartar Candidato</h3>
+    <p style="color: #64748b; margin-bottom: 25px;">¿Seguro que deseas descartar definitivamente a <strong>{{ nombreADescartar() }}</strong> de este proceso de selección?</p>
+    
+    <div style="display: flex; gap: 15px; justify-content: center;">
+      <button class="btn btn-ghost" (click)="cerrarConfirmacionDescarte()" [disabled]="procesandoDescarte()">Cancelar</button>
+      <button class="btn btn-danger" (click)="confirmarDescarte()" [disabled]="procesandoDescarte()">
+        {{ procesandoDescarte() ? 'Procesando...' : 'Sí, descartar' }}
+      </button>
+    </div>
+  </div>
+</div>

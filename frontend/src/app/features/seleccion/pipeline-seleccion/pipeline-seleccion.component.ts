@@ -20,11 +20,12 @@ import {
   PipelineVacanteResponse,
   VacanteResumenSeleccion,
 } from '../seleccion.models';
+import { ComparacionModalComponent } from '../comparacion-modal/comparacion-modal.component';
 
 @Component({
   selector: 'app-pipeline-seleccion',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ComparacionModalComponent],
   templateUrl: './pipeline-seleccion.component.html',
   styleUrls: ['./pipeline-seleccion.component.scss'],
   changeDetection: ChangeDetectionStrategy.Default,
@@ -72,6 +73,45 @@ export class PipelineSeleccionComponent implements OnInit {
   cargandoNotas = signal(false);
   guardandoNota = signal(false);
   errorNotas = signal<string | null>(null);
+
+  // ── Selección para Comparación (HU-18) ──────────────────────────────
+  candidatosSeleccionados = signal<string[]>([]);
+  mostrarModalComparacion = signal(false);
+
+  toggleSeleccion(idPostulacion: string): void {
+    const actuales = this.candidatosSeleccionados();
+    if (actuales.includes(idPostulacion)) {
+      this.candidatosSeleccionados.set(actuales.filter(id => id !== idPostulacion));
+    } else {
+      if (actuales.length < 3) {
+        this.candidatosSeleccionados.set([...actuales, idPostulacion]);
+      } else {
+        alert('Solo puedes comparar hasta 3 candidatos a la vez.');
+      }
+    }
+  }
+
+  estaSeleccionado(idPostulacion: string): boolean {
+    return this.candidatosSeleccionados().includes(idPostulacion);
+  }
+
+  abrirComparacion(): void {
+    if (this.candidatosSeleccionados().length < 2) {
+      alert('Debes seleccionar al menos 2 candidatos para comparar.');
+      return;
+    }
+    this.mostrarModalComparacion.set(true);
+  }
+
+  cerrarComparacion(): void {
+    this.mostrarModalComparacion.set(false);
+  }
+
+  onCandidatoDescartadoDesdeComparacion(): void {
+    if (this.vacanteSeleccionadaId()) {
+      this.cargarPipeline(this.vacanteSeleccionadaId()!);
+    }
+  }
 
   // ── Entrevistas (HU-20) ──────────────────────────────────────────────
   mapaEntrevistas = signal<Record<string, Entrevista[]>>({});

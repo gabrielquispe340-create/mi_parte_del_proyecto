@@ -17,8 +17,9 @@ from app.features.seleccion.schema import (
     NotaInternaResponse,
     PipelineVacanteResponse,
     VacanteResumenSeleccion,
+    CompararCandidatosRequest,
 )
-from app.models.candidato import CandidateEducation, CandidateProfile
+from app.models.candidato import CandidateEducation, CandidateProfile, CandidateSkill, WorkExperience, CandidateLanguage
 from app.models.empresa import CompanyMember
 from app.models.postulacion import Application
 from app.models.vacante import JobPosting, JobSelectionStage
@@ -497,3 +498,114 @@ class SeleccionService:
             puede_avanzar=a.current_status not in ("rejected", "withdrawn", "hired"),
             puede_descartar=a.current_status not in ("rejected", "withdrawn", "hired"),
         )
+
+    def obtener_comparacion_candidatos(
+        self, user_id: uuid.UUID, job_id: uuid.UUID, data: CompararCandidatosRequest, ip: str = "127.0.0.1"
+    ) -> list["CandidatoComparacionResponse"]:
+        from app.features.vacantes.service import VacanteService
+        from app.features.perfil.schema import (
+            FormacionResponse, ExperienciaResponse, IdiomaResponse, HabilidadResponse
+        )
+        from app.features.seleccion.schema import CandidatoComparacionResponse
+
+        miembro = self._obtener_miembro(user_id)
+        vacante = self.repo.obtener_vacante(job_id, miembro.company_id)
+        if not vacante:
+            raise NotFoundException("Vacante no encontrada o no pertenece a la empresa.")
+
+        if not (2 <= len(data.postulaciones) <= 3):
+            raise BadRequestException("Debe seleccionar entre 2 y 3 candidatos para comparar.")
+
+        vacante_service = VacanteService(self.db)
+        
+        resultado: list[CandidatoComparacionResponse] = []
+        for post_id in data.postulaciones:
+            app = self.repo.obtener_postulacion_por_id(post_id)
+            if not app or app.job_id != job_id:
+                raise BadRequestException(f"La postulación no pertenece a esta vacante.")
+            if app.current_status in ("rejected", "withdrawn"):
+                raise BadRequestException("No se pueden comparar candidatos descartados o retirados.")
+            
+            cand: CandidateProfile = app.candidate
+            
+            skills = self.db.query(CandidateSkill).filter(CandidateSkill.candidate_id == cand.id).all() if cand else []
+            candidato_skills_ids = {cs.skill_id for cs in skills}
+            candidato_carreras_ids = {e.field_of_study_id for e in cand.educations if e.field_of_study_id} if cand and cand.educations else set()
+            
+            afinidad = vacante_service._calcular_afinidad(vacante, candidato_skills_ids, candidato_carreras_ids)
+            
+            nombre_completo = f"{cand.first_name} {cand.last_name}" if cand else "Candidato"
+            
+            formacion = []
+            if cand and cand.educations:
+                for e in cand.educations:
+                    formacion.append(FormacionResponse(
+                        id=e.id,
+                        institucion=e.institution_name or "",
+                        programa=e.program_name or "",
+                        estado_academico=e.academic_status or e.education_level,
+                        fecha_inicio=e.start_date,
+                        fecha_fin=e.end_date
+                    ))
+                    
+            experiencia = []
+            if cand:
+                experiences = self.db.query(WorkExperience).filter(WorkExperience.candidate_id == cand.id).all()
+                for ex in experiences:
+                    experiencia.append(ExperienciaResponse(
+                        id=ex.id,
+                        empresa=ex.company_name or "",
+                        cargo=ex.position_title,
+                        descripcion=ex.description,
+                        fecha_inicio=ex.start_date,
+                        fecha_fin=ex.end_date
+                    ))
+                    
+            from app.models.catalogo import Skill
+            habilidades = []
+            if candidato_skills_ids:
+                actual_skills = self.db.query(Skill).filter(Skill.id.in_(candidato_skills_ids)).all()
+                for s in actual_skills:
+                    habilidades.append(HabilidadResponse(
+                        id=s.id,
+                        nombre=s.name,
+                        categoria=s.category
+                    ))
+                        
+            from app.models.catalogo import Language
+            idiomas = []
+            if cand:
+                languages = self.db.query(CandidateLanguage).filter(CandidateLanguage.candidate_id == cand.id).all()
+                if languages:
+                    lang_ids = {l.language_id for l in languages}
+                    actual_langs = self.db.query(Language).filter(Language.id.in_(lang_ids)).all()
+                    lang_dict = {al.id: al for al in actual_langs}
+                    for lang in languages:
+                        al = lang_dict.get(lang.language_id)
+                        if al:
+                            idiomas.append(IdiomaResponse(
+                                id=lang.language_id,
+                                idioma=al.name,
+                                nivel=lang.proficiency_level or "basico"
+                            ))
+            
+            resultado.append(CandidatoComparacionResponse(
+                postulacion_id=app.id,
+                candidato_id=cand.id if cand else uuid.uuid4(),
+                candidato_nombre=nombre_completo,
+                afinidad=afinidad,
+                formacion=formacion,
+                experiencia=experiencia,
+                habilidades=habilidades,
+                idiomas=idiomas
+            ))
+            
+        self.bitacora.registrar(
+            modulo="seleccion",
+            accion="comparar_candidatos",
+            usuario_id=user_id,
+            ip=ip,
+            detalles=f"vacante_id={job_id} cantidad={len(data.postulaciones)}"
+        )
+        self.db.commit()
+        return resultado
