@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Azul marino de EGRESA (el mismo color primario de la web). -->
+    <color name="egresa_marino">#1E3A8A</color>
+</resources>

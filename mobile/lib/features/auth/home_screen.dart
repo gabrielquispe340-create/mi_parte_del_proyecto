@@ -1,32 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/models/sesion.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/marca.dart';
 import '../perfil/egresado_panel_screen.dart';
 import 'login_screen.dart';
 
-/// Punto de entrada post-login: si el usuario es egresado, muestra su
-/// panel real (perfil + accesos). Para el resto de roles (empresa,
-/// moderador, admin) todavía no hay pantallas móviles dedicadas
-/// (Sprint 4 según el roadmap), así que se muestra una vista informativa.
+const _urlWeb = 'https://egresa.up.railway.app';
+
+/// Punto de entrada post-login. La app móvil es para egresados; las cuentas
+/// de empresa y de administración se gestionan desde la web.
 class HomeScreen extends StatelessWidget {
   final Sesion sesion;
 
   const HomeScreen({super.key, required this.sesion});
 
-  String get _rolLegible {
-    switch (sesion.rol) {
-      case 'candidate':
-        return 'Egresado';
-      case 'empresa':
-        return 'Empresa';
-      case 'moderator':
-        return 'Moderador';
-      case 'platform_admin':
-        return 'Administrador de plataforma';
-      default:
-        return sesion.rol;
-    }
-  }
+  String get _rolLegible => switch (sesion.rol) {
+        'empresa' => 'empresa',
+        'moderator' => 'moderador',
+        'platform_admin' => sesion.institucionNombre == null ? 'superadministrador' : 'administrador universitario',
+        _ => sesion.rol,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -34,51 +29,47 @@ class HomeScreen extends StatelessWidget {
       return EgresadoPanelScreen(sesion: sesion);
     }
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('EGRESA'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Cerrar sesión',
-            onPressed: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Center(
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(28),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(Icons.check_circle, size: 64, color: Colors.green.shade600),
-              const SizedBox(height: 16),
+              const Align(alignment: Alignment.centerLeft, child: MarcaEgresa(tamano: 22)),
+              const Spacer(),
+              Container(
+                width: 72,
+                height: 72,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(color: AppColors.primarioSuave, shape: BoxShape.circle),
+                child: const Icon(Icons.desktop_windows_outlined, size: 34, color: AppColors.primario),
+              ),
+              const SizedBox(height: 20),
               Text(
-                '¡Sesión iniciada!',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                'Tu cuenta se gestiona desde la web',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
               Text(
-                'Rol: $_rolLegible',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              if (sesion.roles.length > 1) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Roles asignados: ${sesion.roles.join(", ")}',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                ),
-              ],
-              const SizedBox(height: 24),
-              const Text(
-                'Las pantallas móviles para este rol todavía están '
-                'planificadas para el Sprint 4 según el roadmap del '
-                'proyecto.',
+                'Ingresaste como $_rolLegible. La app móvil está pensada para egresados; '
+                'el panel de ${sesion.rol == 'empresa' ? 'tu empresa' : 'administración'} está disponible en la web.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: const TextStyle(color: AppColors.textoSuave),
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () => launchUrl(Uri.parse(_urlWeb), mode: LaunchMode.externalApplication),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Text('Abrir EGRESA en el navegador'),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (_) => false,
+                ),
+                child: const Text('Cerrar sesión'),
               ),
             ],
           ),

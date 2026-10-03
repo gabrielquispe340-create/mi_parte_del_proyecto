@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 import '../../core/models/cv_item.dart';
 import '../../core/services/perfil_service.dart';
+import '../../core/utils/formatos.dart';
+import '../../core/widgets/vistas_estado.dart';
 
 /// Pantalla con pestañas para las secciones del CV: formación, experiencia,
 /// idiomas, certificaciones y habilidades (backend/app/features/perfil/router.py).
@@ -24,6 +28,7 @@ class _MiCvScreenState extends State<MiCvScreen> {
           title: const Text('Mi CV'),
           bottom: const TabBar(
             isScrollable: true,
+            tabAlignment: TabAlignment.start,
             tabs: [
               Tab(text: 'Formación'),
               Tab(text: 'Experiencia'),
@@ -62,6 +67,8 @@ abstract class _SeccionCvState<T, W extends StatefulWidget> extends State<W> {
   Widget tituloDe(T item);
   Widget? subtituloDe(T item);
   Future<void> abrirFormularioAlta();
+  IconData get iconoVacio;
+  String get textoVacio;
 
   @override
   void initState() {
@@ -89,6 +96,7 @@ abstract class _SeccionCvState<T, W extends StatefulWidget> extends State<W> {
   }
 
   Future<void> _eliminar(T item) async {
+    if (!await _confirmarEliminacion(context)) return;
     try {
       await eliminar(idDe(item));
       _recargar();
@@ -98,57 +106,77 @@ abstract class _SeccionCvState<T, W extends StatefulWidget> extends State<W> {
     }
   }
 
+  Future<void> _agregar() async {
+    await abrirFormularioAlta();
+    if (mounted) _recargar();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _recargar,
-        child: _cuerpo(),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await abrirFormularioAlta();
-          _recargar();
-        },
-        child: const Icon(Icons.add),
-      ),
+      body: RefreshIndicator(onRefresh: _recargar, child: _cuerpo()),
+      floatingActionButton: _BotonAgregar(onPressed: _agregar),
     );
   }
 
   Widget _cuerpo() {
-    if (cargando) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (error != null) {
-      return ListView(
-        children: [
-          const SizedBox(height: 80),
-          Center(child: Text(error!, textAlign: TextAlign.center)),
-        ],
-      );
-    }
+    if (cargando) return const VistaCargando();
+    if (error != null) return VistaMensaje.error(error, onReintentar: _recargar);
     if (items.isEmpty) {
-      return ListView(
-        children: const [
-          SizedBox(height: 80),
-          Center(child: Text('Todavía no agregaste nada acá.')),
-        ],
-      );
+      return VistaMensaje(icono: iconoVacio, titulo: 'Todavía no agregaste nada', mensaje: textoVacio);
     }
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80),
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, i) {
         final item = items[i];
-        return ListTile(
-          title: tituloDe(item),
-          subtitle: subtituloDe(item),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () => _eliminar(item),
+        return Card(
+          child: ListTile(
+            contentPadding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
+            title: tituloDe(item),
+            subtitle: subtituloDe(item),
+            trailing: IconButton(
+              tooltip: 'Eliminar',
+              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.textoSuave),
+              onPressed: () => _eliminar(item),
+            ),
           ),
         );
       },
+    );
+  }
+}
+
+Future<bool> _confirmarEliminacion(BuildContext context) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (contexto) => AlertDialog(
+      title: const Text('Eliminar del CV'),
+      content: const Text('Se va a quitar de tu CV y ya no lo verán las empresas.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(contexto).pop(false), child: const Text('Cancelar')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.peligro),
+          onPressed: () => Navigator.of(contexto).pop(true),
+          child: const Text('Eliminar'),
+        ),
+      ],
+    ),
+  );
+  return ok == true;
+}
+
+class _BotonAgregar extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _BotonAgregar({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: onPressed,
+      icon: const Icon(Icons.add_rounded),
+      label: const Text('Agregar'),
     );
   }
 }
@@ -158,12 +186,7 @@ Future<void> _mostrarFormulario(BuildContext context, {required String titulo, r
     context: context,
     isScrollControlled: true,
     builder: (context) => Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
+      padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(context).viewInsets.bottom + 20),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -208,8 +231,26 @@ class _FormacionTabState extends _SeccionCvState<Formacion, _FormacionTab> {
   Widget tituloDe(Formacion item) => Text(item.programa);
 
   @override
-  Widget? subtituloDe(Formacion item) =>
-      Text([item.institucion, if (item.estadoAcademico != null) item.estadoAcademico!].join(' · '));
+  Widget? subtituloDe(Formacion item) {
+    final partes = [
+      item.institucion.trim(),
+      if (item.estadoAcademico != null) _estadosAcademicos[item.estadoAcademico] ?? capitalizar(item.estadoAcademico!),
+    ].where((p) => p.isNotEmpty);
+    return partes.isEmpty ? null : Text(partes.join(' · '));
+  }
+
+  static const _estadosAcademicos = {
+    'en_curso': 'En curso',
+    'concluido': 'Concluido',
+    'egresado': 'Egresado',
+    'titulado': 'Titulado',
+  };
+
+  @override
+  IconData get iconoVacio => Icons.school_outlined;
+
+  @override
+  String get textoVacio => 'Agregá tu carrera y otros estudios.';
 
   @override
   Future<void> abrirFormularioAlta() async {
@@ -224,9 +265,15 @@ class _FormacionTabState extends _SeccionCvState<Formacion, _FormacionTab> {
         builder: (context, setSheetState) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(controller: institucionCtrl, decoration: const InputDecoration(labelText: 'Institución')),
+            TextField(
+              controller: institucionCtrl,
+              decoration: const InputDecoration(labelText: 'Institución'),
+            ),
             const SizedBox(height: 12),
-            TextField(controller: programaCtrl, decoration: const InputDecoration(labelText: 'Programa / carrera')),
+            TextField(
+              controller: programaCtrl,
+              decoration: const InputDecoration(labelText: 'Programa / carrera'),
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: estado,
@@ -297,6 +344,12 @@ class _ExperienciaTabState extends _SeccionCvState<Experiencia, _ExperienciaTab>
   Widget? subtituloDe(Experiencia item) => Text(item.empresa);
 
   @override
+  IconData get iconoVacio => Icons.work_outline_rounded;
+
+  @override
+  String get textoVacio => 'Sumá pasantías, trabajos o proyectos en los que participaste.';
+
+  @override
   Future<void> abrirFormularioAlta() async {
     final empresaCtrl = TextEditingController();
     final cargoCtrl = TextEditingController();
@@ -308,9 +361,15 @@ class _ExperienciaTabState extends _SeccionCvState<Experiencia, _ExperienciaTab>
       contenido: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(controller: empresaCtrl, decoration: const InputDecoration(labelText: 'Empresa')),
+          TextField(
+            controller: empresaCtrl,
+            decoration: const InputDecoration(labelText: 'Empresa'),
+          ),
           const SizedBox(height: 12),
-          TextField(controller: cargoCtrl, decoration: const InputDecoration(labelText: 'Cargo')),
+          TextField(
+            controller: cargoCtrl,
+            decoration: const InputDecoration(labelText: 'Cargo'),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: descripcionCtrl,
@@ -374,13 +433,14 @@ class _IdiomasTabState extends _SeccionCvState<Idioma, _IdiomasTab> {
   @override
   Widget? subtituloDe(Idioma item) => Text(_nivelLegible(item.nivel));
 
+  @override
+  IconData get iconoVacio => Icons.translate_rounded;
+
+  @override
+  String get textoVacio => 'Indicá los idiomas que manejás y tu nivel.';
+
   String _nivelLegible(String nivel) {
-    const etiquetas = {
-      'basico': 'Básico',
-      'intermedio': 'Intermedio',
-      'avanzado': 'Avanzado',
-      'nativo': 'Nativo',
-    };
+    const etiquetas = {'basico': 'Básico', 'intermedio': 'Intermedio', 'avanzado': 'Avanzado', 'nativo': 'Nativo'};
     return etiquetas[nivel] ?? nivel;
   }
 
@@ -396,7 +456,10 @@ class _IdiomasTabState extends _SeccionCvState<Idioma, _IdiomasTab> {
         builder: (context, setSheetState) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(controller: idiomaCtrl, decoration: const InputDecoration(labelText: 'Idioma')),
+            TextField(
+              controller: idiomaCtrl,
+              decoration: const InputDecoration(labelText: 'Idioma'),
+            ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: nivel,
@@ -463,6 +526,12 @@ class _CertificacionesTabState extends _SeccionCvState<Certificacion, _Certifica
   Widget? subtituloDe(Certificacion item) => item.entidadEmisora == null ? null : Text(item.entidadEmisora!);
 
   @override
+  IconData get iconoVacio => Icons.workspace_premium_outlined;
+
+  @override
+  String get textoVacio => 'Cursos y certificaciones que respalden tus conocimientos.';
+
+  @override
   Future<void> abrirFormularioAlta() async {
     final nombreCtrl = TextEditingController();
     final entidadCtrl = TextEditingController();
@@ -473,10 +542,15 @@ class _CertificacionesTabState extends _SeccionCvState<Certificacion, _Certifica
       contenido: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(controller: nombreCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
+          TextField(
+            controller: nombreCtrl,
+            decoration: const InputDecoration(labelText: 'Nombre'),
+          ),
           const SizedBox(height: 12),
           TextField(
-              controller: entidadCtrl, decoration: const InputDecoration(labelText: 'Entidad emisora (opcional)')),
+            controller: entidadCtrl,
+            decoration: const InputDecoration(labelText: 'Entidad emisora (opcional)'),
+          ),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: () async {
@@ -563,7 +637,10 @@ class _HabilidadesTabState extends State<_HabilidadesTab> {
       contenido: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextField(controller: ctrl, decoration: const InputDecoration(labelText: 'Nombre de la habilidad')),
+          TextField(
+            controller: ctrl,
+            decoration: const InputDecoration(labelText: 'Nombre de la habilidad'),
+          ),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: () async {
@@ -581,6 +658,7 @@ class _HabilidadesTabState extends State<_HabilidadesTab> {
   }
 
   Future<void> _quitar(Habilidad habilidad) async {
+    if (!await _confirmarEliminacion(context)) return;
     final nombres = _habilidades.where((h) => h.id != habilidad.id).map((h) => h.nombre).toList();
     await _guardarLista(nombres);
   }
@@ -591,29 +669,35 @@ class _HabilidadesTabState extends State<_HabilidadesTab> {
       body: RefreshIndicator(
         onRefresh: _cargar,
         child: _cargando
-            ? const Center(child: CircularProgressIndicator())
+            ? const VistaCargando()
             : _error != null
-                ? ListView(children: [const SizedBox(height: 80), Center(child: Text(_error!))])
-                : ListView(
-                    padding: const EdgeInsets.all(20),
-                    children: [
-                      if (_habilidades.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 60),
-                          child: Center(child: Text('Todavía no agregaste habilidades.')),
+            ? VistaMensaje.error(_error, onReintentar: _cargar)
+            : _habilidades.isEmpty
+            ? const VistaMensaje(
+                icono: Icons.psychology_outlined,
+                titulo: 'Todavía no agregaste habilidades',
+                mensaje: 'Son lo que más pesa en tu afinidad con cada vacante.',
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 96),
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _habilidades
+                        .map(
+                          (h) => Chip(
+                            label: Text(h.nombre),
+                            deleteButtonTooltipMessage: 'Quitar',
+                            onDeleted: () => _quitar(h),
+                          ),
                         )
-                      else
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _habilidades
-                              .map((h) => Chip(label: Text(h.nombre), onDeleted: () => _quitar(h)))
-                              .toList(),
-                        ),
-                    ],
+                        .toList(),
                   ),
+                ],
+              ),
       ),
-      floatingActionButton: FloatingActionButton(onPressed: _agregar, child: const Icon(Icons.add)),
+      floatingActionButton: _BotonAgregar(onPressed: _agregar),
     );
   }
 }

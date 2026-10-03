@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../../core/models/entrevista.dart';
 import '../../core/models/postulacion.dart';
+import '../../core/services/entrevista_service.dart';
 import '../../core/services/postulacion_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/utils/formatos.dart';
+import '../../core/widgets/insignia.dart';
+import '../../core/widgets/vistas_estado.dart';
+import 'tarjeta_entrevista.dart';
 
-const Map<String, Color> _coloresHistorial = {
-  'blue': Colors.blue,
-  'yellow': Colors.amber,
-  'purple': Colors.purple,
-  'indigo': Colors.indigo,
-  'cyan': Colors.cyan,
-  'emerald': Colors.teal,
-  'green': Colors.green,
-  'red': Colors.red,
-  'gray': Colors.grey,
-};
+class _Detalle {
+  final DetallePostulacion detalle;
+  final List<Entrevista> entrevistas;
+  const _Detalle(this.detalle, this.entrevistas);
+}
 
-/// Detalle de una postulación (HU-15): vacante, estado actual, historial de
-/// cambios de estado y opción de retirarla si todavía sigue activa.
-/// Consume GET /postulaciones/{id} y POST /postulaciones/{id}/retirar.
+/// Detalle de una postulación (HU-15): estado, entrevistas propuestas por la
+/// empresa (HU-20), historial y la opción de retirarla mientras siga activa.
 class PostulacionDetalleScreen extends StatefulWidget {
   final String accessToken;
   final String postulacionId;
@@ -29,29 +29,74 @@ class PostulacionDetalleScreen extends StatefulWidget {
 }
 
 class _PostulacionDetalleScreenState extends State<PostulacionDetalleScreen> {
-  final _servicio = PostulacionService();
-  late Future<DetallePostulacion> _futuroDetalle;
+  final _postulaciones = PostulacionService();
+  final _entrevistas = EntrevistaService();
+  late Future<_Detalle> _futuro = _cargar();
   bool _retirando = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _futuroDetalle = _servicio.obtenerDetalle(widget.accessToken, widget.postulacionId);
+  Future<_Detalle> _cargar() async {
+    final resultados = await Future.wait<Object>([
+      _postulaciones.obtenerDetalle(widget.accessToken, widget.postulacionId),
+      _entrevistas.listar(widget.accessToken, widget.postulacionId),
+    ]);
+    final entrevistas = [...resultados[1] as List<Entrevista>]..sort(_porPrioridad);
+    return _Detalle(resultados[0] as DetallePostulacion, entrevistas);
   }
 
-  void _recargar() {
-    setState(() => _futuroDetalle = _servicio.obtenerDetalle(widget.accessToken, widget.postulacionId));
+  /// Primero lo que espera respuesta, después lo confirmado por venir (ambos por
+  /// fecha) y al final lo ya resuelto, de lo más reciente a lo más viejo.
+  static int _porPrioridad(Entrevista a, Entrevista b) {
+    int grupo(Entrevista e) => e.requiereRespuesta ? 0 : (e.confirmada && !e.yaPaso ? 1 : 2);
+    final porGrupo = grupo(a).compareTo(grupo(b));
+    if (porGrupo != 0) return porGrupo;
+    return grupo(a) == 2 ? b.creada.compareTo(a.creada) : a.inicio.compareTo(b.inicio);
+  }
+
+  Future<void> _recargar() async {
+    if (!mounted) return;
+    final futuro = _cargar();
+    setState(() => _futuro = futuro);
+    await futuro.then((_) {}, onError: (_) {});
+  }
+
+  void _avisar(String mensaje) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
+  }
+
+  Future<void> _confirmar(Entrevista entrevista) async {
+    try {
+      await _entrevistas.confirmar(widget.accessToken, entrevista.id);
+      _avisar('Confirmaste tu asistencia. ¡Éxitos en la entrevista!');
+      await _recargar();
+    } catch (e) {
+      _avisar('$e');
+    }
+  }
+
+  Future<void> _rechazar(Entrevista entrevista, String motivo) async {
+    try {
+      await _entrevistas.rechazar(widget.accessToken, entrevista.id, motivo);
+      _avisar('Le avisamos a la empresa que no podés asistir.');
+      await _recargar();
+    } catch (e) {
+      _avisar('$e');
+    }
   }
 
   Future<void> _confirmarRetiro() async {
     final confirmado = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (contexto) => AlertDialog(
         title: const Text('Retirar postulación'),
-        content: const Text('¿Estás seguro de que querés retirar esta postulación? Esta acción no se puede deshacer.'),
+        content: const Text('La empresa dejará de ver tu postulación. Esta acción no se puede deshacer.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Retirar')),
+          TextButton(onPressed: () => Navigator.of(contexto).pop(false), child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.peligro),
+            onPressed: () => Navigator.of(contexto).pop(true),
+            child: const Text('Retirar'),
+          ),
         ],
       ),
     );
@@ -59,13 +104,11 @@ class _PostulacionDetalleScreenState extends State<PostulacionDetalleScreen> {
 
     setState(() => _retirando = true);
     try {
-      await _servicio.retirar(widget.accessToken, widget.postulacionId);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Postulación retirada.')));
-      _recargar();
+      await _postulaciones.retirar(widget.accessToken, widget.postulacionId);
+      _avisar('Retiraste tu postulación.');
+      await _recargar();
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      _avisar('$e');
     } finally {
       if (mounted) setState(() => _retirando = false);
     }
@@ -74,90 +117,206 @@ class _PostulacionDetalleScreenState extends State<PostulacionDetalleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle de postulación')),
-      body: FutureBuilder<DetallePostulacion>(
-        future: _futuroDetalle,
+      appBar: AppBar(title: const Text('Postulación')),
+      body: FutureBuilder<_Detalle>(
+        future: _futuro,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('${snapshot.error}'));
-          }
+          // Tras confirmar o rechazar, la tarjeta se actualiza sin volver a mostrar el indicador de carga.
+          if (snapshot.hasData) return RefreshIndicator(onRefresh: _recargar, child: _contenido(snapshot.data!));
+          if (snapshot.connectionState == ConnectionState.waiting) return const VistaCargando();
+          return VistaMensaje.error(snapshot.error, onReintentar: _recargar);
+        },
+      ),
+    );
+  }
 
-          final detalle = snapshot.data!;
-          final p = detalle.postulacion;
-          final color = _coloresHistorial[p.estadoColor] ?? Colors.grey;
+  Widget _contenido(_Detalle datos) {
+    final p = datos.detalle.postulacion;
+    final entrevistas = datos.entrevistas;
+    final ubicacion = [p.empresaNombre, if (p.empresaCiudad != null && p.empresaCiudad!.isNotEmpty) p.empresaCiudad!];
 
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Text(p.jobTitulo, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('${p.empresaNombre} · ${p.empresaCiudad ?? ''}', style: TextStyle(color: Colors.grey[700])),
-              const SizedBox(height: 12),
-              Chip(
-                label: Text(p.estadoLabel, style: const TextStyle(color: Colors.white)),
-                backgroundColor: color,
-              ),
-              if (p.etapaActualNombre != null) ...[
-                const SizedBox(height: 8),
-                Text('Etapa actual: ${p.etapaActualNombre}'),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AvatarEmpresa(p.empresaNombre, tamano: 48),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.jobTitulo, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 17)),
+                          const SizedBox(height: 2),
+                          Text(ubicacion.join(' · '), style: const TextStyle(color: AppColors.textoSuave)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Insignia(p.estadoLabel, colores: coloresDeEstado(p.estadoColor)),
+                    if (p.etapaActualNombre != null && p.etapaActualNombre!.isNotEmpty)
+                      DatoConIcono(Icons.flag_outlined, 'Etapa: ${p.etapaActualNombre}'),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Te postulaste ${haceCuanto(p.fechaPostulacion)}',
+                  style: const TextStyle(color: AppColors.textoSuave, fontSize: 13),
+                ),
               ],
-              const SizedBox(height: 20),
-              Text('Descripción de la vacante', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(detalle.vacanteDescripcion),
-              const SizedBox(height: 24),
-              Text('Historial', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              for (final h in detalle.historialEstados)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+        ),
+        if (entrevistas.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          TituloSeccion(entrevistas.length == 1 ? 'Entrevista' : 'Entrevistas'),
+          const SizedBox(height: 8),
+          for (final e in entrevistas) ...[
+            TarjetaEntrevista(entrevista: e, onConfirmar: _confirmar, onRechazar: _rechazar),
+            const SizedBox(height: 12),
+          ],
+        ],
+        if (datos.detalle.historialEstados.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          const TituloSeccion('Seguimiento'),
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: _LineaDeTiempo(datos.detalle.historialEstados),
+            ),
+          ),
+        ],
+        if (datos.detalle.vacanteDescripcion.trim().isNotEmpty) ...[
+          const SizedBox(height: 22),
+          const TituloSeccion('Sobre la vacante'),
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _TextoExpandible(datos.detalle.vacanteDescripcion.trim()),
+            ),
+          ),
+        ],
+        if (p.puedeRetirar) ...[
+          const SizedBox(height: 24),
+          OutlinedButton(
+            onPressed: _retirando ? null : _confirmarRetiro,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.peligro,
+              side: BorderSide(color: AppColors.peligro.withValues(alpha: 0.35)),
+            ),
+            child: _retirando
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Retirar postulación'),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _LineaDeTiempo extends StatelessWidget {
+  final List<HistorialEstado> historial;
+  const _LineaDeTiempo(this.historial);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final (i, h) in historial.indexed)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: 16,
+                  child: Column(
                     children: [
+                      const SizedBox(height: 3),
                       Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        width: 10,
-                        height: 10,
+                        width: 12,
+                        height: 12,
                         decoration: BoxDecoration(
-                          color: _coloresHistorial[h.haciaEstadoColor] ?? Colors.grey,
+                          color: coloresDeEstado(h.haciaEstadoColor).color,
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(h.haciaEstadoLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
-                            if (h.motivo != null && h.motivo!.isNotEmpty)
-                              Text(h.motivo!, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                            Text(
-                              '${h.fecha.day}/${h.fecha.month}/${h.fecha.year}',
-                              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
+                      if (i < historial.length - 1) Expanded(child: Container(width: 2, color: AppColors.borde)),
                     ],
                   ),
                 ),
-              if (p.puedeRetirar) ...[
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _retirando ? null : _confirmarRetiro,
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.red, minimumSize: const Size.fromHeight(48)),
-                  child: _retirando
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Retirar postulación'),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(h.haciaEstadoLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        if (h.motivo != null && h.motivo!.isNotEmpty)
+                          Text(h.motivo!, style: const TextStyle(color: AppColors.textoSuave, fontSize: 13)),
+                        const SizedBox(height: 2),
+                        Text(
+                          fechaCorta(h.fecha.toLocal()),
+                          style: const TextStyle(color: AppColors.textoSuave, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
-            ],
-          );
-        },
-      ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _TextoExpandible extends StatefulWidget {
+  final String texto;
+  const _TextoExpandible(this.texto);
+
+  @override
+  State<_TextoExpandible> createState() => _TextoExpandibleState();
+}
+
+class _TextoExpandibleState extends State<_TextoExpandible> {
+  bool _abierto = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final largo = widget.texto.length > 220;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.texto,
+          maxLines: _abierto || !largo ? null : 4,
+          overflow: _abierto || !largo ? null : TextOverflow.ellipsis,
+        ),
+        if (largo)
+          TextButton(
+            onPressed: () => setState(() => _abierto = !_abierto),
+            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
+            child: Text(_abierto ? 'Ver menos' : 'Ver más'),
+          ),
+      ],
     );
   }
 }

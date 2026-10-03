@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 import '../../core/models/recomendacion.dart';
 import '../../core/services/recomendacion_service.dart';
 import '../perfil/mi_cv_screen.dart';
@@ -43,16 +45,16 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
 
   Future<void> _postularme(VacanteRecomendada r) async {
     final postulado = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => PostulacionScreen(accessToken: widget.accessToken, vacante: r.vacante)),
+      MaterialPageRoute(
+        builder: (_) => PostulacionScreen(accessToken: widget.accessToken, vacante: r.vacante),
+      ),
     );
     // Las vacantes a las que ya se postuló salen de las recomendaciones.
     if (postulado == true && mounted) _recargar();
   }
 
   Future<void> _completarCv() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => MiCvScreen(accessToken: widget.accessToken)),
-    );
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => MiCvScreen(accessToken: widget.accessToken)));
     if (mounted) _recargar();
   }
 
@@ -61,9 +63,7 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vacantes recomendadas'),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Recalcular', onPressed: _recargar),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.refresh), tooltip: 'Recalcular', onPressed: _recargar)],
       ),
       body: FutureBuilder<Recomendaciones>(
         future: _futuro,
@@ -83,10 +83,7 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
           if (snapshot.hasError) {
             return _estadoError(snapshot.error);
           }
-          return RefreshIndicator(
-            onRefresh: () async => _recargar(),
-            child: _listado(snapshot.data!),
-          );
+          return RefreshIndicator(onRefresh: () async => _recargar(), child: _listado(snapshot.data!));
         },
       ),
     );
@@ -102,7 +99,7 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
           children: [
             Icon(
               noDisponible ? Icons.smart_toy_outlined : Icons.error_outline,
-              color: noDisponible ? Colors.orange.shade400 : Colors.red.shade400,
+              color: noDisponible ? AppColors.alerta : AppColors.peligro,
               size: 48,
             ),
             const SizedBox(height: 12),
@@ -137,43 +134,52 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
 
   Widget _listado(Recomendaciones datos) {
     final filtradas = datos.items.where((r) => r.afinidad >= _minimo).toList();
-    final hora = '${datos.calculadoEn.hour.toString().padLeft(2, '0')}:'
+    final hora =
+        '${datos.calculadoEn.hour.toString().padLeft(2, '0')}:'
         '${datos.calculadoEn.minute.toString().padLeft(2, '0')}';
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.deepPurple.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.deepPurple.shade100),
+            color: AppColors.violetaSuave,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.violeta.withValues(alpha: 0.2)),
           ),
-          child: Text(
-            '🔒 La afinidad compara tu carrera, habilidades, experiencia e idiomas con cada vacante vigente. '
-            'Nunca usa tu edad, género, foto ni otros datos personales.',
-            style: TextStyle(color: Colors.deepPurple.shade800, fontSize: 13),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.shield_outlined, size: 20, color: AppColors.violeta),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'La afinidad compara tu carrera, habilidades, experiencia e idiomas con cada vacante vigente. '
+                  'Nunca usa tu edad, género, foto ni otros datos personales.',
+                  style: TextStyle(color: AppColors.violeta, fontSize: 13),
+                ),
+              ),
+            ],
           ),
         ),
-        if (datos.perfilFaltantes.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _mejorarPerfil(datos.perfilFaltantes),
-        ],
+        if (datos.perfilFaltantes.isNotEmpty) ...[const SizedBox(height: 12), _mejorarPerfil(datos.perfilFaltantes)],
         const SizedBox(height: 16),
         Text(
           '${filtradas.length} ${filtradas.length == 1 ? 'vacante' : 'vacantes'} · calculado a las $hora con tu perfil actual',
-          style: TextStyle(color: Colors.grey[700], fontSize: 13),
+          style: TextStyle(color: AppColors.textoSuave, fontSize: 13),
         ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           children: _filtros.entries
-              .map((f) => ChoiceChip(
-                    label: Text(f.value),
-                    selected: _minimo == f.key,
-                    onSelected: (_) => setState(() => _minimo = f.key),
-                  ))
+              .map(
+                (f) => ChoiceChip(
+                  label: Text(f.value),
+                  selected: _minimo == f.key,
+                  onSelected: (_) => setState(() => _minimo = f.key),
+                ),
+              )
               .toList(),
         ),
         const SizedBox(height: 12),
@@ -185,13 +191,10 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
                   ? 'No hay vacantes vigentes para recomendarte ahora (no se incluyen las que ya te postulaste).'
                   : 'Ninguna vacante llega a esa afinidad. Probá con "Todas".',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: AppColors.textoSuave),
             ),
           ),
-        for (final r in filtradas) ...[
-          _tarjeta(r),
-          const SizedBox(height: 12),
-        ],
+        for (final r in filtradas) ...[_tarjeta(r), const SizedBox(height: 12)],
       ],
     );
   }
@@ -200,9 +203,9 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
+        color: AppColors.alertaSuave,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.amber.shade200),
+        border: Border.all(color: AppColors.alerta.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,9 +225,11 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
 
   Widget _tarjeta(VacanteRecomendada r) {
     final abierta = _abiertas.contains(r.vacante.id);
-    final datosVacante = [r.vacante.city, r.vacante.modalidadLegible, r.vacante.nivelLegible]
-        .where((x) => x.isNotEmpty)
-        .join(' · ');
+    final datosVacante = [
+      r.vacante.city,
+      r.vacante.modalidadLegible,
+      r.vacante.nivelLegible,
+    ].where((x) => x.isNotEmpty).join(' · ');
 
     return Card(
       child: Padding(
@@ -249,9 +254,12 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
                       children: [
                         Text(r.vacante.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 2),
-                        Text(r.vacante.companyName, style: TextStyle(color: Colors.grey[800], fontWeight: FontWeight.w600)),
+                        Text(
+                          r.vacante.companyName,
+                          style: TextStyle(color: AppColors.texto, fontWeight: FontWeight.w600),
+                        ),
                         if (datosVacante.isNotEmpty)
-                          Text(datosVacante, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                          Text(datosVacante, style: TextStyle(color: AppColors.textoSuave, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -273,7 +281,7 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
               if (r.criterios.isEmpty)
                 Text(
                   'La vacante no especifica carrera, habilidades, experiencia ni idiomas, así que la afinidad es neutral (50%).',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                  style: TextStyle(color: AppColors.textoSuave, fontSize: 13),
                 ),
               for (final c in r.criterios) _detalleCriterio(c),
             ],
@@ -282,7 +290,8 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => setState(() => abierta ? _abiertas.remove(r.vacante.id) : _abiertas.add(r.vacante.id)),
+                    onPressed: () =>
+                        setState(() => abierta ? _abiertas.remove(r.vacante.id) : _abiertas.add(r.vacante.id)),
                     child: Text(abierta ? 'Ocultar detalle' : '¿Por qué ${r.afinidad}%?'),
                   ),
                 ),
@@ -303,18 +312,24 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
 
   Widget _insigniaAfinidad(int afinidad) {
     final (fondo, texto) = afinidad >= 75
-        ? (Colors.green.shade50, Colors.green.shade800)
+        ? (AppColors.exitoSuave, AppColors.exito)
         : afinidad >= 50
-            ? (Colors.amber.shade50, Colors.orange.shade800)
-            : (Colors.blueGrey.shade50, Colors.blueGrey.shade700);
+        ? (AppColors.alertaSuave, AppColors.alerta)
+        : (Color(0xFFF1F5F9), AppColors.textoSuave);
     return Container(
       width: 72,
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(10)),
       child: Column(
         children: [
-          Text('$afinidad%', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: texto)),
-          Text('afinidad', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: texto)),
+          Text(
+            '$afinidad%',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: texto),
+          ),
+          Text(
+            'afinidad',
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: texto),
+          ),
         ],
       ),
     );
@@ -331,7 +346,7 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
               Expanded(
                 child: Text('${_icono(c.estado)} ${c.nombre}', style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
-              Text('${c.cumplimiento}% · pesa ${c.peso}%', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+              Text('${c.cumplimiento}% · pesa ${c.peso}%', style: TextStyle(color: AppColors.textoSuave, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 6),
@@ -340,12 +355,12 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
             child: LinearProgressIndicator(
               value: c.cumplimiento / 100,
               minHeight: 6,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: AppColors.borde,
               color: _colores(c.estado).$2,
             ),
           ),
           const SizedBox(height: 6),
-          Text(c.detalle, style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+          Text(c.detalle, style: TextStyle(color: AppColors.textoSuave, fontSize: 13)),
           if (c.coincidencias.isNotEmpty || c.faltantes.isNotEmpty) ...[
             const SizedBox(height: 6),
             Wrap(
@@ -367,20 +382,23 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(999)),
-      child: Text(texto, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Text(
+        texto,
+        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
   (Color, Color) _colores(String? estado) {
     switch (estado) {
       case 'cumple':
-        return (Colors.green.shade50, Colors.green.shade700);
+        return (AppColors.exitoSuave, AppColors.exito);
       case 'parcial':
-        return (Colors.amber.shade50, Colors.orange.shade800);
+        return (AppColors.alertaSuave, AppColors.alerta);
       case 'no_cumple':
-        return (Colors.red.shade50, Colors.red.shade700);
+        return (AppColors.peligroSuave, AppColors.peligro);
       default:
-        return (Colors.grey.shade100, Colors.grey.shade700);
+        return (Color(0xFFF1F5F9), AppColors.textoSuave);
     }
   }
 

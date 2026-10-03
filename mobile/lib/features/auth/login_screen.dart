@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/services/auth_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/widgets/marca.dart';
+import '../vacantes/vacantes_screen.dart';
 import 'home_screen.dart';
 import 'registro_egresado_screen.dart';
 
-/// HU-02 — Inicio de sesión (versión móvil).
-/// Llama al mismo backend real que usa la web (Supabase compartida del equipo).
+/// HU-02 — Inicio de sesión. Desde acá también se pueden explorar las ofertas
+/// sin cuenta (HU-34).
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -32,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _iniciarSesion() async {
     if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
 
     setState(() {
       _cargando = true;
@@ -39,15 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final sesion = await _authService.login(
-        _correoCtrl.text.trim(),
-        _passwordCtrl.text,
-      );
-
+      final sesion = await _authService.login(_correoCtrl.text.trim(), _passwordCtrl.text);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => HomeScreen(sesion: sesion)),
-      );
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HomeScreen(sesion: sesion)));
     } on AuthException catch (e) {
       setState(() => _error = e.mensaje);
     } catch (_) {
@@ -57,111 +56,150 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _explorarSinCuenta() {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VacantesScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FB),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: AppTheme.barrasSistemaSobreOscuro,
+      child: Scaffold(
+        backgroundColor: AppColors.primario,
+        // La hoja del formulario se estira hasta el borde inferior aunque sobre espacio.
+        body: LayoutBuilder(
+          builder: (context, restricciones) => SingleChildScrollView(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Form(
-                key: _formKey,
+              constraints: BoxConstraints(minHeight: restricciones.maxHeight),
+              child: IntrinsicHeight(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 24),
-                    Icon(Icons.school_rounded, size: 56, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(height: 12),
-                    Text(
-                      'EGRESA',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                    ),
-                    Text(
-                      'Bolsa de trabajo universitaria',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 32),
-
-                    TextFormField(
-                      controller: _correoCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      autocorrect: false,
-                      decoration: const InputDecoration(
-                        labelText: 'Correo electrónico',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Ingresá tu correo.';
-                        if (!v.contains('@')) return 'Correo inválido.';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    TextFormField(
-                      controller: _passwordCtrl,
-                      obscureText: _ocultarPassword,
-                      decoration: InputDecoration(
-                        labelText: 'Contraseña',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: Icon(_ocultarPassword ? Icons.visibility_off : Icons.visibility),
-                          onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
+                    SafeArea(
+                      bottom: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(28, 36, 28, 32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const MarcaEgresa(sobreOscuro: true, tamano: 28),
+                            const SizedBox(height: 28),
+                            Text(
+                              'Tu primer trabajo empieza en tu universidad',
+                              style: Theme.of(
+                                context,
+                              ).textTheme.headlineSmall?.copyWith(color: Colors.white, height: 1.25),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Bolsa de trabajo universitaria: ofertas de empresas habilitadas por tu universidad.',
+                              style: TextStyle(color: Color(0xFFC7D2FE), fontSize: 14.5, height: 1.4),
+                            ),
+                          ],
                         ),
                       ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Ingresá tu contraseña.';
-                        return null;
-                      },
-                      onFieldSubmitted: (_) => _iniciarSesion(),
                     ),
-
-                    if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade200),
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          color: AppColors.fondo,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                         ),
-                        child: Text(
-                          _error!,
-                          style: TextStyle(color: Colors.red.shade800, fontSize: 13),
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: _cargando ? null : _iniciarSesion,
-                      style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                      child: _cargando
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                            )
-                          : const Text('Iniciar sesión'),
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: _cargando
-                          ? null
-                          : () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const RegistroEgresadoScreen()),
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                        child: SafeArea(
+                          top: false,
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text('Ingresá a tu cuenta', style: Theme.of(context).textTheme.titleLarge),
+                                    const SizedBox(height: 20),
+                                    TextFormField(
+                                      controller: _correoCtrl,
+                                      keyboardType: TextInputType.emailAddress,
+                                      textInputAction: TextInputAction.next,
+                                      autocorrect: false,
+                                      autofillHints: const [AutofillHints.email],
+                                      decoration: const InputDecoration(
+                                        labelText: 'Correo electrónico',
+                                        prefixIcon: Icon(Icons.mail_outline_rounded),
+                                      ),
+                                      validator: (v) {
+                                        if (v == null || v.trim().isEmpty) return 'Ingresá tu correo.';
+                                        if (!v.contains('@')) return 'Correo inválido.';
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 14),
+                                    TextFormField(
+                                      controller: _passwordCtrl,
+                                      obscureText: _ocultarPassword,
+                                      autofillHints: const [AutofillHints.password],
+                                      decoration: InputDecoration(
+                                        labelText: 'Contraseña',
+                                        prefixIcon: const Icon(Icons.lock_outline_rounded),
+                                        suffixIcon: IconButton(
+                                          tooltip: _ocultarPassword ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                                          icon: Icon(
+                                            _ocultarPassword
+                                                ? Icons.visibility_off_outlined
+                                                : Icons.visibility_outlined,
+                                          ),
+                                          onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
+                                        ),
+                                      ),
+                                      validator: (v) => (v == null || v.isEmpty) ? 'Ingresá tu contraseña.' : null,
+                                      onFieldSubmitted: (_) => _iniciarSesion(),
+                                    ),
+                                    if (_error != null) ...[const SizedBox(height: 14), _AvisoError(_error!)],
+                                    const SizedBox(height: 22),
+                                    FilledButton(
+                                      onPressed: _cargando ? null : _iniciarSesion,
+                                      child: _cargando
+                                          ? const SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                                            )
+                                          : const Text('Iniciar sesión'),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextButton(
+                                      onPressed: _cargando
+                                          ? null
+                                          : () => Navigator.of(
+                                              context,
+                                            ).push(MaterialPageRoute(builder: (_) => const RegistroEgresadoScreen())),
+                                      child: const Text('¿No tenés cuenta? Registrate como egresado'),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    const Row(
+                                      children: [
+                                        Expanded(child: Divider()),
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 12),
+                                          child: Text('o', style: TextStyle(color: AppColors.textoSuave)),
+                                        ),
+                                        Expanded(child: Divider()),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 18),
+                                    OutlinedButton.icon(
+                                      onPressed: _cargando ? null : _explorarSinCuenta,
+                                      icon: const Icon(Icons.travel_explore_rounded),
+                                      label: const Text('Explorar ofertas sin cuenta'),
+                                    ),
+                                  ],
+                                ),
                               ),
-                      child: const Text('¿No tenés cuenta? Registrate como egresado'),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -169,6 +207,33 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AvisoError extends StatelessWidget {
+  final String mensaje;
+  const _AvisoError(this.mensaje);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.peligroSuave,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.peligro.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 20, color: AppColors.peligro),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(mensaje, style: const TextStyle(color: AppColors.peligro, fontSize: 13.5)),
+          ),
+        ],
       ),
     );
   }
