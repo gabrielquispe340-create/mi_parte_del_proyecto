@@ -41,7 +41,7 @@ infra/      Docker Compose, Nginx, scripts de despliegue y respaldo
 | Python | 3.13+ |
 | Node.js | 22+ |
 | PostgreSQL | 16 |
-| Flutter | 3.11+ (opcional, solo móvil) |
+| Flutter | 3.44+ con Dart 3.12 (opcional, solo móvil) |
 | Docker Desktop | 24+ (opcional, alternativa al setup nativo) |
 
 ## Setup local
@@ -71,6 +71,12 @@ Abre 👉 http://localhost:4200
 
 ### Móvil
 
+La app es para **egresados**: buscar vacantes y postularse, seguir sus postulaciones,
+responder las entrevistas que proponen las empresas (confirmar, rechazar con un motivo,
+unirse a la videollamada o abrir la dirección en el mapa), completar el CV y ver las
+recomendaciones. Sin cuenta se pueden explorar las ofertas públicas. Las cuentas de empresa
+y de administración se usan desde la web.
+
 ```bash
 cd mobile
 flutter pub get
@@ -84,9 +90,19 @@ flutter build apk  # queda en mobile/build/app/outputs/flutter-apk/app-release.a
 ```
 
 El APK de release se conecta al backend de producción en Railway, así que funciona
-con cualquier conexión a internet (WiFi o datos), sin tener una PC prendida. Para
-probar un celular contra el backend de tu PC, compilá con `--dart-define=CELULAR_FISICO=true`
-(misma red WiFi; la IP está en `mobile/lib/core/services/api_config.dart`).
+con cualquier conexión a internet (WiFi o datos), sin tener una PC prendida.
+
+Para instalarlo, pasá el `app-release.apk` al celular (por WhatsApp o por cable), abrilo y
+permití "instalar apps de origen desconocido" cuando Android lo pida. Si dice que la app no
+se puede instalar, desinstalá primero la versión anterior: cada PC firma el APK con su propia
+clave, y Android no deja actualizar encima de uno firmado en otra máquina.
+
+Para probar un celular contra el backend de tu PC:
+
+- **Por USB** (lo más simple): `adb reverse tcp:8000 tcp:8000` y compilá con
+  `--dart-define=API_URL=http://127.0.0.1:8000/api`.
+- **Por WiFi** (misma red): compilá con `--dart-define=CELULAR_FISICO=true`; la IP está en
+  `mobile/lib/core/services/api_config.dart`.
 
 ### Todo junto con Docker Compose
 
@@ -283,6 +299,15 @@ Moderador de UMSS: `moderador@umss.egresa.bo` / `Egresa2026!`.
   "Verificar sin cambiar nada".
 - Las cuentas que se crean desde Gestión de roles (o al aprobar una universidad) tienen una
   contraseña temporal y deben cambiarla en el primer ingreso.
+- **Ofertas sin cuenta (HU-34):** en el login, "Explorar vacantes de empleo" (web) o
+  "Explorar ofertas sin cuenta" (app). Muestra las vacantes publicadas con el total de
+  vacantes activas y de empresas verificadas; para postularse pide iniciar sesión.
+- **Entrevistas (HU-20):** con `empresa@prueba.com`, en el dashboard "Gestionar Candidatos y
+  Etapas" → "Agendar entrevista" en la tarjeta del candidato. El egresado la confirma o la
+  rechaza desde Mis postulaciones (web) o desde la app, donde Inicio avisa la propuesta.
+- **Comparar candidatos (HU-18):** en "Gestionar Candidatos y Etapas", marcá 2 o 3 candidatos
+  de la misma vacante con el checkbox de su tarjeta y tocá "Comparar candidatos" en la barra
+  de abajo. Ojo: "Descartar candidato" desde la comparación descarta de verdad.
 
 Si alguna deja de funcionar (alguien del equipo pudo haberla cambiado probando), se resetea corriendo los scripts de arriba o pidiendo que se actualice manualmente — avisen en el grupo antes de cambiarlas para no romper la sesión de otro compañero.
 
