@@ -1,11 +1,12 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, catchError, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { MessageResponse, RegistroEmpresaRequest } from '../../core/models/auth.models';
 import { TimeoutService } from '../../core/services/timeout.service';
+import { ETIQUETAS_ROL } from '../admin/gestion-roles/gestion-roles.model';
 
 const TOKEN_KEY = 'token';
 const REFRESH_KEY = 'refresh_token';
@@ -40,6 +41,12 @@ export class AuthService {
   /** Universidad (tenant) del usuario; vacía para empresas y para el superadmin global. */
   readonly institucion = signal<string>(localStorage.getItem(INSTITUCION_KEY) ?? '');
   readonly debeCambiarPassword = signal<boolean>(localStorage.getItem(DEBE_CAMBIAR_PASSWORD_KEY) === '1');
+  /** Nombre del rol para mostrar; el admin sin universidad es el superadmin del SaaS. */
+  readonly rolLegible = computed(() => {
+    const rol = this.rol();
+    if (rol === 'platform_admin' && !this.institucion()) return 'Superadministrador';
+    return ETIQUETAS_ROL[rol] ?? rol;
+  });
 
   private readonly timeout = inject(TimeoutService);
 
