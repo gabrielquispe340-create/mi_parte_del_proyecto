@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Textos propios de Flutter en español (contadores, menú copiar/pegar, tooltips).
+  flutter_localizations:
+    sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -37,6 +40,8 @@ dependencies:
 
   # Cliente HTTP para consumir el backend FastAPI (HU-02 login real).
   http: ^1.2.2
+  # Abre el enlace de videollamada y la dirección de las entrevistas (HU-20).
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
@@ -59,6 +64,19 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Inter, la misma tipografía de la web, incluida en la app para no depender
+  # de internet al abrirla (licencia OFL en assets/fonts/OFL.txt).
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

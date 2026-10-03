@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 import '../../core/models/perfil_egresado.dart';
 import '../../core/services/perfil_service.dart';
 
@@ -98,7 +100,7 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
           padding: const EdgeInsets.all(20),
           children: [
             if (_error != null) ...[
-              Text(_error!, style: const TextStyle(color: Colors.red)),
+              Text(_error!, style: const TextStyle(color: AppColors.peligro)),
               const SizedBox(height: 12),
             ],
             TextFormField(
@@ -155,7 +157,10 @@ class _EditarPerfilScreenState extends State<EditarPerfilScreen> {
               onPressed: _guardando ? null : _guardar,
               child: _guardando
                   ? const SizedBox(
-                      width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
                   : const Text('Guardar cambios'),
             ),
           ],

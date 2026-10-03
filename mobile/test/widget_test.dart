@@ -10,5 +10,7 @@ void main() {
     expect(find.text('EGRESA'), findsOneWidget);
     expect(find.text('Iniciar sesión'), findsOneWidget);
     expect(find.byType(TextFormField), findsNWidgets(2));
+    // HU-34: las ofertas se pueden explorar sin cuenta.
+    expect(find.text('Explorar ofertas sin cuenta'), findsOneWidget);
   });
 }
