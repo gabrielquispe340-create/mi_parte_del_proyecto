@@ -1249,3 +1249,80 @@
   .kanban-board { flex-direction: column; }
   .kanban-col { width: 100%; min-width: 100%; }
 }
+
+// ── Comparación de candidatos (HU-18) ─────────────────────────────────
+.selection-checkbox {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+
+  input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+  }
+}
+
+.comparison-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 10px 10px 20px;
+  border-radius: 999px;
+  background: var(--text-main);
+  color: #fff;
+  box-shadow: var(--shadow-hover);
+
+  &__texto {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+
+    small {
+      color: #cbd5e1;
+      font-weight: 400;
+    }
+  }
+
+  &__limpiar,
+  &__comparar {
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  &__limpiar {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: transparent;
+    color: #fff;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  &__comparar {
+    border: none;
+    background: #fff;
+    color: var(--primary);
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+}

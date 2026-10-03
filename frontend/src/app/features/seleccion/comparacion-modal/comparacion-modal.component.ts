@@ -15,7 +15,8 @@ export class ComparacionModalComponent implements OnInit {
   @Input({ required: true }) idVacante!: string;
   @Input({ required: true }) postulacionIds!: string[];
   @Output() close = new EventEmitter<void>();
-  @Output() candidateDiscarded = new EventEmitter<void>();
+  /** Emite el id de la postulación descartada. */
+  @Output() candidateDiscarded = new EventEmitter<string>();
 
   private readonly svc = inject(SeleccionService);
 
@@ -26,10 +27,11 @@ export class ComparacionModalComponent implements OnInit {
   postulacionADescartar = signal<string | null>(null);
   nombreADescartar = signal<string>('');
   procesandoDescarte = signal(false);
+  errorDescarte = signal<string | null>(null);
 
   ngOnInit(): void {
     if (this.postulacionIds.length < 2 || this.postulacionIds.length > 3) {
-      this.error.set('Debe seleccionar entre 2 y 3 candidatos.');
+      this.error.set('Seleccioná entre 2 y 3 candidatos para comparar.');
       this.cargando.set(false);
       return;
     }
@@ -67,6 +69,7 @@ export class ComparacionModalComponent implements OnInit {
     if (!id) return;
     
     this.procesandoDescarte.set(true);
+    this.errorDescarte.set(null);
     this.svc.descartarCandidato(id, { motivo: 'Descartado desde vista de comparación' }).subscribe({
       next: () => {
         this.procesandoDescarte.set(false);
@@ -74,7 +77,7 @@ export class ComparacionModalComponent implements OnInit {
 
         const remaining = this.candidatos().filter(c => c.postulacion_id !== id);
         this.candidatos.set(remaining);
-        this.candidateDiscarded.emit(); 
+        this.candidateDiscarded.emit(id);
         
         if (remaining.length < 2) {
           this.close.emit();
@@ -83,7 +86,36 @@ export class ComparacionModalComponent implements OnInit {
       error: (e: HttpErrorResponse) => {
         this.procesandoDescarte.set(false);
         this.cerrarConfirmacionDescarte();
+        this.errorDescarte.set(e.error?.detail ?? 'No se pudo descartar al candidato. Intentá de nuevo.');
       }
     });
+  }
+
+  iniciales(nombre: string): string {
+    return nombre
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0].toUpperCase())
+      .join('');
+  }
+
+  /** El perfil guarda el nivel sin tilde ("basico"); acá se muestra bien escrito. */
+  nivelIdioma(nivel: string): string {
+    const niveles: Record<string, string> = {
+      basico: 'Básico',
+      intermedio: 'Intermedio',
+      avanzado: 'Avanzado',
+      fluido: 'Fluido',
+      nativo: 'Nativo',
+    };
+    return niveles[nivel?.toLowerCase()] ?? nivel;
+  }
+
+  /** Mismos cortes que la afinidad en el resto de la plataforma. */
+  nivelAfinidad(porcentaje: number): 'alta' | 'media' | 'baja' {
+    if (porcentaje >= 75) return 'alta';
+    if (porcentaje >= 50) return 'media';
+    return 'baja';
   }
 }

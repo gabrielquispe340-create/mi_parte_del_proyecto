@@ -82,12 +82,8 @@ export class PipelineSeleccionComponent implements OnInit {
     const actuales = this.candidatosSeleccionados();
     if (actuales.includes(idPostulacion)) {
       this.candidatosSeleccionados.set(actuales.filter(id => id !== idPostulacion));
-    } else {
-      if (actuales.length < 3) {
-        this.candidatosSeleccionados.set([...actuales, idPostulacion]);
-      } else {
-        alert('Solo puedes comparar hasta 3 candidatos a la vez.');
-      }
+    } else if (actuales.length < 3) {
+      this.candidatosSeleccionados.set([...actuales, idPostulacion]);
     }
   }
 
@@ -95,11 +91,17 @@ export class PipelineSeleccionComponent implements OnInit {
     return this.candidatosSeleccionados().includes(idPostulacion);
   }
 
+  /** Con 3 elegidos se deshabilitan los demás (se compara hasta 3). */
+  puedeSeleccionar(idPostulacion: string): boolean {
+    return this.estaSeleccionado(idPostulacion) || this.candidatosSeleccionados().length < 3;
+  }
+
+  limpiarSeleccion(): void {
+    this.candidatosSeleccionados.set([]);
+  }
+
   abrirComparacion(): void {
-    if (this.candidatosSeleccionados().length < 2) {
-      alert('Debes seleccionar al menos 2 candidatos para comparar.');
-      return;
-    }
+    if (this.candidatosSeleccionados().length < 2) return;
     this.mostrarModalComparacion.set(true);
   }
 
@@ -107,7 +109,9 @@ export class PipelineSeleccionComponent implements OnInit {
     this.mostrarModalComparacion.set(false);
   }
 
-  onCandidatoDescartadoDesdeComparacion(): void {
+  onCandidatoDescartadoDesdeComparacion(idPostulacion: string): void {
+    // El descartado ya no se puede comparar: sale de la selección.
+    this.candidatosSeleccionados.update(ids => ids.filter(id => id !== idPostulacion));
     if (this.vacanteSeleccionadaId()) {
       this.cargarPipeline(this.vacanteSeleccionadaId()!);
     }
@@ -193,6 +197,9 @@ export class PipelineSeleccionComponent implements OnInit {
 
   seleccionarVacante(id: string): void {
     this.vacanteSeleccionadaId.set(id);
+    // La comparación es por vacante: al cambiar de vacante se empieza de cero.
+    this.limpiarSeleccion();
+    this.mostrarModalComparacion.set(false);
     this.cargarPipeline(id);
   }
 

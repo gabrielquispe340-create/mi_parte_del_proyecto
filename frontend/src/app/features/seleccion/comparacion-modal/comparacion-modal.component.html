@@ -1,102 +1,135 @@
-<div class="modal-overlay">
-  <div class="modal-content comparison-modal">
-    <div class="modal-header">
-      <h2>Comparación de Candidatos</h2>
-      <button class="btn-close" (click)="close.emit()">×</button>
-    </div>
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="comparison-modal" role="dialog" aria-modal="true" aria-labelledby="titulo-comparacion" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div>
+        <h2 id="titulo-comparacion">Comparar candidatos</h2>
+        <p class="modal-subtitle">Perfiles lado a lado para decidir a quién avanzar en el proceso.</p>
+      </div>
+      <button type="button" class="btn-close" aria-label="Cerrar comparación" (click)="close.emit()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
 
     <div class="modal-body">
-      <div *ngIf="cargando()" class="loading-state">
-        <div class="spinner"></div>
-        <p>Cargando perfiles...</p>
-      </div>
-
-      <div *ngIf="error()" class="error-state">
-        <p>{{ error() }}</p>
-      </div>
-
-      <div *ngIf="!cargando() && !error()" class="comparison-grid" [style.grid-template-columns]="'repeat(' + candidatos().length + ', 1fr)'">
-        
-        <!-- Headers -->
-        <div class="candidate-col" *ngFor="let cand of candidatos()">
-          <div class="candidate-header">
-            <h3>{{ cand.candidato_nombre }}</h3>
-            <span class="afinidad-badge" *ngIf="cand.afinidad !== null">{{ cand.afinidad }}% afinidad</span>
-          </div>
-
-          <div class="candidate-actions">
-            <button class="btn btn-danger btn-sm" (click)="abrirConfirmacionDescarte(cand.postulacion_id, cand.candidato_nombre)">
-              <i class="fas fa-times"></i> Descartar
-            </button>
-          </div>
-
-          <!-- Experiencia -->
-          <div class="section-card">
-            <h4><i class="fas fa-briefcase"></i> Experiencia</h4>
-            <div *ngIf="cand.experiencia.length === 0" class="empty-state">Sin experiencia registrada</div>
-            <ul class="item-list">
-              <li *ngFor="let exp of cand.experiencia">
-                <strong>{{ exp.cargo }}</strong> en {{ exp.empresa }}
-                <div class="dates">{{ exp.fecha_inicio | date:'MMM yyyy' }} - {{ exp.fecha_fin ? (exp.fecha_fin | date:'MMM yyyy') : 'Presente' }}</div>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Formación -->
-          <div class="section-card">
-            <h4><i class="fas fa-graduation-cap"></i> Formación</h4>
-            <div *ngIf="cand.formacion.length === 0" class="empty-state">Sin formación registrada</div>
-            <ul class="item-list">
-              <li *ngFor="let edu of cand.formacion">
-                <strong>{{ edu.programa }}</strong>
-                <div>{{ edu.institucion }} ({{ edu.estado_academico }})</div>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Habilidades -->
-          <div class="section-card">
-            <h4><i class="fas fa-star"></i> Habilidades</h4>
-            <div *ngIf="cand.habilidades.length === 0" class="empty-state">Sin habilidades</div>
-            <div class="tags">
-              <span class="tag" *ngFor="let hab of cand.habilidades">{{ hab.nombre }}</span>
-            </div>
-          </div>
-
-          <!-- Idiomas -->
-          <div class="section-card">
-            <h4><i class="fas fa-language"></i> Idiomas</h4>
-            <div *ngIf="cand.idiomas.length === 0" class="empty-state">Sin idiomas</div>
-            <ul class="item-list">
-              <li *ngFor="let lang of cand.idiomas">
-                <strong>{{ lang.idioma }}</strong>: {{ lang.nivel }}
-              </li>
-            </ul>
-          </div>
-
+      @if (cargando()) {
+        <div class="state">
+          <div class="spinner"></div>
+          <p>Cargando perfiles…</p>
         </div>
+      } @else if (error()) {
+        <div class="state state--error">
+          <p>{{ error() }}</p>
+          <button type="button" class="btn-outline" (click)="cargarDatos()">Reintentar</button>
+        </div>
+      } @else {
+        @if (errorDescarte()) {
+          <div class="alert-error" role="alert">{{ errorDescarte() }}</div>
+        }
 
+        <div class="comparison-grid" [style.--columnas]="candidatos().length">
+          @for (cand of candidatos(); track cand.postulacion_id) {
+            <article class="candidate-col">
+              <div class="candidate-header">
+                <div class="avatar">{{ iniciales(cand.candidato_nombre) }}</div>
+                <h3>{{ cand.candidato_nombre }}</h3>
+                @if (cand.afinidad !== null && cand.afinidad !== undefined) {
+                  <span [class]="'afinidad afinidad--' + nivelAfinidad(cand.afinidad)">{{ cand.afinidad }}% de afinidad</span>
+                } @else {
+                  <span class="afinidad afinidad--baja">Afinidad no disponible</span>
+                }
+              </div>
+
+              <section class="section">
+                <h4>Experiencia</h4>
+                @for (exp of cand.experiencia; track exp.id) {
+                  <div class="item">
+                    <strong>{{ exp.cargo }}</strong>
+                    @if (exp.empresa) {
+                      <span>{{ exp.empresa }}</span>
+                    }
+                    @if (exp.fecha_inicio) {
+                      <span class="meta">
+                        {{ exp.fecha_inicio | date: 'MM/yyyy' }} – {{ exp.fecha_fin ? (exp.fecha_fin | date: 'MM/yyyy') : 'actualidad' }}
+                      </span>
+                    }
+                  </div>
+                } @empty {
+                  <p class="empty">Sin experiencia registrada</p>
+                }
+              </section>
+
+              <section class="section">
+                <h4>Formación</h4>
+                @for (edu of cand.formacion; track edu.id) {
+                  <div class="item">
+                    <strong>{{ edu.programa }}</strong>
+                    @if (edu.institucion) {
+                      <span>{{ edu.institucion }}</span>
+                    }
+                    @if (edu.estado_academico) {
+                      <span class="meta">{{ edu.estado_academico | titlecase }}</span>
+                    }
+                  </div>
+                } @empty {
+                  <p class="empty">Sin formación registrada</p>
+                }
+              </section>
+
+              <section class="section">
+                <h4>Habilidades</h4>
+                @if (cand.habilidades.length) {
+                  <div class="tags">
+                    @for (hab of cand.habilidades; track hab.id) {
+                      <span class="tag">{{ hab.nombre }}</span>
+                    }
+                  </div>
+                } @else {
+                  <p class="empty">Sin habilidades registradas</p>
+                }
+              </section>
+
+              <section class="section">
+                <h4>Idiomas</h4>
+                @for (lang of cand.idiomas; track lang.id) {
+                  <div class="item item--row">
+                    <strong>{{ lang.idioma }}</strong>
+                    <span class="meta">{{ nivelIdioma(lang.nivel) }}</span>
+                  </div>
+                } @empty {
+                  <p class="empty">Sin idiomas registrados</p>
+                }
+              </section>
+
+              <footer class="candidate-actions">
+                <button type="button" class="btn-danger-outline" (click)="abrirConfirmacionDescarte(cand.postulacion_id, cand.candidato_nombre)">
+                  Descartar candidato
+                </button>
+              </footer>
+            </article>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Confirmación propia en lugar de window.confirm() -->
+@if (postulacionADescartar() !== null) {
+  <div class="modal-overlay modal-overlay--top" (click)="cerrarConfirmacionDescarte()">
+    <div class="confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="titulo-descarte" (click)="$event.stopPropagation()">
+      <div class="confirm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        </svg>
+      </div>
+      <h3 id="titulo-descarte">Descartar candidato</h3>
+      <p>¿Seguro que querés descartar a <strong>{{ nombreADescartar() }}</strong> de este proceso de selección?</p>
+      <div class="confirm-actions">
+        <button type="button" class="btn-outline" (click)="cerrarConfirmacionDescarte()" [disabled]="procesandoDescarte()">Cancelar</button>
+        <button type="button" class="btn-danger" (click)="confirmarDescarte()" [disabled]="procesandoDescarte()">
+          {{ procesandoDescarte() ? 'Descartando…' : 'Sí, descartar' }}
+        </button>
       </div>
     </div>
   </div>
-</div>
-
-<!-- Modal de confirmación custom para no usar window.confirm() -->
-<div class="modal-overlay custom-confirm-modal" *ngIf="postulacionADescartar() !== null" style="z-index: 9999;">
-  <div class="modal-panel" style="max-width: 450px; background: white; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-    <div style="color: #ef4444; margin-bottom: 15px;">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-      </svg>
-    </div>
-    <h3 style="margin-bottom: 10px; font-size: 1.25rem;">Descartar Candidato</h3>
-    <p style="color: #64748b; margin-bottom: 25px;">¿Seguro que deseas descartar definitivamente a <strong>{{ nombreADescartar() }}</strong> de este proceso de selección?</p>
-    
-    <div style="display: flex; gap: 15px; justify-content: center;">
-      <button class="btn btn-ghost" (click)="cerrarConfirmacionDescarte()" [disabled]="procesandoDescarte()">Cancelar</button>
-      <button class="btn btn-danger" (click)="confirmarDescarte()" [disabled]="procesandoDescarte()">
-        {{ procesandoDescarte() ? 'Procesando...' : 'Sí, descartar' }}
-      </button>
-    </div>
-  </div>
-</div>
+}

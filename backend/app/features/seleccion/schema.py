@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.features.perfil.schema import ExperienciaResponse, FormacionResponse, HabilidadResponse, IdiomaResponse
+
 
 class EtapaItem(BaseModel):
     id: uuid.UUID | None = None
@@ -102,15 +104,11 @@ class NotaInternaResponse(BaseModel):
     created_at: datetime
 
 
-from app.features.perfil.schema import (
-    FormacionResponse,
-    ExperienciaResponse,
-    IdiomaResponse,
-    HabilidadResponse,
-)
-
 class CompararCandidatosRequest(BaseModel):
+    """HU-18: postulaciones de la misma vacante a comparar."""
+
     postulaciones: list[uuid.UUID] = Field(..., min_length=2, max_length=3, description="IDs de las postulaciones a comparar")
+
 
 class CandidatoComparacionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
