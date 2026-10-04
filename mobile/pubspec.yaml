@@ -40,8 +40,15 @@ dependencies:
 
   # Cliente HTTP para consumir el backend FastAPI (HU-02 login real).
   http: ^1.2.2
+  # Tipo MIME de los adjuntos que se suben (ya venía como dependencia de http).
+  http_parser: ^4.1.2
   # Abre el enlace de videollamada y la dirección de las entrevistas (HU-20).
   url_launcher: ^6.3.3
+  # Mensajería (HU-19): elegir un archivo para adjuntar, guardar el que llega
+  # en la caché del teléfono y abrirlo con la app que corresponda (PDF, imagen...).
+  file_picker: ^13.1.0
+  path_provider: ^2.1.6
+  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:

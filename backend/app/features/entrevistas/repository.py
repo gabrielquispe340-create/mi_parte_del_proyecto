@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.models.candidato import CandidateProfile
 from app.models.empresa import CompanyMember
@@ -60,6 +60,29 @@ class EntrevistasRepository:
             )
             .where(Interview.application_id == application_id)
             .order_by(Interview.created_at.desc())
+        )
+        return list(self.db.scalars(stmt).all())
+
+    def listar_por_empresa_y_rango(
+        self, company_id: uuid.UUID, desde: datetime, hasta: datetime
+    ) -> list[Interview]:
+        """Entrevistas de las vacantes de la empresa que empiezan en [desde, hasta)."""
+        stmt = (
+            select(Interview)
+            .join(Application, Interview.application_id == Application.id)
+            .join(JobPosting, Application.job_id == JobPosting.id)
+            .options(
+                contains_eager(Interview.application)
+                .contains_eager(Application.job_posting)
+                .joinedload(JobPosting.company),
+                contains_eager(Interview.application).joinedload(Application.candidate),
+            )
+            .where(
+                JobPosting.company_id == company_id,
+                Interview.scheduled_start >= desde,
+                Interview.scheduled_start < hasta,
+            )
+            .order_by(Interview.scheduled_start.asc())
         )
         return list(self.db.scalars(stmt).all())
 

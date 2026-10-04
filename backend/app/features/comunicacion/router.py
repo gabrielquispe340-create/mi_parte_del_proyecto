@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common.request_context import get_client_ip
 from app.core.database import get_db
-from app.features.comunicacion.schema import ConversacionPostulacionOut, MensajeOut
+from app.features.comunicacion.schema import ConversacionPostulacionOut, ConversacionResumenOut, MensajeOut
 from app.features.comunicacion.service import ComunicacionService
 from app.security.dependencies import CurrentUser, require_roles
 
@@ -21,6 +21,15 @@ _roles_mensajeria = require_roles("empresa", "candidate", "egresado", "candidato
 @router.get("/_status")
 def estado_modulo() -> dict:
     return {"modulo": "comunicacion_y_entrevistas", "sprint_previsto": 2, "activo": True}
+
+
+@router.get("/conversaciones", response_model=list[ConversacionResumenOut])
+def listar_conversaciones(
+    current_user: CurrentUser = Depends(_roles_mensajeria),
+    db: Session = Depends(get_db),
+) -> list[ConversacionResumenOut]:
+    """Bandeja de mensajes: hilos del usuario con su último mensaje y los no leídos."""
+    return ComunicacionService(db).listar_conversaciones(current_user.id_usuario)
 
 
 @router.get(

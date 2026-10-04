@@ -18,6 +18,7 @@ from app.features.comunicacion.repository import ComunicacionRepository
 from app.features.comunicacion.schema import (
     AdjuntoMensajeOut,
     ConversacionPostulacionOut,
+    ConversacionResumenOut,
     MensajeOut,
 )
 from app.models.comunicacion import Conversation, Message
@@ -72,7 +73,9 @@ class ComunicacionService:
             "No tienes permiso para acceder a esta conversación. Solo pueden comunicarse el candidato postulado y la empresa titular de la vacante."
         )
 
-    def _metadatos_postulacion(self, app: Application) -> tuple[str, str, str, Optional[str]]:
+    @staticmethod
+    def _nombres_postulacion(app: Application) -> tuple[str, str, str]:
+        """Vacante, empresa y candidato de la postulación, sin cargar la formación."""
         vacante_titulo = app.job_posting.title if app.job_posting else "Vacante"
         empresa_nombre = "Empresa"
         if app.job_posting and app.job_posting.company:
@@ -82,9 +85,14 @@ class ComunicacionService:
                 or "Empresa"
             )
         candidato_nombre = "Candidato"
-        candidato_carrera: Optional[str] = None
         if app.candidate:
             candidato_nombre = f"{app.candidate.first_name} {app.candidate.last_name}".strip()
+        return vacante_titulo, empresa_nombre, candidato_nombre
+
+    def _metadatos_postulacion(self, app: Application) -> tuple[str, str, str, Optional[str]]:
+        vacante_titulo, empresa_nombre, candidato_nombre = self._nombres_postulacion(app)
+        candidato_carrera: Optional[str] = None
+        if app.candidate:
             for edu in app.candidate.educations or []:
                 if edu.field_of_study and edu.field_of_study.name:
                     candidato_carrera = edu.field_of_study.name
@@ -148,6 +156,35 @@ class ComunicacionService:
             if last_read is None or msg.created_at > last_read:
                 no_leidos += 1
         return no_leidos
+
+    def listar_conversaciones(self, user_id: uuid.UUID) -> list[ConversacionResumenOut]:
+        """Bandeja de mensajes del usuario (candidato o empresa), del hilo más reciente al más viejo."""
+        conversaciones = self.repo.listar_conversaciones_de_usuario(user_id)
+        ids = [c.id for c in conversaciones]
+        ultimos = self.repo.ultimos_mensajes(ids)
+        no_leidos = self.repo.contar_no_leidos(ids, user_id)
+
+        resultado: list[ConversacionResumenOut] = []
+        for conv in conversaciones:
+            ultimo = ultimos.get(conv.id)
+            if ultimo is None:  # Hilo sin mensajes visibles.
+                continue
+            vacante_titulo, empresa_nombre, candidato_nombre = self._nombres_postulacion(conv.application)
+            resultado.append(
+                ConversacionResumenOut(
+                    conversation_id=conv.id,
+                    application_id=conv.application_id,
+                    vacante_titulo=vacante_titulo,
+                    empresa_nombre=empresa_nombre,
+                    candidato_nombre=candidato_nombre,
+                    estado_postulacion=conv.application.current_status,
+                    ultimo_mensaje=ultimo.content,
+                    ultimo_mensaje_es_mio=ultimo.sender_id == user_id,
+                    ultimo_mensaje_at=ultimo.created_at,
+                    no_leidos=no_leidos.get(conv.id, 0),
+                )
+            )
+        return resultado
 
     def obtener_conversacion_postulacion(
         self,

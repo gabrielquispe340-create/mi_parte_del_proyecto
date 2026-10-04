@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from app.models.candidato import CandidateEducation, CandidateProfile
 from app.models.empresa import Company, CompanyMember
@@ -104,6 +104,23 @@ class SeleccionRepository:
                 selectinload(Application.notes),
             )
             .where(Application.job_id == job_id)
+            .order_by(Application.applied_at.desc())
+        )
+        return list(self.db.scalars(stmt).all())
+
+    def obtener_postulaciones_nuevas_empresa(self, company_id: uuid.UUID) -> list[Application]:
+        """Postulaciones que nadie revisó todavía (estado "applied") en todas las vacantes de la empresa."""
+        stmt = (
+            select(Application)
+            .join(JobPosting, Application.job_id == JobPosting.id)
+            .options(
+                contains_eager(Application.job_posting),
+                joinedload(Application.candidate).joinedload(CandidateProfile.user),
+                joinedload(Application.candidate).selectinload(CandidateProfile.educations).joinedload(CandidateEducation.field_of_study),
+                joinedload(Application.current_stage),
+                selectinload(Application.notes),
+            )
+            .where(JobPosting.company_id == company_id, Application.current_status == "applied")
             .order_by(Application.applied_at.desc())
         )
         return list(self.db.scalars(stmt).all())

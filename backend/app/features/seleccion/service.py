@@ -16,6 +16,8 @@ from app.features.seleccion.schema import (
     NotaInternaRequest,
     NotaInternaResponse,
     PipelineVacanteResponse,
+    PostulanteNuevoItem,
+    PostulantesNuevosResponse,
     VacanteResumenSeleccion,
     CandidatoComparacionResponse,
     CompararCandidatosRequest,
@@ -85,6 +87,37 @@ class SeleccionService:
                 )
             )
         return resultado
+
+    def listar_postulantes_nuevos(self, user_id: uuid.UUID, limite: int = 50) -> PostulantesNuevosResponse:
+        """App móvil de empresas: postulantes que nadie revisó todavía, del más reciente al más viejo."""
+        from app.features.vacantes.service import VacanteService
+
+        miembro = self._obtener_miembro(user_id)
+        apps = self.repo.obtener_postulaciones_nuevas_empresa(miembro.company_id)
+        visibles = apps[:limite]
+        perfiles = motor_afinidad.perfiles_de_candidatos(self.db, {a.candidate_id for a in visibles})
+        ia_activa = motor_afinidad.ia_activa()
+
+        postulantes: list[PostulanteNuevoItem] = []
+        for a in visibles:
+            afinidad = VacanteService._calcular_afinidad(
+                a.job_posting, perfiles.get(a.candidate_id) if ia_activa else None
+            )
+            postulantes.append(
+                PostulanteNuevoItem(
+                    **self._mapear_candidato_item(a).model_dump(exclude={"candidato_afinidad"}),
+                    candidato_afinidad=afinidad.porcentaje if afinidad else None,
+                    vacante_id=a.job_id,
+                    vacante_titulo=a.job_posting.title,
+                )
+            )
+
+        empresa = miembro.company
+        return PostulantesNuevosResponse(
+            empresa_nombre=empresa.trade_name or empresa.legal_name,
+            total=len(apps),
+            postulantes=postulantes,
+        )
 
     def obtener_etapas_vacante(self, user_id: uuid.UUID, job_id: uuid.UUID) -> list[EtapaResponse]:
         miembro = self._obtener_miembro(user_id)

@@ -44,6 +44,21 @@ class ConversacionPostulacionOut(BaseModel):
     mensajes: list[MensajeOut] = []
 
 
+class ConversacionResumenOut(BaseModel):
+    """Una fila de la bandeja de mensajes: cada hilo con su último mensaje."""
+
+    conversation_id: uuid.UUID
+    application_id: uuid.UUID
+    vacante_titulo: str
+    empresa_nombre: str
+    candidato_nombre: str
+    estado_postulacion: str
+    ultimo_mensaje: str
+    ultimo_mensaje_es_mio: bool
+    ultimo_mensaje_at: datetime
+    no_leidos: int = 0
+
+
 class ResumenMensajesPostulacionOut(BaseModel):
     application_id: uuid.UUID
     total_mensajes: int = 0

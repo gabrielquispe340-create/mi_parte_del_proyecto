@@ -2,22 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/models/sesion.dart';
+import '../../core/services/api_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/marca.dart';
+import '../empresa/empresa_panel_screen.dart';
 import '../perfil/egresado_panel_screen.dart';
 import 'login_screen.dart';
 
-const _urlWeb = 'https://egresa.up.railway.app';
-
-/// Punto de entrada post-login. La app móvil es para egresados; las cuentas
-/// de empresa y de administración se gestionan desde la web.
+/// Punto de entrada post-login. Los egresados tienen la app completa y las
+/// empresas una versión acotada (postulantes nuevos, agenda y mensajes); las
+/// cuentas de administración se gestionan desde la web.
 class HomeScreen extends StatelessWidget {
   final Sesion sesion;
 
   const HomeScreen({super.key, required this.sesion});
 
   String get _rolLegible => switch (sesion.rol) {
-        'empresa' => 'empresa',
         'moderator' => 'moderador',
         'platform_admin' => sesion.institucionNombre == null ? 'superadministrador' : 'administrador universitario',
         _ => sesion.rol,
@@ -27,6 +27,9 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     if (sesion.rol == 'candidate') {
       return EgresadoPanelScreen(sesion: sesion);
+    }
+    if (sesion.rol == 'empresa') {
+      return EmpresaPanelScreen(sesion: sesion);
     }
     return Scaffold(
       body: SafeArea(
@@ -52,14 +55,14 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Ingresaste como $_rolLegible. La app móvil está pensada para egresados; '
-                'el panel de ${sesion.rol == 'empresa' ? 'tu empresa' : 'administración'} está disponible en la web.',
+                'Ingresaste como $_rolLegible. La app móvil está pensada para egresados y empresas; '
+                'el panel de administración está disponible en la web.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppColors.textoSuave),
               ),
               const Spacer(),
               FilledButton.icon(
-                onPressed: () => launchUrl(Uri.parse(_urlWeb), mode: LaunchMode.externalApplication),
+                onPressed: () => launchUrl(Uri.parse(ApiConfig.urlWeb), mode: LaunchMode.externalApplication),
                 icon: const Icon(Icons.open_in_new_rounded),
                 label: const Text('Abrir EGRESA en el navegador'),
               ),

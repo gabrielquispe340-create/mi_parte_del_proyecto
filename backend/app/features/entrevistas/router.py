@@ -1,5 +1,7 @@
 import uuid
-from fastapi import APIRouter, Depends, Request
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from app.common.request_context import get_client_ip
@@ -23,6 +25,21 @@ _solo_candidato = require_roles("candidate")
 # ─── ENDPOINTS LADO EMPRESA (/seleccion) ─────────────────────────────────────
 
 router_empresa = APIRouter(prefix="/seleccion", tags=["entrevistas-empresa"])
+
+
+@router_empresa.get("/entrevistas", response_model=list[EntrevistaOut])
+def listar_agenda_entrevistas_empresa(
+    desde: datetime = Query(..., description="Inicio del rango, ISO 8601 con zona horaria"),
+    hasta: datetime = Query(..., description="Fin del rango (exclusivo), como máximo 31 días después"),
+    current_user: CurrentUser = Depends(_solo_empresa),
+    db: Session = Depends(get_db),
+) -> list[EntrevistaOut]:
+    """App móvil de empresas: agenda de entrevistas de todas sus vacantes, por hora de inicio."""
+    return EntrevistasService(db).listar_agenda_empresa(
+        user_id=current_user.id_usuario,
+        desde=desde,
+        hasta=hasta,
+    )
 
 
 @router_empresa.post("/postulaciones/{id_postulacion}/entrevistas", response_model=EntrevistaOut, status_code=201)

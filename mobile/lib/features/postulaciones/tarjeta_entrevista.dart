@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/models/entrevista.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/abrir_afuera.dart';
 import '../../core/utils/formatos.dart';
 import '../../core/widgets/insignia.dart';
 
@@ -64,47 +63,6 @@ class _TarjetaEntrevistaState extends State<TarjetaEntrevista> {
       if (mounted) setState(() => _procesando = false);
     }
   }
-
-  /// El enlace lo escribe la empresa: solo se abren direcciones http(s), y si
-  /// viene sin esquema ("meet.google.com/abc") se asume https.
-  static Uri? _enlaceSeguro(String texto) {
-    final limpio = texto.trim();
-    final uri = Uri.tryParse(limpio.contains('://') ? limpio : 'https://$limpio');
-    if (uri == null || !(uri.scheme == 'https' || uri.scheme == 'http') || uri.host.isEmpty) return null;
-    return uri;
-  }
-
-  /// Abre [uri] en otra app; si no se puede, copia [texto] y avisa con [siFalla].
-  Future<void> _abrirAfuera(Uri? uri, String texto, String siFalla) async {
-    var abierto = false;
-    if (uri != null) {
-      try {
-        abierto = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } catch (_) {
-        abierto = false;
-      }
-    }
-    if (abierto || !mounted) return;
-    await Clipboard.setData(ClipboardData(text: texto));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(siFalla)));
-  }
-
-  Future<void> _abrirEnlace() async {
-    final enlace = _e.enlace;
-    if (enlace == null) return;
-    await _abrirAfuera(
-      _enlaceSeguro(enlace),
-      enlace,
-      'No se pudo abrir el enlace. Lo copiamos para que lo pegues en tu navegador.',
-    );
-  }
-
-  Future<void> _abrirMapa(String lugar) => _abrirAfuera(
-    Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': lugar}),
-    lugar,
-    'No se pudo abrir el mapa. Copiamos la dirección.',
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +144,7 @@ class _TarjetaEntrevistaState extends State<TarjetaEntrevista> {
                 if (mostrarEnlace) ...[
                   const SizedBox(height: 14),
                   OutlinedButton.icon(
-                    onPressed: _abrirEnlace,
+                    onPressed: () => abrirVideollamada(context, _e.enlace!),
                     icon: const Icon(Icons.videocam_outlined),
                     label: const Text('Unirse a la videollamada'),
                   ),
@@ -194,7 +152,7 @@ class _TarjetaEntrevistaState extends State<TarjetaEntrevista> {
                 if (tieneLugar && porVenir) ...[
                   const SizedBox(height: 14),
                   OutlinedButton.icon(
-                    onPressed: () => _abrirMapa(lugar),
+                    onPressed: () => abrirMapa(context, lugar),
                     icon: const Icon(Icons.map_outlined),
                     label: const Text('Cómo llegar'),
                   ),

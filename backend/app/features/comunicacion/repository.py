@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, func, or_, select
+from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from app.models.candidato import CandidateEducation, CandidateProfile
 from app.models.comunicacion import (
@@ -63,6 +63,63 @@ class ComunicacionRepository:
             .where(CandidateProfile.user_id == user_id)
         )
         return self.db.scalar(stmt)
+
+    def listar_conversaciones_de_usuario(self, user_id: uuid.UUID, limite: int = 100) -> list[Conversation]:
+        """Hilos de postulaciones donde el usuario es el candidato o miembro activo de la empresa."""
+        empresas_del_usuario = select(CompanyMember.company_id).where(
+            CompanyMember.user_id == user_id, CompanyMember.is_active.is_(True)
+        )
+        stmt = (
+            select(Conversation)
+            .join(Application, Conversation.application_id == Application.id)
+            .join(JobPosting, Application.job_id == JobPosting.id)
+            .join(CandidateProfile, Application.candidate_id == CandidateProfile.id)
+            .options(
+                contains_eager(Conversation.application)
+                .contains_eager(Application.job_posting)
+                .joinedload(JobPosting.company),
+                contains_eager(Conversation.application).contains_eager(Application.candidate),
+            )
+            .where(or_(CandidateProfile.user_id == user_id, JobPosting.company_id.in_(empresas_del_usuario)))
+            .order_by(Conversation.last_message_at.desc())
+            .limit(limite)
+        )
+        return list(self.db.scalars(stmt).all())
+
+    def ultimos_mensajes(self, conversation_ids: list[uuid.UUID]) -> dict[uuid.UUID, Message]:
+        """Último mensaje visible de cada hilo, en una sola consulta (DISTINCT ON)."""
+        if not conversation_ids:
+            return {}
+        stmt = (
+            select(Message)
+            .where(Message.conversation_id.in_(conversation_ids), Message.deleted_at.is_(None))
+            .order_by(Message.conversation_id, Message.created_at.desc())
+            .distinct(Message.conversation_id)
+        )
+        return {m.conversation_id: m for m in self.db.scalars(stmt).all()}
+
+    def contar_no_leidos(self, conversation_ids: list[uuid.UUID], user_id: uuid.UUID) -> dict[uuid.UUID, int]:
+        """Mensajes de la otra parte posteriores a la última lectura del usuario, por hilo."""
+        if not conversation_ids:
+            return {}
+        stmt = (
+            select(Message.conversation_id, func.count(Message.id))
+            .outerjoin(
+                ConversationMember,
+                and_(
+                    ConversationMember.conversation_id == Message.conversation_id,
+                    ConversationMember.user_id == user_id,
+                ),
+            )
+            .where(
+                Message.conversation_id.in_(conversation_ids),
+                Message.deleted_at.is_(None),
+                Message.sender_id != user_id,
+                or_(ConversationMember.last_read_at.is_(None), Message.created_at > ConversationMember.last_read_at),
+            )
+            .group_by(Message.conversation_id)
+        )
+        return {conv_id: total for conv_id, total in self.db.execute(stmt).all()}
 
     def obtener_conversacion_por_postulacion(
         self, application_id: uuid.UUID
