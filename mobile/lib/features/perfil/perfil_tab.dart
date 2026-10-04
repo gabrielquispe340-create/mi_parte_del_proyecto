@@ -9,6 +9,8 @@ import '../../core/widgets/insignia.dart';
 import '../../core/widgets/vistas_estado.dart';
 import '../auth/cambiar_password_screen.dart';
 import '../inicio/inicio_tab.dart';
+import '../notificaciones/notificaciones_screen.dart';
+import '../notificaciones/preferencias_notificaciones_screen.dart';
 import 'editar_perfil_screen.dart';
 import 'mi_cv_screen.dart';
 
@@ -49,6 +51,18 @@ class _PerfilTabState extends State<PerfilTab> {
       MaterialPageRoute(builder: (_) => MiCvScreen(accessToken: widget.sesion.accessToken)),
     );
     if (mounted) _recargar();
+  }
+
+  Future<void> _abrirNotificaciones() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => NotificacionesScreen(accessToken: widget.sesion.accessToken)),
+    );
+  }
+
+  Future<void> _abrirPreferencias() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PreferenciasNotificacionesScreen(accessToken: widget.sesion.accessToken)),
+    );
   }
 
   Future<void> _cambiarPassword() async {
@@ -96,7 +110,7 @@ class _PerfilTabState extends State<PerfilTab> {
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
+                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Sobre mí', style: Theme.of(context).textTheme.titleSmall),
@@ -116,6 +130,20 @@ class _PerfilTabState extends State<PerfilTab> {
                         titulo: 'Mi CV',
                         subtitulo: 'Formación, experiencia, idiomas, certificaciones y habilidades',
                         onTap: _abrirCv,
+                      ),
+                      const Divider(indent: 60),
+                      _Opcion(
+                        icono: Icons.notifications_active_outlined,
+                        titulo: 'Notificaciones y Alertas',
+                        subtitulo: 'Avisos de postulaciones, vacantes afines y push Firebase',
+                        onTap: _abrirNotificaciones,
+                      ),
+                      const Divider(indent: 60),
+                      _Opcion(
+                        icono: Icons.tune_outlined,
+                        titulo: 'Preferencias de Notificación',
+                        subtitulo: 'Canales y frecuencias de alertas por tipo',
+                        onTap: _abrirPreferencias,
                       ),
                       const Divider(indent: 60),
                       _Opcion(

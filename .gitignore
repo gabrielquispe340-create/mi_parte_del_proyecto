@@ -57,3 +57,5 @@ infra/seed/
 # Credenciales (NUNCA commitear)
 **/firebase-adminsdk-*.json
 **/*service-account*.json
+**/serviceAccountKey*.json
+!**/serviceAccountKey.example.json

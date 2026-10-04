@@ -8,6 +8,8 @@ import { environment } from '../../../environments/environment';
 import { PostulacionService, PostulacionListResponse } from '../../core/services/postulacion.service';
 import { SeleccionService } from '../seleccion/seleccion.service';
 
+import { NotificacionesCampanaComponent } from '../../shared/components/notificaciones-campana/notificaciones-campana.component';
+
 interface InstitucionEmpresa {
   id: string;
   nombre: string;
@@ -19,7 +21,7 @@ interface InstitucionEmpresa {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, NotificacionesCampanaComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })

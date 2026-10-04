@@ -103,6 +103,13 @@ export const routes: Routes = [
         path: 'bitacora',
         loadComponent: () => import('./features/admin/bitacora/bitacora.component').then((m) => m.BitacoraComponent),
       },
+      {
+        path: 'notificaciones',
+        loadComponent: () =>
+          import('./features/notificaciones/notificaciones-panel/notificaciones-panel.component').then(
+            (m) => m.NotificacionesPanelComponent,
+          ),
+      },
     ],
   },
   {
@@ -172,6 +179,31 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/vacantes/mis-vacantes/mis-vacantes.component').then(
         (m) => m.MisVacantesComponent,
+      ),
+  },
+  {
+    path: 'empresa/sugerencias-ia',
+    canActivate: [authGuard],
+    data: { roles: ['EMPRESA'] },
+    loadComponent: () =>
+      import('./features/ia/sugerencias-candidatos/sugerencias-candidatos.component').then(
+        (m) => m.SugerenciasCandidatosComponent,
+      ),
+  },
+  {
+    path: 'ia/sugerencias-candidatos',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/ia/sugerencias-candidatos/sugerencias-candidatos.component').then(
+        (m) => m.SugerenciasCandidatosComponent,
+      ),
+  },
+  {
+    path: 'notificaciones',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/notificaciones/notificaciones-panel/notificaciones-panel.component').then(
+        (m) => m.NotificacionesPanelComponent,
       ),
   },
   {

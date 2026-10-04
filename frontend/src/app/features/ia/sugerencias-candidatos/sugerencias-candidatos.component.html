@@ -1,0 +1,224 @@
+<div class="sugerencias-page">
+  
+  <!-- Header de la Vista -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="badge-tag">Módulo 5.1.11 • Inteligencia Artificial</div>
+      <h1>Sugerencia de Candidatos por Afinidad</h1>
+      <p class="subtitle">Ranking inteligente de postulantes ordenados por porcentaje de coincidencia con los requisitos de la vacante.</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="select-box">
+        <label for="vacanteSelect">Seleccionar Vacante:</label>
+        <select
+          id="vacanteSelect"
+          [ngModel]="vacanteSeleccionadaId()"
+          (ngModelChange)="vacanteSeleccionadaId.set($event); onCambiarVacante()"
+          class="custom-select"
+        >
+          @for (vac of vacantes(); track vac.id) {
+            <option [value]="vac.id">{{ vac.title }} ({{ vac.city || 'Bolivia' }})</option>
+          }
+        </select>
+      </div>
+
+      <a routerLink="/postulaciones/seleccion" class="btn-pipeline">
+        📊 Ir al Pipeline Kanban
+      </a>
+    </div>
+  </header>
+
+  <!-- Barra de Filtro por Umbral de Afinidad (HU-24 CP02) -->
+  <section class="threshold-bar">
+    <div class="threshold-left">
+      <span class="threshold-label">Filtrar por Umbral Mínimo de Coincidencia:</span>
+      <div class="threshold-pills">
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="umbralMinimo() === 0"
+          (click)="onCambiarUmbral(0)"
+        >
+          Todos (0%+)
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="umbralMinimo() === 50"
+          (click)="onCambiarUmbral(50)"
+        >
+          Media (50%+)
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="umbralMinimo() === 70"
+          (click)="onCambiarUmbral(70)"
+        >
+          Alta (70%+)
+        </button>
+        <button
+          type="button"
+          class="pill-btn"
+          [class.active]="umbralMinimo() === 85"
+          (click)="onCambiarUmbral(85)"
+        >
+          Excelente (85%+)
+        </button>
+      </div>
+    </div>
+
+    @if (sugerencias(); as sug) {
+      <div class="threshold-stats">
+        <span>Mostrando <strong>{{ sug.total_coincidentes }}</strong> de <strong>{{ sug.total_postulantes }}</strong> postulantes</span>
+      </div>
+    }
+  </section>
+
+  <!-- Mensajes de Error o Fallback -->
+  @if (errorMensaje()) {
+    <div class="alert-banner">
+      ⚠️ {{ errorMensaje() }}
+    </div>
+  }
+
+  <!-- Listado de Candidatos Ranking -->
+  <main class="ranking-container">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Calculando afinidad con el motor de IA...</p>
+      </div>
+    }
+
+    @if (!isLoading() && sugerencias(); as sug) {
+      @if (sug.items.length === 0) {
+        <div class="empty-state">
+          <span class="icon-empty">🔍</span>
+          <h3>No se encontraron candidatos con afinidad ≥ {{ umbralMinimo() }}%</h3>
+          <p>Prueba reducir el umbral de coincidencia para ver más postulantes del pool.</p>
+        </div>
+      }
+
+      @if (sug.items.length > 0) {
+        <div class="candidates-grid">
+          @for (candidato of sug.items; track candidato.candidate_id) {
+            <div class="candidate-card">
+              
+              <div class="card-header">
+                <div class="candidate-meta">
+                  <div class="candidate-avatar">
+                    {{ candidato.first_name.charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <h3 class="candidate-name">{{ candidato.first_name }} {{ candidato.last_name }}</h3>
+                    <p class="candidate-headline">{{ candidato.professional_headline || 'Egresado UAGRM' }}</p>
+                    @if (candidato.carrera_principal) {
+                      <span class="carrera-tag">🎓 {{ candidato.carrera_principal }}</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Badge de Afinidad -->
+                <div class="match-badge-box">
+                  <div class="match-score" [ngClass]="getBadgeColor(candidato.afinidad_porcentaje)">
+                    <span class="score-number">{{ candidato.afinidad_porcentaje }}%</span>
+                    <span class="score-label">Match IA</span>
+                  </div>
+                  <span class="match-level">{{ candidato.nivel_coincidencia }}</span>
+                </div>
+              </div>
+
+              <!-- Razones de Coincidencia (Explicabilidad RNF-20) -->
+              <div class="card-reasons">
+                <h4>Razones de la Coincidencia:</h4>
+                <ul class="reasons-list">
+                  @for (razon of candidato.razones_principales; track $index) {
+                    <li>✓ {{ razon }}</li>
+                  }
+                </ul>
+              </div>
+
+              <!-- Botones de Acción -->
+              <div class="card-footer">
+                <button
+                  type="button"
+                  class="btn-view-criteria"
+                  (click)="verCriterios(candidato)"
+                >
+                  🔍 Ver Desglose de Criterios
+                </button>
+                <a routerLink="/postulaciones/seleccion" class="btn-goto-pipeline">
+                  Mover en Pipeline →
+                </a>
+              </div>
+
+            </div>
+          }
+        </div>
+      }
+    }
+  </main>
+
+  <!-- MODAL: DESGLOSE TRANSPARENTE DE CRITERIOS (RNF-20) -->
+  @if (candidatoSeleccionado(); as cand) {
+    <div class="modal-backdrop" (click)="cerrarModalCriterios()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        
+        <div class="modal-header">
+          <div class="modal-title-box">
+            <h3>Desglose de Afinidad: {{ cand.first_name }} {{ cand.last_name }}</h3>
+            <span class="badge-score-modal">{{ cand.afinidad_porcentaje }}% de Coincidencia Total</span>
+          </div>
+          <button type="button" class="btn-close" (click)="cerrarModalCriterios()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-intro">
+            El motor de IA evalúa de manera transparente los cuatro criterios profesionales sin considerar datos personales sensibles:
+          </p>
+
+          <div class="criteria-list">
+            @for (crit of cand.criterios; track crit.clave) {
+              <div class="crit-item">
+                <div class="crit-header">
+                  <strong>{{ crit.nombre }} (Peso: {{ crit.peso }}%)</strong>
+                  <span class="crit-compliance" [class.full]="crit.cumplimiento >= 80" [class.partial]="crit.cumplimiento >= 40 && crit.cumplimiento < 80">
+                    {{ crit.cumplimiento }}% Cumplimiento
+                  </span>
+                </div>
+                <p class="crit-detail">{{ crit.detalle }}</p>
+
+                @if (crit.coincidencias.length > 0) {
+                  <div class="tags-row">
+                    <span class="tag-title">Coincide en:</span>
+                    @for (item of crit.coincidencias; track item) {
+                      <span class="match-tag">✓ {{ item }}</span>
+                    }
+                  </div>
+                }
+
+                @if (crit.faltantes.length > 0) {
+                  <div class="tags-row missing">
+                    <span class="tag-title">Faltante/No registrado:</span>
+                    @for (item of crit.faltantes; track item) {
+                      <span class="missing-tag">✕ {{ item }}</span>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-close" (click)="cerrarModalCriterios()">Cerrar</button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>
+

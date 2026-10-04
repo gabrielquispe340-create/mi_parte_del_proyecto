@@ -1,0 +1,294 @@
+<div class="notif-page-container">
+  
+  <header class="page-header">
+    <div class="header-content">
+      <div class="badge-tag">Módulo de Alertas y Notificaciones</div>
+      <h1>Centro de Notificaciones</h1>
+      <p class="subtitle">Gestiona tus avisos de postulaciones, vacantes recomendadas y preferencias de recepción.</p>
+    </div>
+  </header>
+
+  <!-- Pestañas Principales -->
+  <div class="tabs-nav">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="tabActiva === 'historial'"
+      (click)="tabActiva = 'historial'"
+    >
+      🔔 Historial de Notificaciones
+      @if (noLeidas > 0) {
+        <span class="tab-badge">{{ noLeidas }}</span>
+      }
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.active]="tabActiva === 'preferencias'"
+      (click)="tabActiva = 'preferencias'"
+    >
+      ⚙️ Preferencias y Privacidad
+    </button>
+  </div>
+
+  <!-- Toast / Alertas -->
+  @if (mensajeExito) {
+    <div class="alert-banner success-banner">
+      ✓ {{ mensajeExito }}
+    </div>
+  }
+  @if (mensajeError) {
+    <div class="alert-banner error-banner">
+      ✕ {{ mensajeError }}
+    </div>
+  }
+
+  <main class="page-body">
+    <!-- PESTAÑA 1: HISTORIAL DE NOTIFICACIONES -->
+    @if (tabActiva === 'historial') {
+      <div class="historial-card">
+        <div class="historial-toolbar">
+          <div class="filter-pills">
+            <button
+              type="button"
+              class="pill-btn"
+              [class.active]="filtroActual === 'todas'"
+              (click)="cambiarFiltro('todas')"
+            >
+              Todas ({{ total }})
+            </button>
+            <button
+              type="button"
+              class="pill-btn"
+              [class.active]="filtroActual === 'no_leidas'"
+              (click)="cambiarFiltro('no_leidas')"
+            >
+              Solo no leídas ({{ noLeidas }})
+            </button>
+          </div>
+
+          @if (noLeidas > 0) {
+            <button type="button" class="btn-mark-all-page" (click)="marcarTodasComoLeidas()">
+              ✓ Marcar todas como leídas
+            </button>
+          }
+        </div>
+
+        @if (isLoadingHistorial) {
+          <div class="state-box">
+            <div class="spinner"></div>
+            <p>Cargando notificaciones...</p>
+          </div>
+        }
+
+        @if (!isLoadingHistorial && notificaciones.length === 0) {
+          <div class="state-box empty-state">
+            <span class="icon-huge">📭</span>
+            <h3>No tienes notificaciones en este filtro</h3>
+            <p>Los avisos importantes de tus postulaciones y vacantes aparecerán aquí.</p>
+          </div>
+        }
+
+        @if (!isLoadingHistorial && notificaciones.length > 0) {
+          <div class="notifications-feed">
+            @for (notif of notificaciones; track notif.id) {
+              <div
+                class="feed-item"
+                [class.unread]="!notif.leida"
+                (click)="navegarNotificacion(notif)"
+              >
+                <div class="feed-icon">
+                  {{ getIconoTipo(notif.notification_type) }}
+                </div>
+
+                <div class="feed-main">
+                  <div class="feed-header">
+                    <h4>{{ notif.title }}</h4>
+                    <span class="feed-time">{{ notif.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+
+                  @if (notif.body) {
+                    <p class="feed-text">{{ notif.body }}</p>
+                  }
+
+                  @if (notif.link) {
+                    <span class="feed-link-hint">Ver detalle del evento →</span>
+                  }
+                </div>
+
+                <div class="feed-actions">
+                  @if (!notif.leida) {
+                    <button
+                      type="button"
+                      class="btn-icon-action"
+                      (click)="$event.stopPropagation(); marcarComoLeida(notif)"
+                      title="Marcar como leída"
+                    >
+                      ✓
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="btn-icon-action danger"
+                    (click)="eliminarNotificacion(notif, $event)"
+                    title="Eliminar notificación"
+                  >
+                    🗑
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- PESTAÑA 2: PREFERENCIAS DE NOTIFICACIÓN -->
+    @if (tabActiva === 'preferencias') {
+      <div class="preferencias-card">
+        <div class="pref-header">
+          <h3>Canales y Tipos de Notificaciones</h3>
+          <p>Selecciona qué notificaciones deseas recibir en tu cuenta. Puedes cambiarlas en cualquier momento.</p>
+        </div>
+
+        @if (isLoadingPreferencias) {
+          <div class="state-box">
+            <div class="spinner"></div>
+            <p>Cargando tus preferencias...</p>
+          </div>
+        }
+
+        @if (!isLoadingPreferencias) {
+          <form class="pref-form" (ngSubmit)="guardarPreferencias()">
+            
+            <div class="pref-section">
+              <h4>Canales de Envío</h4>
+              
+              <!-- PUSH NATIVO WEB -->
+              <label class="switch-row">
+                <div class="switch-text">
+                  <div class="channel-title-row">
+                    <strong>📲 Notificaciones Push de Escritorio / Navegador</strong>
+                    @if (permisoPushConcedido) {
+                      <span class="badge-active">Permitido en Navegador</span>
+                    } @else {
+                      <span class="badge-pending">Requiere Permiso</span>
+                    }
+                  </div>
+                  <span>Recibir alertas instantáneas en la pantalla de tu dispositivo cuando ocurran cambios de etapa u ofertas afines.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [checked]="preferencias.push_enabled"
+                  (change)="togglePushPermiso($event)"
+                  name="push_enabled"
+                />
+              </label>
+
+              @if (preferencias.push_enabled) {
+                <div class="push-test-box">
+                  <button type="button" class="btn-test-push" (click)="probarNotificacionPush()">
+                    🔔 Probar Notificación Push Ahora
+                  </button>
+                  <small class="push-test-hint">Haz clic para enviar un aviso emergente de prueba a tu pantalla.</small>
+                </div>
+              }
+
+              <!-- IN-APP -->
+              <label class="switch-row">
+                <div class="switch-text">
+                  <strong>🔔 Alertas en la Plataforma (In-App)</strong>
+                  <span>Mostrar indicador numérico y panel desplegable en la barra de navegación superior.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [(ngModel)]="preferencias.in_app_enabled"
+                  name="in_app_enabled"
+                />
+              </label>
+
+              <!-- EMAIL -->
+              <label class="switch-row">
+                <div class="switch-text">
+                  <strong>✉️ Notificaciones por Correo Electrónico</strong>
+                  <span>Recibir un resumen por email cuando ocurran eventos importantes.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [(ngModel)]="preferencias.email_notifications"
+                  name="email_notifications"
+                />
+              </label>
+            </div>
+
+            <div class="pref-section">
+              <h4>Tipos de Eventos a Notificar</h4>
+
+              <label class="switch-row">
+                <div class="switch-text">
+                  <strong>📈 Avances y Cambios en Postulaciones</strong>
+                  <span>Avisos cuando tu postulación avance de etapa, sea preseleccionada o cambie de estado.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [(ngModel)]="preferencias.notify_stage_changes"
+                  name="notify_stage_changes"
+                />
+              </label>
+
+              <label class="switch-row">
+                <div class="switch-text">
+                  <strong>✨ Vacantes Recomendadas y Afines</strong>
+                  <span>Avisos automáticos cuando una empresa publique una vacante que coincida con tu perfil.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [(ngModel)]="preferencias.notify_job_matches"
+                  name="notify_job_matches"
+                />
+              </label>
+
+              <label class="switch-row">
+                <div class="switch-text">
+                  <strong>📅 Agenda de Entrevistas</strong>
+                  <span>Avisos ante agendamientos, reprogramaciones o confirmaciones de entrevistas.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [(ngModel)]="preferencias.notify_interview_events"
+                  name="notify_interview_events"
+                />
+              </label>
+
+              <label class="switch-row">
+                <div class="switch-text">
+                  <strong>💬 Mensajería y Conversaciones</strong>
+                  <span>Avisos ante nuevos mensajes de reclutadores en tus postulaciones activas.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [(ngModel)]="preferencias.notify_messages"
+                  name="notify_messages"
+                />
+              </label>
+            </div>
+
+            <div class="pref-footer">
+              <button type="submit" class="btn-save-prefs" [disabled]="isSavingPreferencias">
+                {{ isSavingPreferencias ? 'Guardando...' : 'Guardar Preferencias' }}
+              </button>
+            </div>
+
+          </form>
+        }
+      </div>
+    }
+  </main>
+</div>

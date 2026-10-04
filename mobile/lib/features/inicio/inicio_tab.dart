@@ -15,6 +15,7 @@ import '../../core/widgets/insignia.dart';
 import '../../core/widgets/vistas_estado.dart';
 import '../mensajes/bandeja_mensajes_screen.dart';
 import '../mensajes/chat_screen.dart';
+import '../notificaciones/notificaciones_screen.dart';
 import '../perfil/mi_cv_screen.dart';
 import '../postulaciones/postulacion_detalle_screen.dart';
 import '../recomendaciones/recomendaciones_screen.dart';
@@ -134,6 +135,7 @@ class _InicioTabState extends State<InicioTab> {
           universidad: widget.sesion.institucionNombre,
           mensajesNoLeidos: datos.mensajesNoLeidos,
           onMensajes: () => _abrir(BandejaMensajesScreen(accessToken: token, esEmpresa: false)),
+          onNotificaciones: () => _abrir(NotificacionesScreen(accessToken: token)),
           onPerfil: () => widget.onIrA(3),
         ),
         const SizedBox(height: 22),
@@ -245,12 +247,14 @@ class _Saludo extends StatelessWidget {
   final String? universidad;
   final int mensajesNoLeidos;
   final VoidCallback onMensajes;
+  final VoidCallback onNotificaciones;
   final VoidCallback onPerfil;
   const _Saludo({
     required this.perfil,
     required this.universidad,
     required this.mensajesNoLeidos,
     required this.onMensajes,
+    required this.onNotificaciones,
     required this.onPerfil,
   });
 
@@ -273,7 +277,12 @@ class _Saludo extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
+        IconButton(
+          onPressed: onNotificaciones,
+          tooltip: 'Notificaciones y alertas',
+          icon: const Icon(Icons.notifications_outlined, color: AppColors.primario, size: 26),
+        ),
         IconButton(
           onPressed: onMensajes,
           tooltip: 'Mensajes',
