@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from sqlalchemy.orm import Session
 
 from app.common.exceptions import BadRequestException, ForbiddenException, NotFoundException
@@ -17,7 +17,12 @@ from app.features.seleccion.schema import (
     NotaInternaResponse,
     PipelineVacanteResponse,
     VacanteResumenSeleccion,
+    CandidatoComparacionResponse,
+    CompararCandidatosRequest,
 )
+from app.features.perfil.repository import EgresadoRepository
+from app.features.perfil.schema import HabilidadResponse
+from app.features.perfil.service import _a_dto_experiencia, _a_dto_formacion, _a_dto_idioma
 from app.models.candidato import CandidateEducation, CandidateProfile
 from app.models.empresa import CompanyMember
 from app.models.postulacion import Application
@@ -497,3 +502,71 @@ class SeleccionService:
             puede_avanzar=a.current_status not in ("rejected", "withdrawn", "hired"),
             puede_descartar=a.current_status not in ("rejected", "withdrawn", "hired"),
         )
+
+    def obtener_comparacion_candidatos(
+        self, user_id: uuid.UUID, job_id: uuid.UUID, data: CompararCandidatosRequest, ip: str = "127.0.0.1"
+    ) -> list[CandidatoComparacionResponse]:
+        """HU-18: perfiles de 2 o 3 postulantes de una misma vacante, lado a lado."""
+        from app.features.vacantes.service import VacanteService
+
+        miembro = self._obtener_miembro(user_id)
+        vacante = self.repo.obtener_vacante(job_id, miembro.company_id)
+        if not vacante:
+            raise NotFoundException("Vacante no encontrada o no pertenece a la empresa.")
+
+        ids = list(dict.fromkeys(data.postulaciones))
+        if not 2 <= len(ids) <= 3:
+            raise BadRequestException("Seleccioná entre 2 y 3 candidatos distintos para comparar.")
+
+        apps: list[Application] = []
+        for id_postulacion in ids:
+            app = self.repo.obtener_postulacion_por_id(id_postulacion)
+            if not app or app.job_id != job_id:
+                raise BadRequestException("La postulación no pertenece a esta vacante.")
+            if app.current_status in ("rejected", "withdrawn"):
+                raise BadRequestException("No se pueden comparar candidatos descartados o retirados.")
+            apps.append(app)
+
+        # La misma afinidad que muestra el pipeline (motor de la HU-23).
+        vacante_service = VacanteService(self.db)
+        perfiles = motor_afinidad.perfiles_de_candidatos(self.db, {a.candidate_id for a in apps})
+        ia_activa = motor_afinidad.ia_activa()
+        # El CV se arma igual que en el perfil del egresado (mismas etiquetas en español).
+        cv = EgresadoRepository(self.db)
+
+        resultado: list[CandidatoComparacionResponse] = []
+        for app in apps:
+            cand = app.candidate
+            afinidad = vacante_service._calcular_afinidad(
+                vacante, perfiles.get(app.candidate_id) if ia_activa else None
+            )
+            experiencia = sorted(
+                cv.listar_experiencia(app.candidate_id),
+                key=lambda e: e.start_date or date.min,
+                reverse=True,
+            )
+            resultado.append(
+                CandidatoComparacionResponse(
+                    postulacion_id=app.id,
+                    candidato_id=app.candidate_id,
+                    candidato_nombre=f"{cand.first_name} {cand.last_name}" if cand else "Candidato",
+                    afinidad=afinidad.porcentaje if afinidad else None,
+                    formacion=[_a_dto_formacion(e) for e in cv.listar_formacion(app.candidate_id)],
+                    experiencia=[_a_dto_experiencia(e) for e in experiencia],
+                    habilidades=[
+                        HabilidadResponse(id=s.id, nombre=s.name, categoria=s.category)
+                        for s in cv.listar_habilidades(app.candidate_id)
+                    ],
+                    idiomas=[_a_dto_idioma(cl, idioma.name) for cl, idioma in cv.listar_idiomas(app.candidate_id)],
+                )
+            )
+
+        self.bitacora.registrar(
+            modulo="seleccion",
+            accion="comparar_candidatos",
+            usuario_id=user_id,
+            ip=ip,
+            detalles=f"vacante_id={job_id} cantidad={len(apps)}",
+        )
+        self.db.commit()
+        return resultado

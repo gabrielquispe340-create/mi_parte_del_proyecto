@@ -71,11 +71,11 @@ class PostulacionService {
           .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const PostulacionException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
 
-    final cuerpo = jsonDecode(respuesta.body) as Map<String, dynamic>;
+    final cuerpo = jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>;
 
     if (respuesta.statusCode == 200) {
       return ResultadoPostulacion(
@@ -99,12 +99,12 @@ class PostulacionService {
           .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const PostulacionException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
 
     if (respuesta.statusCode == 200) {
-      return ResumenPostulaciones.fromJson(jsonDecode(respuesta.body) as Map<String, dynamic>);
+      return ResumenPostulaciones.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>);
     }
 
     throw const PostulacionException('No se pudieron cargar tus postulaciones.');
@@ -120,12 +120,12 @@ class PostulacionService {
           .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const PostulacionException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
 
     if (respuesta.statusCode == 200) {
-      return DetallePostulacion.fromJson(jsonDecode(respuesta.body) as Map<String, dynamic>);
+      return DetallePostulacion.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>);
     }
 
     throw const PostulacionException('No se pudo cargar el detalle de la postulación.');
@@ -148,13 +148,13 @@ class PostulacionService {
           .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const PostulacionException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
 
     if (respuesta.statusCode == 200) return;
 
-    final cuerpo = jsonDecode(respuesta.body) as Map<String, dynamic>;
+    final cuerpo = jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>;
     final detalle = cuerpo['detail'];
     final mensaje = detalle is String ? detalle : 'No se pudo retirar la postulación.';
     throw PostulacionException(mensaje);

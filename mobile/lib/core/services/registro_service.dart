@@ -25,7 +25,7 @@ class RegistroService {
       throw const AuthException('No se pudo cargar la lista de carreras.');
     }
 
-    final lista = jsonDecode(respuesta.body) as List<dynamic>;
+    final lista = jsonDecode(utf8.decode(respuesta.bodyBytes)) as List<dynamic>;
     return lista.map((e) => Carrera.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -44,7 +44,7 @@ class RegistroService {
       throw const AuthException('No se pudo cargar la lista de universidades.');
     }
 
-    final lista = jsonDecode(respuesta.body) as List<dynamic>;
+    final lista = jsonDecode(utf8.decode(respuesta.bodyBytes)) as List<dynamic>;
     return lista.map((e) => Institucion.fromJson(e as Map<String, dynamic>)).toList();
   }
 
@@ -82,13 +82,13 @@ class RegistroService {
           .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const AuthException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
 
     if (respuesta.statusCode == 201) return;
 
-    final cuerpo = jsonDecode(respuesta.body) as Map<String, dynamic>;
+    final cuerpo = jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>;
     final detalle = cuerpo['detail'];
     final mensaje = detalle is String ? detalle : 'Ocurrió un error inesperado al registrarte.';
     throw AuthException(mensaje);

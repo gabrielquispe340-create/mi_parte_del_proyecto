@@ -92,14 +92,29 @@ class Vacante {
   String get jornadaLegible => _jornadas[employmentType] ?? employmentType;
   String get nivelLegible => _niveles[seniorityLevel] ?? seniorityLevel;
 
+  bool get tieneSalario => salaryVisible && (_monto(salaryMin) != null || _monto(salaryMax) != null);
+
+  /// "Bs. 4.200 – 5.200"
   String get salarioLegible {
-    if (!salaryVisible || (salaryMin == null && salaryMax == null)) {
-      return 'No especificado';
-    }
-    if (salaryMin != null && salaryMax != null) {
-      return '$currency $salaryMin - $salaryMax';
-    }
-    return '$currency ${salaryMin ?? salaryMax}';
+    final minimo = _monto(salaryMin);
+    final maximo = _monto(salaryMax);
+    if (!tieneSalario) return 'A convenir';
+    final moneda = currency == 'BOB' ? 'Bs.' : currency;
+    if (minimo != null && maximo != null) return '$moneda $minimo – $maximo';
+    return '$moneda ${minimo ?? maximo}';
+  }
+
+  /// Fecha límite de postulación, en hora local.
+  DateTime? get cierre {
+    final fecha = applicationDeadline == null ? null : DateTime.tryParse(applicationDeadline!);
+    return fecha?.toLocal();
+  }
+
+  /// "4200.00" -> "4.200"
+  static String? _monto(String? valor) {
+    final numero = num.tryParse(valor ?? '');
+    if (numero == null) return null;
+    return numero.round().toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
   }
 }
 

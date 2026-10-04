@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 import '../../core/models/pregunta_filtro.dart';
 import '../../core/models/vacante.dart';
 import '../../core/services/postulacion_service.dart';
@@ -41,9 +43,7 @@ class _PostulacionScreenState extends State<PostulacionScreen> {
           ? _respuestasOpcion[p.id] != null
           : (_respuestasTexto[p.id]?.trim().isNotEmpty ?? false);
       if (p.isRequired && !respondida) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Respondé: "${p.questionText}"')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Respondé: "${p.questionText}"')));
         return;
       }
     }
@@ -73,12 +73,7 @@ class _PostulacionScreenState extends State<PostulacionScreen> {
         builder: (_) => AlertDialog(
           title: Text(fueDescartada ? 'Postulación no seleccionada' : '¡Postulación enviada!'),
           content: Text(resultado.message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Aceptar'),
-            ),
-          ],
+          actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Aceptar'))],
         ),
       );
       if (!mounted) return;
@@ -118,10 +113,7 @@ class _PostulacionScreenState extends State<PostulacionScreen> {
                 const SizedBox(height: 16),
                 const Text('Esta vacante no tiene preguntas adicionales.'),
               ],
-              for (final p in preguntas) ...[
-                const SizedBox(height: 24),
-                _preguntaWidget(p),
-              ],
+              for (final p in preguntas) ...[const SizedBox(height: 24), _preguntaWidget(p)],
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: _enviando ? null : () => _postular(preguntas),
@@ -145,17 +137,14 @@ class _PostulacionScreenState extends State<PostulacionScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Text(
-                p.questionText,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              child: Text(p.questionText, style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
             if (p.isKnockout)
               Container(
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
-                child: Text('Eliminatoria', style: TextStyle(fontSize: 11, color: Colors.red.shade700)),
+                decoration: BoxDecoration(color: AppColors.peligroSuave, borderRadius: BorderRadius.circular(12)),
+                child: Text('Eliminatoria', style: TextStyle(fontSize: 11, color: AppColors.peligro)),
               ),
           ],
         ),
@@ -174,7 +163,7 @@ class _PostulacionScreenState extends State<PostulacionScreen> {
         else
           TextField(
             keyboardType: p.questionType == 'number' ? TextInputType.number : TextInputType.text,
-            decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+            decoration: const InputDecoration(hintText: 'Tu respuesta'),
             onChanged: (valor) => _respuestasTexto[p.id] = valor,
           ),
       ],

@@ -20,11 +20,12 @@ import {
   PipelineVacanteResponse,
   VacanteResumenSeleccion,
 } from '../seleccion.models';
+import { ComparacionModalComponent } from '../comparacion-modal/comparacion-modal.component';
 
 @Component({
   selector: 'app-pipeline-seleccion',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ComparacionModalComponent],
   templateUrl: './pipeline-seleccion.component.html',
   styleUrls: ['./pipeline-seleccion.component.scss'],
   changeDetection: ChangeDetectionStrategy.Default,
@@ -72,6 +73,49 @@ export class PipelineSeleccionComponent implements OnInit {
   cargandoNotas = signal(false);
   guardandoNota = signal(false);
   errorNotas = signal<string | null>(null);
+
+  // ── Selección para Comparación (HU-18) ──────────────────────────────
+  candidatosSeleccionados = signal<string[]>([]);
+  mostrarModalComparacion = signal(false);
+
+  toggleSeleccion(idPostulacion: string): void {
+    const actuales = this.candidatosSeleccionados();
+    if (actuales.includes(idPostulacion)) {
+      this.candidatosSeleccionados.set(actuales.filter(id => id !== idPostulacion));
+    } else if (actuales.length < 3) {
+      this.candidatosSeleccionados.set([...actuales, idPostulacion]);
+    }
+  }
+
+  estaSeleccionado(idPostulacion: string): boolean {
+    return this.candidatosSeleccionados().includes(idPostulacion);
+  }
+
+  /** Con 3 elegidos se deshabilitan los demás (se compara hasta 3). */
+  puedeSeleccionar(idPostulacion: string): boolean {
+    return this.estaSeleccionado(idPostulacion) || this.candidatosSeleccionados().length < 3;
+  }
+
+  limpiarSeleccion(): void {
+    this.candidatosSeleccionados.set([]);
+  }
+
+  abrirComparacion(): void {
+    if (this.candidatosSeleccionados().length < 2) return;
+    this.mostrarModalComparacion.set(true);
+  }
+
+  cerrarComparacion(): void {
+    this.mostrarModalComparacion.set(false);
+  }
+
+  onCandidatoDescartadoDesdeComparacion(idPostulacion: string): void {
+    // El descartado ya no se puede comparar: sale de la selección.
+    this.candidatosSeleccionados.update(ids => ids.filter(id => id !== idPostulacion));
+    if (this.vacanteSeleccionadaId()) {
+      this.cargarPipeline(this.vacanteSeleccionadaId()!);
+    }
+  }
 
   // ── Entrevistas (HU-20) ──────────────────────────────────────────────
   mapaEntrevistas = signal<Record<string, Entrevista[]>>({});
@@ -153,6 +197,9 @@ export class PipelineSeleccionComponent implements OnInit {
 
   seleccionarVacante(id: string): void {
     this.vacanteSeleccionadaId.set(id);
+    // La comparación es por vacante: al cambiar de vacante se empieza de cero.
+    this.limpiarSeleccion();
+    this.mostrarModalComparacion.set(false);
     this.cargarPipeline(id);
   }
 

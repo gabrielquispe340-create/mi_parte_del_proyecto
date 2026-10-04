@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 import '../../core/models/carrera.dart';
 import '../../core/models/institucion.dart';
 import '../../core/services/auth_service.dart';
@@ -95,9 +97,9 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registro exitoso. Ya podés iniciar sesión.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Registro exitoso. Ya podés iniciar sesión.')));
       Navigator.of(context).pop();
     } on AuthException catch (e) {
       setState(() => _error = e.mensaje);
@@ -135,20 +137,20 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                     Text(
                       'Tus datos quedarán pendientes de validación institucional.',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textoSuave),
                     ),
                     const SizedBox(height: 24),
 
                     TextFormField(
                       controller: _nombresCtrl,
-                      decoration: const InputDecoration(labelText: 'Nombres', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Nombres'),
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingresá tus nombres.' : null,
                     ),
                     const SizedBox(height: 12),
 
                     TextFormField(
                       controller: _apellidosCtrl,
-                      decoration: const InputDecoration(labelText: 'Apellidos', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Apellidos'),
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingresá tus apellidos.' : null,
                     ),
                     const SizedBox(height: 12),
@@ -156,7 +158,7 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                     TextFormField(
                       controller: _ciCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Carnet de identidad', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Carnet de identidad'),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'Ingresá tu CI.';
                         if (v.trim().length < 5) return 'El CI parece incompleto.';
@@ -169,7 +171,7 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                       controller: _correoCtrl,
                       keyboardType: TextInputType.emailAddress,
                       autocorrect: false,
-                      decoration: const InputDecoration(labelText: 'Correo electrónico', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Correo electrónico'),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'Ingresá tu correo.';
                         if (!v.contains('@')) return 'Correo inválido.';
@@ -183,7 +185,6 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                       obscureText: _ocultarPassword,
                       decoration: InputDecoration(
                         labelText: 'Contraseña',
-                        border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(_ocultarPassword ? Icons.visibility_off : Icons.visibility),
                           onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
@@ -206,12 +207,14 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                       DropdownButtonFormField<String>(
                         initialValue: _institucionSeleccionadaId,
                         isExpanded: true,
-                        decoration: const InputDecoration(labelText: 'Universidad', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(labelText: 'Universidad'),
                         items: _instituciones
-                            .map((i) => DropdownMenuItem(
-                                  value: i.id,
-                                  child: Text(i.etiqueta, overflow: TextOverflow.ellipsis),
-                                ))
+                            .map(
+                              (i) => DropdownMenuItem(
+                                value: i.id,
+                                child: Text(i.etiqueta, overflow: TextOverflow.ellipsis),
+                              ),
+                            )
                             .toList(),
                         onChanged: (v) => setState(() => _institucionSeleccionadaId = v),
                         validator: (v) => v == null ? 'Seleccioná tu universidad.' : null,
@@ -219,9 +222,14 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         initialValue: _carreraSeleccionadaId,
-                        decoration: const InputDecoration(labelText: 'Carrera', border: OutlineInputBorder()),
+                        decoration: const InputDecoration(labelText: 'Carrera'),
                         items: _carreras
-                            .map((c) => DropdownMenuItem(value: c.id, child: Text(c.nombre, overflow: TextOverflow.ellipsis)))
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.nombre, overflow: TextOverflow.ellipsis),
+                              ),
+                            )
                             .toList(),
                         onChanged: (v) => setState(() => _carreraSeleccionadaId = v),
                       ),
@@ -231,7 +239,7 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                     TextFormField(
                       controller: _anioEgresoCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Año de egreso (opcional)', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Año de egreso (opcional)'),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return null;
                         final anio = int.tryParse(v.trim());
@@ -243,7 +251,7 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
 
                     TextFormField(
                       controller: _matriculaCtrl,
-                      decoration: const InputDecoration(labelText: 'Matrícula (opcional)', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(labelText: 'Matrícula (opcional)'),
                     ),
 
                     if (_error != null) ...[
@@ -251,11 +259,11 @@ class _RegistroEgresadoScreenState extends State<RegistroEgresadoScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade50,
+                          color: AppColors.peligroSuave,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.shade200),
+                          border: Border.all(color: AppColors.peligro.withValues(alpha: 0.25)),
                         ),
-                        child: Text(_error!, style: TextStyle(color: Colors.red.shade800, fontSize: 13)),
+                        child: Text(_error!, style: TextStyle(color: AppColors.peligro, fontSize: 13)),
                       ),
                     ],
 

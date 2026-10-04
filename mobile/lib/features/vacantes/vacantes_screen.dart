@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../../core/models/estadisticas_publicas.dart';
 import '../../core/models/vacante.dart';
 import '../../core/services/vacante_service.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/utils/formatos.dart';
+import '../../core/widgets/tarjeta_vacante.dart';
+import '../../core/widgets/vistas_estado.dart';
+import '../auth/registro_egresado_screen.dart';
+import '../recomendaciones/recomendaciones_screen.dart';
 import 'vacante_detalle_screen.dart';
 
-/// Pantalla de exploración de vacantes para el egresado. Consume
-/// GET /vacantes/buscar (HU-13): admite búsqueda por palabra clave y
-/// ordenar por afinidad calculada según la carrera/habilidades del
-/// egresado autenticado, contra la Supabase real.
+/// Búsqueda de vacantes (HU-13). Sin [accessToken] es la vista pública de la
+/// HU-34: todas las ofertas vigentes, las estadísticas de la plataforma y una
+/// invitación a crear cuenta para postularse.
 class VacantesScreen extends StatefulWidget {
-  final String accessToken;
+  final String? accessToken;
 
-  const VacantesScreen({super.key, required this.accessToken});
+  const VacantesScreen({super.key, this.accessToken});
 
   @override
   State<VacantesScreen> createState() => _VacantesScreenState();
@@ -21,14 +27,14 @@ class _VacantesScreenState extends State<VacantesScreen> {
   final _servicio = VacanteService();
   final _busquedaCtrl = TextEditingController();
 
-  late Future<List<Vacante>> _futuroVacantes;
-  String _ordenarPor = 'fecha';
+  late Future<List<Vacante>> _futuro = _buscar();
+  late final Future<EstadisticasPublicas>? _estadisticas = _anonimo ? _servicio.estadisticasPublicas() : null;
+  String _orden = 'fecha';
 
-  @override
-  void initState() {
-    super.initState();
-    _futuroVacantes = _servicio.buscar(widget.accessToken, ordenarPor: _ordenarPor);
-  }
+  bool get _anonimo => widget.accessToken == null;
+
+  Future<List<Vacante>> _buscar() =>
+      _servicio.buscar(widget.accessToken, q: _busquedaCtrl.text, ordenarPor: _orden);
 
   @override
   void dispose() {
@@ -36,127 +42,253 @@ class _VacantesScreenState extends State<VacantesScreen> {
     super.dispose();
   }
 
-  void _recargar() {
-    setState(() {
-      _futuroVacantes = _servicio.buscar(widget.accessToken, q: _busquedaCtrl.text, ordenarPor: _ordenarPor);
-    });
+  Future<void> _recargar() async {
+    if (!mounted) return;
+    final futuro = _buscar();
+    setState(() => _futuro = futuro);
+    await futuro.catchError((_) => <Vacante>[]);
+  }
+
+  void _ordenarPor(String orden) {
+    if (orden == _orden) return;
+    _orden = orden;
+    _recargar();
+  }
+
+  void _abrir(Vacante vacante) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => VacanteDetalleScreen(accessToken: widget.accessToken, vacante: vacante)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Vacantes disponibles')),
+      appBar: AppBar(
+        title: Text(_anonimo ? 'Ofertas laborales' : 'Vacantes'),
+        actions: [
+          if (!_anonimo)
+            IconButton(
+              tooltip: 'Recomendadas para vos',
+              icon: const Icon(Icons.auto_awesome_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => RecomendacionesScreen(accessToken: widget.accessToken!)),
+              ),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _busquedaCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Buscar por título o palabra clave',
-                      prefixIcon: Icon(Icons.search),
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    onSubmitted: (_) => _recargar(),
-                  ),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _busquedaCtrl,
+              builder: (context, valor, _) => TextField(
+                controller: _busquedaCtrl,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _recargar(),
+                decoration: InputDecoration(
+                  hintText: 'Cargo, palabra clave o tecnología',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: valor.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Limpiar búsqueda',
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () {
+                            _busquedaCtrl.clear();
+                            _recargar();
+                          },
+                        ),
                 ),
-                const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.sort),
-                  tooltip: 'Ordenar',
-                  initialValue: _ordenarPor,
-                  onSelected: (valor) {
-                    setState(() => _ordenarPor = valor);
-                    _recargar();
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'fecha', child: Text('Más recientes')),
-                    PopupMenuItem(value: 'afinidad', child: Text('Mayor afinidad')),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
-          Expanded(child: _listado()),
+          if (!_anonimo)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Row(
+                children: [
+                  _ChipOrden('Más recientes', seleccionado: _orden == 'fecha', onTap: () => _ordenarPor('fecha')),
+                  const SizedBox(width: 8),
+                  _ChipOrden('Mayor afinidad', seleccionado: _orden == 'afinidad', onTap: () => _ordenarPor('afinidad')),
+                ],
+              ),
+            ),
+          Expanded(
+            child: FutureBuilder<List<Vacante>>(
+              future: _futuro,
+              builder: (context, snapshot) {
+                final cargando = snapshot.connectionState == ConnectionState.waiting;
+                if (snapshot.hasData) {
+                  // Mientras llega una búsqueda nueva se mantiene la anterior con una barra de progreso.
+                  return Column(
+                    children: [
+                      SizedBox(height: 2, child: cargando ? const LinearProgressIndicator() : null),
+                      Expanded(child: RefreshIndicator(onRefresh: _recargar, child: _listado(snapshot.data!))),
+                    ],
+                  );
+                }
+                if (cargando) return const VistaCargando();
+                return VistaMensaje.error(snapshot.error, onReintentar: _recargar);
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _listado() {
-    return FutureBuilder<List<Vacante>>(
-        future: _futuroVacantes,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+  Widget _listado(List<Vacante> vacantes) {
+    final buscando = _busquedaCtrl.text.trim().isNotEmpty;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
+      children: [
+        if (_anonimo) ...[
+          _BannerPublico(_estadisticas),
+          const SizedBox(height: 14),
+        ],
+        if (vacantes.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 40),
+            child: VistaMensaje(
+              icono: Icons.search_off_rounded,
+              titulo: buscando ? 'Sin resultados' : 'No hay vacantes publicadas',
+              mensaje: buscando
+                  ? 'No encontramos vacantes para "${_busquedaCtrl.text.trim()}". Probá con otras palabras.'
+                  : 'Cuando las empresas publiquen ofertas, las vas a ver acá.',
+            ),
+          )
+        else ...[
+          Text(
+            vacantes.length == 1 ? '1 vacante' : '${vacantes.length} vacantes',
+            style: const TextStyle(color: AppColors.textoSuave, fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 10),
+          for (final vacante in vacantes) ...[
+            TarjetaVacante(vacante: vacante, onTap: () => _abrir(vacante)),
+            const SizedBox(height: 12),
+          ],
+        ],
+        if (_anonimo) ...[
+          const SizedBox(height: 8),
+          const _InvitacionRegistro(),
+        ],
+      ],
+    );
+  }
+}
+
+class _ChipOrden extends StatelessWidget {
+  final String texto;
+  final bool seleccionado;
+  final VoidCallback onTap;
+  const _ChipOrden(this.texto, {required this.seleccionado, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      label: Text(texto),
+      selected: seleccionado,
+      onSelected: (_) => onTap(),
+      showCheckmark: false,
+      selectedColor: AppColors.primarioSuave,
+      side: BorderSide(color: seleccionado ? AppColors.primarioBorde : AppColors.borde),
+      labelStyle: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 13,
+        fontWeight: seleccionado ? FontWeight.w600 : FontWeight.w500,
+        color: seleccionado ? AppColors.primario : AppColors.textoSuave,
+      ),
+    );
+  }
+}
+
+/// Estadísticas públicas de la plataforma (HU-34) para quien todavía no tiene cuenta.
+class _BannerPublico extends StatelessWidget {
+  final Future<EstadisticasPublicas>? estadisticas;
+  const _BannerPublico(this.estadisticas);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<EstadisticasPublicas>(
+      future: estadisticas,
+      builder: (context, snapshot) {
+        final datos = snapshot.data;
+        if (datos == null) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(color: AppColors.primario, borderRadius: BorderRadius.circular(AppTheme.radio)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IntrinsicHeight(
+                child: Row(
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
-                    const SizedBox(height: 12),
-                    Text('${snapshot.error}', textAlign: TextAlign.center),
-                    const SizedBox(height: 12),
-                    ElevatedButton(onPressed: _recargar, child: const Text('Reintentar')),
+                    Expanded(child: _Cifra(valor: datos.vacantesActivas, etiqueta: 'vacantes activas')),
+                    const VerticalDivider(color: Color(0x33FFFFFF), width: 24, thickness: 1),
+                    Expanded(child: _Cifra(valor: datos.empresasVerificadas, etiqueta: 'empresas verificadas')),
                   ],
                 ),
               ),
-            );
-          }
+              const SizedBox(height: 12),
+              Text(
+                'Datos al ${fechaCorta(datos.corte)}. Iniciá sesión para ver tu afinidad con cada oferta y postularte.',
+                style: const TextStyle(color: Color(0xFFC7D2FE), fontSize: 12.5, height: 1.4),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
-          final vacantes = snapshot.data ?? [];
-          if (vacantes.isEmpty) {
-            return const Center(child: Text('No hay vacantes publicadas por el momento.'));
-          }
+class _Cifra extends StatelessWidget {
+  final int valor;
+  final String etiqueta;
+  const _Cifra({required this.valor, required this.etiqueta});
 
-          return RefreshIndicator(
-            onRefresh: () async => _recargar(),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: vacantes.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) {
-                final vacante = vacantes[i];
-                return Card(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    title: Text(vacante.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        '${vacante.companyName} · ${vacante.city}\n${vacante.modalidadLegible} · ${vacante.jornadaLegible}',
-                      ),
-                    ),
-                    isThreeLine: true,
-                    trailing: vacante.afinidadPorcentaje != null
-                        ? Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('${vacante.afinidadPorcentaje}%', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
-                              const Text('afín', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                            ],
-                          )
-                        : const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => VacanteDetalleScreen(accessToken: widget.accessToken, vacante: vacante),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$valor', style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700, height: 1.1)),
+        const SizedBox(height: 2),
+        Text(etiqueta, style: const TextStyle(color: Color(0xFFC7D2FE), fontSize: 13)),
+      ],
+    );
+  }
+}
+
+class _InvitacionRegistro extends StatelessWidget {
+  const _InvitacionRegistro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('¿Sos egresado?', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            const Text(
+              'Creá tu cuenta para postularte, seguir tus procesos y recibir recomendaciones según tu perfil.',
+              style: TextStyle(color: AppColors.textoSuave),
             ),
-          );
-        });
+            const SizedBox(height: 14),
+            FilledButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const RegistroEgresadoScreen()),
+              ),
+              child: const Text('Crear mi cuenta'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
+
 import '../../core/models/sesion.dart';
 import '../../core/services/auth_service.dart';
 
@@ -44,9 +46,7 @@ class _CambiarPasswordScreenState extends State<CambiarPasswordScreen> {
     try {
       final sesion = await _authService.cambiarPassword(widget.accessToken, _actualCtrl.text, _nuevaCtrl.text);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Contraseña actualizada.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Contraseña actualizada.')));
       Navigator.of(context).pop<Sesion>(sesion);
     } on AuthException catch (e) {
       setState(() => _error = e.mensaje);
@@ -90,11 +90,11 @@ class _CambiarPasswordScreenState extends State<CambiarPasswordScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: AppColors.peligroSuave,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(color: AppColors.peligro.withValues(alpha: 0.25)),
                   ),
-                  child: Text(_error!, style: TextStyle(color: Colors.red.shade800, fontSize: 13)),
+                  child: Text(_error!, style: TextStyle(color: AppColors.peligro, fontSize: 13)),
                 ),
               ],
               const SizedBox(height: 24),
@@ -123,7 +123,6 @@ class _CambiarPasswordScreenState extends State<CambiarPasswordScreen> {
       decoration: InputDecoration(
         labelText: etiqueta,
         prefixIcon: const Icon(Icons.lock_outline),
-        border: const OutlineInputBorder(),
         suffixIcon: IconButton(
           icon: Icon(_ocultar ? Icons.visibility_off : Icons.visibility),
           onPressed: () => setState(() => _ocultar = !_ocultar),

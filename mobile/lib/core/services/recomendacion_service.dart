@@ -30,7 +30,7 @@ class RecomendacionService {
           .timeout(const Duration(seconds: 30));
     } catch (_) {
       throw const RecomendacionException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
 

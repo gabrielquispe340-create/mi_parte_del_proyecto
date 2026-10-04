@@ -285,6 +285,11 @@
 <ng-template #cardCandidato let-c>
   <article class="candidate-card" [class.candidate-card--rejected]="c.estado === 'rejected' || c.estado === 'withdrawn'">
     <div class="card-top">
+      <label class="selection-checkbox" *ngIf="c.estado !== 'rejected' && c.estado !== 'withdrawn'"
+             [title]="puedeSeleccionar(c.postulacion_id) ? 'Seleccionar para comparar' : 'Podés comparar hasta 3 candidatos'">
+        <input type="checkbox" [checked]="estaSeleccionado(c.postulacion_id)" [disabled]="!puedeSeleccionar(c.postulacion_id)"
+               (change)="toggleSeleccion(c.postulacion_id)" [attr.aria-label]="'Comparar a ' + c.candidato_nombre" />
+      </label>
       <div class="avatar">{{ initials(c.candidato_nombre) }}</div>
       <div class="card-info">
         <h4 class="cand-nombre">{{ c.candidato_nombre }}</h4>
@@ -727,6 +732,28 @@
   </div>
 }
 
+
+
+<!-- ===== BARRA DE COMPARACIÓN (HU-18) ===== -->
+<div class="comparison-bar" *ngIf="candidatosSeleccionados().length > 0" role="region" aria-label="Comparación de candidatos">
+  <span class="comparison-bar__texto">
+    {{ candidatosSeleccionados().length }} de 3 seleccionados
+    <small *ngIf="candidatosSeleccionados().length < 2">· elegí al menos 2</small>
+  </span>
+  <button type="button" class="comparison-bar__limpiar" (click)="limpiarSeleccion()">Limpiar</button>
+  <button type="button" class="comparison-bar__comparar" (click)="abrirComparacion()" [disabled]="candidatosSeleccionados().length < 2">
+    Comparar candidatos
+  </button>
+</div>
+
+<app-comparacion-modal
+  *ngIf="mostrarModalComparacion()"
+  [idVacante]="vacanteSeleccionadaId()!"
+  [postulacionIds]="candidatosSeleccionados()"
+  (close)="cerrarComparacion()"
+  (candidateDiscarded)="onCandidatoDescartadoDesdeComparacion($event)"
+></app-comparacion-modal>
+
 <!-- ===== MODAL: AGENDAR / REPROGRAMAR ENTREVISTA (HU-20) ===== -->
 @if (mostrarModalEntrevista()) {
   <div class="modal-backdrop" (click)="cerrarModalEntrevista()">
@@ -865,4 +892,5 @@
     </div>
   </div>
 }
+
 

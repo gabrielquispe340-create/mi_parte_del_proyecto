@@ -32,11 +32,11 @@ class AuthService {
           .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const AuthException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
 
-    final cuerpo = jsonDecode(respuesta.body) as Map<String, dynamic>;
+    final cuerpo = jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>;
 
     if (respuesta.statusCode == 200) {
       return Sesion.fromJson(cuerpo);
@@ -65,7 +65,7 @@ class AuthService {
           .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const AuthException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
 

@@ -31,7 +31,7 @@ class PerfilService {
       return await peticion().timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const PerfilException(
-        'No se pudo conectar con el servidor. Verificá que el backend esté corriendo y la URL configurada.',
+        'No se pudo conectar con el servidor. Revisá tu conexión a internet e intentá de nuevo.',
       );
     }
   }
@@ -39,7 +39,7 @@ class PerfilService {
   Never _lanzarError(http.Response respuesta, String mensajePorDefecto) {
     dynamic cuerpo;
     try {
-      cuerpo = jsonDecode(respuesta.body);
+      cuerpo = jsonDecode(utf8.decode(respuesta.bodyBytes));
     } catch (_) {
       cuerpo = null;
     }
@@ -54,7 +54,7 @@ class PerfilService {
       () => http.get(_uri(''), headers: _headers(accessToken)),
     );
     if (respuesta.statusCode == 200) {
-      return PerfilEgresado.fromJson(jsonDecode(respuesta.body) as Map<String, dynamic>);
+      return PerfilEgresado.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>);
     }
     _lanzarError(respuesta, 'No se pudo cargar el perfil.');
   }
@@ -82,7 +82,7 @@ class PerfilService {
       () => http.patch(_uri(''), headers: _headers(accessToken, conJson: true), body: jsonEncode(body)),
     );
     if (respuesta.statusCode == 200) {
-      return PerfilEgresado.fromJson(jsonDecode(respuesta.body) as Map<String, dynamic>);
+      return PerfilEgresado.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>);
     }
     _lanzarError(respuesta, 'No se pudo actualizar el perfil.');
   }
@@ -92,7 +92,7 @@ class PerfilService {
   Future<List<Formacion>> listarFormacion(String accessToken) async {
     final respuesta = await _enviar(() => http.get(_uri('/formacion'), headers: _headers(accessToken)));
     if (respuesta.statusCode == 200) {
-      return (jsonDecode(respuesta.body) as List).map((e) => Formacion.fromJson(e)).toList();
+      return (jsonDecode(utf8.decode(respuesta.bodyBytes)) as List).map((e) => Formacion.fromJson(e)).toList();
     }
     _lanzarError(respuesta, 'No se pudo cargar la formación académica.');
   }
@@ -112,7 +112,7 @@ class PerfilService {
       () => http.post(_uri('/formacion'), headers: _headers(accessToken, conJson: true), body: jsonEncode(body)),
     );
     if (respuesta.statusCode == 201) {
-      return Formacion.fromJson(jsonDecode(respuesta.body) as Map<String, dynamic>);
+      return Formacion.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>);
     }
     _lanzarError(respuesta, 'No se pudo agregar la formación académica.');
   }
@@ -129,7 +129,7 @@ class PerfilService {
   Future<List<Experiencia>> listarExperiencia(String accessToken) async {
     final respuesta = await _enviar(() => http.get(_uri('/experiencia'), headers: _headers(accessToken)));
     if (respuesta.statusCode == 200) {
-      return (jsonDecode(respuesta.body) as List).map((e) => Experiencia.fromJson(e)).toList();
+      return (jsonDecode(utf8.decode(respuesta.bodyBytes)) as List).map((e) => Experiencia.fromJson(e)).toList();
     }
     _lanzarError(respuesta, 'No se pudo cargar la experiencia laboral.');
   }
@@ -149,7 +149,7 @@ class PerfilService {
       () => http.post(_uri('/experiencia'), headers: _headers(accessToken, conJson: true), body: jsonEncode(body)),
     );
     if (respuesta.statusCode == 201) {
-      return Experiencia.fromJson(jsonDecode(respuesta.body) as Map<String, dynamic>);
+      return Experiencia.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>);
     }
     _lanzarError(respuesta, 'No se pudo agregar la experiencia laboral.');
   }
@@ -166,7 +166,7 @@ class PerfilService {
   Future<List<Idioma>> listarIdiomas(String accessToken) async {
     final respuesta = await _enviar(() => http.get(_uri('/idiomas'), headers: _headers(accessToken)));
     if (respuesta.statusCode == 200) {
-      return (jsonDecode(respuesta.body) as List).map((e) => Idioma.fromJson(e)).toList();
+      return (jsonDecode(utf8.decode(respuesta.bodyBytes)) as List).map((e) => Idioma.fromJson(e)).toList();
     }
     _lanzarError(respuesta, 'No se pudieron cargar los idiomas.');
   }
@@ -177,7 +177,7 @@ class PerfilService {
       () => http.post(_uri('/idiomas'), headers: _headers(accessToken, conJson: true), body: jsonEncode(body)),
     );
     if (respuesta.statusCode == 201) {
-      return Idioma.fromJson(jsonDecode(respuesta.body) as Map<String, dynamic>);
+      return Idioma.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>);
     }
     _lanzarError(respuesta, 'No se pudo agregar el idioma.');
   }
@@ -194,7 +194,7 @@ class PerfilService {
   Future<List<Certificacion>> listarCertificaciones(String accessToken) async {
     final respuesta = await _enviar(() => http.get(_uri('/certificaciones'), headers: _headers(accessToken)));
     if (respuesta.statusCode == 200) {
-      return (jsonDecode(respuesta.body) as List).map((e) => Certificacion.fromJson(e)).toList();
+      return (jsonDecode(utf8.decode(respuesta.bodyBytes)) as List).map((e) => Certificacion.fromJson(e)).toList();
     }
     _lanzarError(respuesta, 'No se pudieron cargar las certificaciones.');
   }
@@ -213,7 +213,7 @@ class PerfilService {
           http.post(_uri('/certificaciones'), headers: _headers(accessToken, conJson: true), body: jsonEncode(body)),
     );
     if (respuesta.statusCode == 201) {
-      return Certificacion.fromJson(jsonDecode(respuesta.body) as Map<String, dynamic>);
+      return Certificacion.fromJson(jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map<String, dynamic>);
     }
     _lanzarError(respuesta, 'No se pudo agregar la certificación.');
   }
@@ -230,7 +230,7 @@ class PerfilService {
   Future<List<Habilidad>> listarHabilidades(String accessToken) async {
     final respuesta = await _enviar(() => http.get(_uri('/habilidades'), headers: _headers(accessToken)));
     if (respuesta.statusCode == 200) {
-      return (jsonDecode(respuesta.body) as List).map((e) => Habilidad.fromJson(e)).toList();
+      return (jsonDecode(utf8.decode(respuesta.bodyBytes)) as List).map((e) => Habilidad.fromJson(e)).toList();
     }
     _lanzarError(respuesta, 'No se pudieron cargar las habilidades.');
   }
@@ -245,7 +245,7 @@ class PerfilService {
       ),
     );
     if (respuesta.statusCode == 200) {
-      return (jsonDecode(respuesta.body) as List).map((e) => Habilidad.fromJson(e)).toList();
+      return (jsonDecode(utf8.decode(respuesta.bodyBytes)) as List).map((e) => Habilidad.fromJson(e)).toList();
     }
     _lanzarError(respuesta, 'No se pudieron actualizar las habilidades.');
   }

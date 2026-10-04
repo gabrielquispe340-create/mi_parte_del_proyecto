@@ -1,0 +1,135 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="comparison-modal" role="dialog" aria-modal="true" aria-labelledby="titulo-comparacion" (click)="$event.stopPropagation()">
+    <header class="modal-header">
+      <div>
+        <h2 id="titulo-comparacion">Comparar candidatos</h2>
+        <p class="modal-subtitle">Perfiles lado a lado para decidir a quién avanzar en el proceso.</p>
+      </div>
+      <button type="button" class="btn-close" aria-label="Cerrar comparación" (click)="close.emit()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+      </button>
+    </header>
+
+    <div class="modal-body">
+      @if (cargando()) {
+        <div class="state">
+          <div class="spinner"></div>
+          <p>Cargando perfiles…</p>
+        </div>
+      } @else if (error()) {
+        <div class="state state--error">
+          <p>{{ error() }}</p>
+          <button type="button" class="btn-outline" (click)="cargarDatos()">Reintentar</button>
+        </div>
+      } @else {
+        @if (errorDescarte()) {
+          <div class="alert-error" role="alert">{{ errorDescarte() }}</div>
+        }
+
+        <div class="comparison-grid" [style.--columnas]="candidatos().length">
+          @for (cand of candidatos(); track cand.postulacion_id) {
+            <article class="candidate-col">
+              <div class="candidate-header">
+                <div class="avatar">{{ iniciales(cand.candidato_nombre) }}</div>
+                <h3>{{ cand.candidato_nombre }}</h3>
+                @if (cand.afinidad !== null && cand.afinidad !== undefined) {
+                  <span [class]="'afinidad afinidad--' + nivelAfinidad(cand.afinidad)">{{ cand.afinidad }}% de afinidad</span>
+                } @else {
+                  <span class="afinidad afinidad--baja">Afinidad no disponible</span>
+                }
+              </div>
+
+              <section class="section">
+                <h4>Experiencia</h4>
+                @for (exp of cand.experiencia; track exp.id) {
+                  <div class="item">
+                    <strong>{{ exp.cargo }}</strong>
+                    @if (exp.empresa) {
+                      <span>{{ exp.empresa }}</span>
+                    }
+                    @if (exp.fecha_inicio) {
+                      <span class="meta">
+                        {{ exp.fecha_inicio | date: 'MM/yyyy' }} – {{ exp.fecha_fin ? (exp.fecha_fin | date: 'MM/yyyy') : 'actualidad' }}
+                      </span>
+                    }
+                  </div>
+                } @empty {
+                  <p class="empty">Sin experiencia registrada</p>
+                }
+              </section>
+
+              <section class="section">
+                <h4>Formación</h4>
+                @for (edu of cand.formacion; track edu.id) {
+                  <div class="item">
+                    <strong>{{ edu.programa }}</strong>
+                    @if (edu.institucion) {
+                      <span>{{ edu.institucion }}</span>
+                    }
+                    @if (edu.estado_academico) {
+                      <span class="meta">{{ edu.estado_academico | titlecase }}</span>
+                    }
+                  </div>
+                } @empty {
+                  <p class="empty">Sin formación registrada</p>
+                }
+              </section>
+
+              <section class="section">
+                <h4>Habilidades</h4>
+                @if (cand.habilidades.length) {
+                  <div class="tags">
+                    @for (hab of cand.habilidades; track hab.id) {
+                      <span class="tag">{{ hab.nombre }}</span>
+                    }
+                  </div>
+                } @else {
+                  <p class="empty">Sin habilidades registradas</p>
+                }
+              </section>
+
+              <section class="section">
+                <h4>Idiomas</h4>
+                @for (lang of cand.idiomas; track lang.id) {
+                  <div class="item item--row">
+                    <strong>{{ lang.idioma }}</strong>
+                    <span class="meta">{{ nivelIdioma(lang.nivel) }}</span>
+                  </div>
+                } @empty {
+                  <p class="empty">Sin idiomas registrados</p>
+                }
+              </section>
+
+              <footer class="candidate-actions">
+                <button type="button" class="btn-danger-outline" (click)="abrirConfirmacionDescarte(cand.postulacion_id, cand.candidato_nombre)">
+                  Descartar candidato
+                </button>
+              </footer>
+            </article>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+<!-- Confirmación propia en lugar de window.confirm() -->
+@if (postulacionADescartar() !== null) {
+  <div class="modal-overlay modal-overlay--top" (click)="cerrarConfirmacionDescarte()">
+    <div class="confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="titulo-descarte" (click)="$event.stopPropagation()">
+      <div class="confirm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        </svg>
+      </div>
+      <h3 id="titulo-descarte">Descartar candidato</h3>
+      <p>¿Seguro que querés descartar a <strong>{{ nombreADescartar() }}</strong> de este proceso de selección?</p>
+      <div class="confirm-actions">
+        <button type="button" class="btn-outline" (click)="cerrarConfirmacionDescarte()" [disabled]="procesandoDescarte()">Cancelar</button>
+        <button type="button" class="btn-danger" (click)="confirmarDescarte()" [disabled]="procesandoDescarte()">
+          {{ procesandoDescarte() ? 'Descartando…' : 'Sí, descartar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
