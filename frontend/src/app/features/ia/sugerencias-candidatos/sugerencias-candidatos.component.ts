@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { VacanteResumen } from '../../../core/models/vacante.models';
+import { Vacante } from '../../../core/models/vacante.models';
 import { VacanteService } from '../../../core/services/vacante.service';
 import { AuthService } from '../../auth/auth.service';
 import { IaService } from '../ia.service';
@@ -22,7 +22,7 @@ export class SugerenciasCandidatosComponent implements OnInit {
   readonly auth = inject(AuthService);
 
   // Vacantes disponibles de la empresa
-  vacantes = signal<VacanteResumen[]>([]);
+  vacantes = signal<Vacante[]>([]);
   vacanteSeleccionadaId = signal<string>('');
 
   // Sugerencias y Ranking IA (HU-24)
@@ -43,7 +43,7 @@ export class SugerenciasCandidatosComponent implements OnInit {
   }
 
   cargarVacantesEmpresa(): void {
-    this.vacanteService.buscarVacantes({ limit: 50 }).subscribe({
+    this.vacanteService.listarMisVacantes({ page_size: 50 }).subscribe({
       next: (resp) => {
         this.vacantes.set(resp.items);
         if (resp.items.length > 0) {
