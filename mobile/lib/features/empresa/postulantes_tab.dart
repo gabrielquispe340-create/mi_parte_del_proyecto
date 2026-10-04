@@ -26,7 +26,7 @@ class _PostulantesTabState extends State<PostulantesTab> {
   Future<void> _recargar() async {
     if (!mounted) return;
     final futuro = EmpresaService().postulantesNuevos(widget.accessToken);
-    setState(() => _futuro = futuro);
+    setState(() { _futuro = futuro; });
     await futuro.then((_) {}, onError: (_) {});
   }
 

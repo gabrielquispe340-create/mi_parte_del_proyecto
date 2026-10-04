@@ -45,7 +45,7 @@ class _VacantesScreenState extends State<VacantesScreen> {
   Future<void> _recargar() async {
     if (!mounted) return;
     final futuro = _buscar();
-    setState(() => _futuro = futuro);
+    setState(() { _futuro = futuro; });
     await futuro.catchError((_) => <Vacante>[]);
   }
 

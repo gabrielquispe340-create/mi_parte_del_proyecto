@@ -95,7 +95,7 @@ class _InicioTabState extends State<InicioTab> {
   Future<void> _recargar() async {
     if (!mounted) return;
     final futuro = _cargar();
-    setState(() => _futuro = futuro);
+    setState(() { _futuro = futuro; });
     await futuro.then((_) {}, onError: (_) {});
   }
 

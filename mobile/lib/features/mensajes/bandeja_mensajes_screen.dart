@@ -44,7 +44,7 @@ class _BandejaMensajesScreenState extends State<BandejaMensajesScreen> {
   Future<void> _recargar() async {
     if (!mounted) return;
     final futuro = _cargar();
-    setState(() => _futuro = futuro);
+    setState(() { _futuro = futuro; });
     await futuro.then((_) {}, onError: (_) {});
   }
 
