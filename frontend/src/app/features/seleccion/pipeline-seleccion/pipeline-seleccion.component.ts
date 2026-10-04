@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SeleccionService } from '../seleccion.service';
 import {
@@ -33,6 +33,7 @@ import { HiloMensajesComponent } from '../../comunicacion/hilo-mensajes/hilo-men
 })
 export class PipelineSeleccionComponent implements OnInit {
   private readonly svc = inject(SeleccionService);
+  private readonly route = inject(ActivatedRoute);
 
   // ── Estado general ──────────────────────────────────────────────────
   vacantes = signal<VacanteResumenSeleccion[]>([]);
@@ -186,7 +187,10 @@ export class PipelineSeleccionComponent implements OnInit {
       next: (data) => {
         this.vacantes.set(data);
         if (data.length > 0 && !this.vacanteSeleccionadaId()) {
-          const preferida = data.find((v) => v.total_postulantes > 0) ?? data[0];
+          // Si se llegó desde otra pantalla con ?vacante=, se abre esa vacante.
+          const pedida = this.route.snapshot.queryParamMap.get('vacante');
+          const preferida =
+            data.find((v) => v.id === pedida) ?? data.find((v) => v.total_postulantes > 0) ?? data[0];
           this.seleccionarVacante(preferida.id);
         }
         this.cargandoVacantes.set(false);
