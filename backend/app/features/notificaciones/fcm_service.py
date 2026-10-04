@@ -13,6 +13,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models.notificacion import UserDeviceToken
 
 logger = logging.getLogger(__name__)
@@ -144,24 +145,29 @@ def enviar_push_fcm(
     if not tokens:
         return {"enviados": 0, "fallidos": 0, "mensaje": "Usuario no tiene dispositivos FCM registrados"}
 
+    enlace = link or "/notificaciones"
     data_payload = {
         "title": title,
         "body": body or "",
-        "link": link or "/notificaciones",
-        "click_action": link or "/notificaciones",
+        "link": enlace,
+        "click_action": enlace,
     }
     if datos_extra:
         data_payload.update(datos_extra)
 
     from firebase_admin import messaging
 
+    # Firebase exige una URL https completa para abrir la web al tocar el aviso; en
+    # desarrollo (http://localhost) se omite y el service worker usa data.link.
+    url_web = enlace if enlace.startswith("http") else f"{get_settings().frontend_url.rstrip('/')}{enlace}"
     mensaje_multicast = messaging.MulticastMessage(
         notification=messaging.Notification(title=title, body=body or ""),
         data=data_payload,
         tokens=tokens,
+        android=messaging.AndroidConfig(priority="high"),
         webpush=messaging.WebpushConfig(
             notification=messaging.WebpushNotification(title=title, body=body or "", icon="/favicon.ico"),
-            fcm_options=messaging.WebpushFCMOptions(link=link or "/notificaciones"),
+            fcm_options=messaging.WebpushFCMOptions(link=url_web) if url_web.startswith("https://") else None,
         ),
     )
     respuesta = messaging.send_each_for_multicast(mensaje_multicast)

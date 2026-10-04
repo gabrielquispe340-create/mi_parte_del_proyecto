@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Notificacion, PreferenciasNotificacion } from '../../../core/models/notificacion.models';
 import { NotificacionService } from '../../../core/services/notificacion.service';
+import { PushService } from '../../../core/services/push.service';
 import { AuthService } from '../../auth/auth.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { AuthService } from '../../auth/auth.service';
 })
 export class NotificacionesPanelComponent implements OnInit {
   private readonly notifService = inject(NotificacionService);
+  readonly push = inject(PushService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -39,12 +41,8 @@ export class NotificacionesPanelComponent implements OnInit {
   };
   isLoadingPreferencias = false;
   isSavingPreferencias = false;
-  get pushSoportado(): boolean {
-    return typeof window !== 'undefined' && 'Notification' in window;
-  }
-  get permisoPushConcedido(): boolean {
-    return this.notifService.tienePermisoWebPush();
-  }
+  activandoPush = false;
+  probandoPush = false;
 
   // Toast / Mensajes
   mensajeExito: string | null = null;
@@ -59,42 +57,47 @@ export class NotificacionesPanelComponent implements OnInit {
     this.cargarPreferencias();
   }
 
+  /** Encender "push" también registra este navegador (pide el permiso si hace falta). */
   async togglePushPermiso(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
-    if (input.checked) {
-      const concedido = await this.notifService.solicitarPermisoWebPush();
-      if (!concedido) {
-        this.preferencias.push_enabled = false;
-        input.checked = false;
-        this.mostrarMensaje('El navegador no tiene permiso para enviar notificaciones Push. Habilítalo en los ajustes del sitio.', true);
-      } else {
-        this.preferencias.push_enabled = true;
-        this.mostrarMensaje('Notificaciones Push del navegador activadas exitosamente.');
-      }
-    } else {
-      this.preferencias.push_enabled = false;
+    this.preferencias.push_enabled = input.checked;
+    if (input.checked && this.push.estado() !== 'activo') {
+      await this.activarPushEnNavegador();
     }
   }
 
-  probarNotificacionPush(): void {
-    if (!this.notifService.tienePermisoWebPush()) {
-      this.notifService.solicitarPermisoWebPush().then((concedido) => {
-        if (concedido) {
-          this.notifService.emitirNotificacionWebPush('🔔 Notificación Push de Prueba', {
-            body: '¡Excelente! Las notificaciones Push de escritorio están funcionando activas en tu navegador.',
-            link: '/notificaciones',
-          });
-        } else {
-          this.mostrarMensaje('Debes permitir las notificaciones en el navegador para recibir Push.', true);
-        }
-      });
-    } else {
-      this.notifService.emitirNotificacionWebPush('🔔 Notificación Push de Prueba', {
-        body: '¡Excelente! Las notificaciones Push de escritorio están funcionando activas en tu navegador.',
-        link: '/notificaciones',
-      });
-      this.mostrarMensaje('Se ha enviado la notificación Push a tu sistema operativo / navegador.');
+  async activarPushEnNavegador(): Promise<void> {
+    this.activandoPush = true;
+    const ok = await this.push.activar();
+    this.activandoPush = false;
+    if (ok) {
+      this.mostrarMensaje('Listo: este navegador va a recibir los avisos aunque EGRESA esté cerrada.');
+    } else if (this.push.estado() === 'bloqueado') {
+      this.mostrarMensaje('El navegador tiene bloqueados los avisos de este sitio. Habilitalos desde el candado de la barra de direcciones.', true);
+    } else if (this.push.estado() !== 'sin-permiso') {
+      this.mostrarMensaje('No se pudieron activar los avisos en este navegador. Intentá de nuevo.', true);
     }
+  }
+
+  /** Envía un push real desde el servidor a los dispositivos registrados de la cuenta. */
+  probarNotificacionPush(): void {
+    this.probandoPush = true;
+    this.notifService
+      .probarPushFCM('Prueba de avisos de EGRESA', 'Si ves esto, los avisos push funcionan en este dispositivo.')
+      .subscribe({
+        next: (r: { enviados?: number; mensaje?: string }) => {
+          this.probandoPush = false;
+          if (r.enviados) {
+            this.mostrarMensaje(`Aviso de prueba enviado a ${r.enviados} dispositivo(s).`);
+          } else {
+            this.mostrarMensaje(r.mensaje || 'No hay dispositivos registrados para recibir avisos.', true);
+          }
+        },
+        error: () => {
+          this.probandoPush = false;
+          this.mostrarMensaje('No se pudo enviar el aviso de prueba.', true);
+        },
+      });
   }
 
   cargarHistorial(): void {

@@ -192,6 +192,11 @@
     background: #fdf4ff;
     color: #a21caf;
   }
+
+  &[data-tipo='denuncias'] {
+    background: #fef2f2;
+    color: #b91c1c;
+  }
 }
 
 .tarea-cuerpo {

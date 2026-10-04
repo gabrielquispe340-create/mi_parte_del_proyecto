@@ -283,6 +283,26 @@
   }
 }
 
+// HU-22: publicada pero oculta mientras la universidad revisa denuncias.
+.badge-oculta {
+  margin-top: 0.25rem;
+  background-color: #fef2f2;
+  color: #b91c1c;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+// Motivo de un rechazo (HU-12) o de una suspensión/retiro por denuncias (HU-22).
+.motivo-estado {
+  display: block;
+  max-width: 16rem;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
 // ─── Botones de Acción de Fila ──────────────────────────────────────────────
 
 .action-buttons {

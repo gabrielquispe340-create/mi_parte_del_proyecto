@@ -117,6 +117,14 @@
                   <span class="badge" [ngClass]="obtenerBadgeClase(vac.status)">
                     {{ obtenerBadgeTexto(vac.status) }}
                   </span>
+                  @if (vac.oculta_por_denuncias) {
+                    <span class="badge badge-oculta" title="Recibió denuncias y la universidad la está revisando">
+                      Oculta por denuncias
+                    </span>
+                  }
+                  @if (vac.rejection_reason && (vac.status === 'rejected' || vac.status === 'closed')) {
+                    <small class="motivo-estado">{{ vac.rejection_reason }}</small>
+                  }
                 </td>
 
                 <!-- Fecha -->

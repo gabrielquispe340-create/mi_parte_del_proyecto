@@ -96,6 +96,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'denuncias',
+        loadComponent: () =>
+          import('./features/admin/denuncias/denuncias.component').then((m) => m.DenunciasComponent),
+      },
+      {
         path: 'respaldos',
         loadComponent: () => import('./features/admin/respaldos/respaldos.component').then((m) => m.RespaldosComponent),
       },

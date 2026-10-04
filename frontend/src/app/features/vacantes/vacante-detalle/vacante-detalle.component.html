@@ -248,6 +248,10 @@
                 <span>Volver al panel</span>
               </a>
             }
+
+            @if (vacante.status === 'published' && !isEmpresa && !isAdmin) {
+              <app-denunciar-oferta class="sidebar-denuncia" [vacanteId]="vacante.id" [titulo]="vacante.title" />
+            }
           </div>
         </div>
       </aside>

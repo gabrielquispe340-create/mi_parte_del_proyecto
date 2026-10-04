@@ -64,6 +64,7 @@ class PendientesPanel(BaseModel):
     vacantes: int
     universidades: int = 0  # solicitudes de alta (solo las ve el superadmin)
     respaldo: int = 0  # 1 si no hay copias de seguridad de los últimos 7 días (solo superadmin)
+    denuncias: int = 0  # ofertas con denuncias pendientes de revisar (HU-22)
 
 
 class ActividadPanel(BaseModel):

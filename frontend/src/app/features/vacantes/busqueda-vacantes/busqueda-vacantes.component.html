@@ -443,6 +443,10 @@
 
       <!-- Footer del Modal con Acción de Postulación -->
       <div class="modal-footer">
+        @if (vacanteSeleccionada) {
+          <app-denunciar-oferta class="footer-denuncia" [vacanteId]="vacanteSeleccionada.id"
+            [titulo]="vacanteSeleccionada.title" />
+        }
         <button class="btn-secondary" (click)="cerrarModalDetalle()">Cerrar</button>
         @if (!estaAutenticado) {
           <button class="btn-primary large" (click)="irARegistro(vacanteSeleccionada?.id)">

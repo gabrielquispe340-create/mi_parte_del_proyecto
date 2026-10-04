@@ -185,7 +185,8 @@ def obtener_detalle_busqueda_vacante(
     db: Session = Depends(get_db),
 ):
     usuario_id = current_user.id_usuario if current_user else None
-    return VacanteService(db).obtener_detalle_busqueda(vacante_id, usuario_id=usuario_id)
+    es_staff = current_user is not None and bool({"platform_admin", "moderator"} & set(current_user.roles))
+    return VacanteService(db).obtener_detalle_busqueda(vacante_id, usuario_id=usuario_id, es_staff=es_staff)
 
 
 @router.get(

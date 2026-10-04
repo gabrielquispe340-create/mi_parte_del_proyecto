@@ -21,6 +21,7 @@ from app.common.exceptions import AppException, ResourceNotFoundException, Servi
 from app.core.tenancy import INSTITUCION_POR_DEFECTO_ID
 from app.features.ia.schema import RecomendacionesResponse, VacanteRecomendadaResponse
 from app.features.ia.services import afinidad as motor_afinidad
+from app.features.moderacion.reglas import no_oculta_por_denuncias
 from app.features.vacantes.repository import empresa_no_suspendida, empresa_vinculada_a
 from app.features.vacantes.schema import CriterioAfinidadResponse
 from app.features.vacantes.service import VacanteService
@@ -107,6 +108,7 @@ class RecomendacionService:
                 or_(JobPosting.application_deadline.is_(None), JobPosting.application_deadline >= func.now()),
                 empresa_vinculada_a(institucion),
                 empresa_no_suspendida(),
+                no_oculta_por_denuncias(),
             )
             .options(
                 joinedload(JobPosting.company).joinedload(Company.sector),

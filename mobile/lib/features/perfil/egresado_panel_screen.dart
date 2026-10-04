@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/sesion.dart';
+import '../../core/services/push_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../auth/login_screen.dart';
 import '../inicio/inicio_tab.dart';
@@ -38,6 +39,12 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
   /// ejemplo una postulación recién enviada. Vacantes conserva la búsqueda.
   final _versiones = [0, 0, 0, 0];
 
+  @override
+  void initState() {
+    super.initState();
+    PushService.instancia.activar(_sesion.accessToken);
+  }
+
   void _irA(int indice) {
     setState(() {
       if (!_visitadas.add(indice) && indice != _indice && indice != _vacantes) _versiones[indice]++;
@@ -46,6 +53,7 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
   }
 
   void _cerrarSesion() {
+    PushService.instancia.desactivar();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
@@ -77,10 +85,14 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
               PerfilTab(
                 key: _clave('perfil', 3),
                 sesion: _sesion,
-                onSesionActualizada: (nueva) => setState(() {
-                  _sesion = nueva;
-                  _versionSesion++;
-                }),
+                onSesionActualizada: (nueva) {
+                  setState(() {
+                    _sesion = nueva;
+                    _versionSesion++;
+                  });
+                  // Tokens nuevos tras cambiar la contraseña: el registro del celular sigue a la sesión.
+                  PushService.instancia.activar(nueva.accessToken);
+                },
                 onCerrarSesion: _cerrarSesion,
               ),
             ),

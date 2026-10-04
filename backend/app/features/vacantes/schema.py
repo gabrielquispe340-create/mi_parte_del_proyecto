@@ -268,6 +268,8 @@ class VacanteResponse(BaseModel):
     updated_at: datetime
 
     skills: list[JobSkillItemResponse] = Field(default_factory=list)
+    # HU-22: publicada pero oculta a los egresados hasta que la universidad revise sus denuncias.
+    oculta_por_denuncias: bool = False
 
     model_config = {"from_attributes": True}
 

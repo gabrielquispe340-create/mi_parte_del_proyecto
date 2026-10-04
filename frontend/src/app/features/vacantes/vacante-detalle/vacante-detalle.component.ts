@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { VacanteService } from '../../../core/services/vacante.service';
+import { DenunciarOfertaComponent } from '../../moderacion/denunciar-oferta/denunciar-oferta.component';
 
 /**
  * Componente para visualizar el detalle completo de una vacante laboral.
@@ -11,7 +12,7 @@ import { VacanteService } from '../../../core/services/vacante.service';
 @Component({
   selector: 'app-vacante-detalle',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, DenunciarOfertaComponent],
   templateUrl: './vacante-detalle.component.html',
   styleUrl: './vacante-detalle.component.scss',
 })

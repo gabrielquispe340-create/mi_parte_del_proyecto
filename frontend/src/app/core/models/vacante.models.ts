@@ -66,6 +66,8 @@ export interface Vacante {
   positions_available: number;
   status: JobStatus | string;
   rejection_reason?: string | null;
+  /** HU-22: publicada pero oculta a los egresados hasta que la universidad revise sus denuncias. */
+  oculta_por_denuncias?: boolean;
   application_deadline?: string | null;
   published_at?: string | null;
   closed_at?: string | null;

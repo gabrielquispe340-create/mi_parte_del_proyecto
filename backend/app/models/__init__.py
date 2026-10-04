@@ -21,6 +21,7 @@ from app.models.institucion import (
     SaasPlan,
     UniversitySignupRequest,
 )
+from app.models.moderacion import ModerationReport
 from app.models.notificacion import Notification, NotificationPreference
 from app.models.respaldo import SystemBackup
 from app.models.seguridad import AuditLog, LoginAttempt
@@ -88,6 +89,7 @@ __all__ = [
     "JobStatus",
     "Language",
     "LoginAttempt",
+    "ModerationReport",
     "Notification",
     "NotificationPreference",
     "PlanPayment",

@@ -1,0 +1,72 @@
+@if (auth.estaAutenticado()) {
+  @if (yaDenunciada()) {
+    <span class="denunciada" title="La universidad está revisando esta oferta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+      Denunciada, en revisión
+    </span>
+  } @else {
+    <button type="button" class="btn-denunciar" (click)="abrir()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21V4m0 0h11l-1.5 4L14 12H3" />
+      </svg>
+      Denunciar oferta
+    </button>
+  }
+}
+
+@if (abierto()) {
+  <div class="denuncia-overlay" (click)="cerrar()">
+    <div class="denuncia-card" role="dialog" aria-modal="true" aria-labelledby="denuncia-titulo" (click)="$event.stopPropagation()">
+      <header>
+        <h2 id="denuncia-titulo">Denunciar oferta</h2>
+        @if (titulo()) {
+          <p class="oferta">{{ titulo() }}</p>
+        }
+        <p class="ayuda">
+          La universidad revisa cada denuncia. La empresa no sabe quién la hizo.
+        </p>
+      </header>
+
+      <fieldset>
+        <legend>¿Qué pasa con esta oferta?</legend>
+        @for (c of categorias; track c.valor) {
+          <label class="opcion" [class.elegida]="categoria() === c.valor">
+            <input type="radio" name="categoria" [value]="c.valor" [checked]="categoria() === c.valor"
+              (change)="categoria.set(c.valor)" />
+            <span>
+              <strong>{{ c.etiqueta }}</strong>
+              <small>{{ c.ayuda }}</small>
+            </span>
+          </label>
+        }
+      </fieldset>
+
+      <label class="detalle" for="denuncia-detalle">
+        Contá qué viste {{ categoria() === 'other' ? '' : '(recomendado)' }}
+      </label>
+      <textarea id="denuncia-detalle" rows="3" maxlength="1000" [ngModel]="descripcion()"
+        (ngModelChange)="descripcion.set($event)"
+        placeholder="Ej.: me pidieron un depósito para reservar el puesto."></textarea>
+      <p class="contador" [class.ok]="conFundamento()">
+        @if (conFundamento()) {
+          Con este detalle tu denuncia cuenta para ocultar la oferta.
+        } @else {
+          {{ largo() }}/{{ minimo }} caracteres. Sin detalle, la denuncia se registra pero no oculta la oferta por sí sola.
+        }
+      </p>
+
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+
+      <footer>
+        <button type="button" class="btn-cancelar" (click)="cerrar()" [disabled]="enviando()">Cancelar</button>
+        <button type="button" class="btn-enviar" (click)="enviar()" [disabled]="!puedeEnviar()">
+          {{ enviando() ? 'Enviando...' : 'Enviar denuncia' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

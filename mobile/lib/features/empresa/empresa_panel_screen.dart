@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/sesion.dart';
 import '../../core/services/api_config.dart';
 import '../../core/services/mensaje_service.dart';
+import '../../core/services/push_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/abrir_afuera.dart';
 import '../auth/login_screen.dart';
@@ -39,6 +40,7 @@ class _EmpresaPanelScreenState extends State<EmpresaPanelScreen> {
   void initState() {
     super.initState();
     _contarNoLeidos();
+    PushService.instancia.activar(widget.sesion.accessToken);
   }
 
   /// El contador de la pestaña Mensajes es un extra: si falla, no se muestra.
@@ -65,6 +67,7 @@ class _EmpresaPanelScreenState extends State<EmpresaPanelScreen> {
   }
 
   void _cerrarSesion() {
+    PushService.instancia.desactivar();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
