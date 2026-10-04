@@ -56,3 +56,20 @@ class CrearNotificacionInternaRequest(BaseModel):
     title: str = Field(..., min_length=2, max_length=200)
     body: str | None = None
     link: str | None = None
+
+
+class RegistrarDeviceTokenRequest(BaseModel):
+    fcm_token: str = Field(..., min_length=5, max_length=500)
+    device_type: str = Field("web", pattern="^(web|android|ios)$")
+    device_name: str | None = Field(None, max_length=100)
+
+
+class EliminarDeviceTokenRequest(BaseModel):
+    fcm_token: str = Field(..., min_length=5, max_length=500)
+
+
+class TestPushFCMRequest(BaseModel):
+    title: str = Field("🚀 Notificación Firebase FCM", max_length=200)
+    body: str = Field("Prueba de Push enviada a través de Firebase Cloud Messaging", max_length=500)
+    link: str | None = "/notificaciones"
+

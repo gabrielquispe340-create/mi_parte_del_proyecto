@@ -212,5 +212,54 @@ export class NotificacionService {
       headers: this.headers(),
     });
   }
+
+  // ─── MÉTODOS FIREBASE CLOUD MESSAGING (FCM) — HU-21 ─────────────────────────
+
+  /** Registra el FCM token del dispositivo ante el backend */
+  registrarTokenFCM(
+    fcmToken: string,
+    deviceType: 'web' | 'android' | 'ios' = 'web',
+    deviceName?: string
+  ): Observable<{ registrado: boolean; token_id: string; device_type: string }> {
+    return this.http.post<{ registrado: boolean; token_id: string; device_type: string }>(
+      `${this.apiUrl}/fcm/registrar-token`,
+      { fcm_token: fcmToken, device_type: deviceType, device_name: deviceName },
+      { headers: this.headers() }
+    );
+  }
+
+  /** Elimina un FCM token del backend al cerrar sesión */
+  eliminarTokenFCM(fcmToken: string): Observable<{ desactivado: boolean }> {
+    return this.http.post<{ desactivado: boolean }>(
+      `${this.apiUrl}/fcm/eliminar-token`,
+      { fcm_token: fcmToken },
+      { headers: this.headers() }
+    );
+  }
+
+  /** Dispara un mensaje Push FCM de prueba desde el backend */
+  probarPushFCM(
+    title: string,
+    body: string,
+    link = '/notificaciones'
+  ): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/fcm/test-push`,
+      { title, body, link },
+      { headers: this.headers() }
+    );
+  }
+
+  /** Registra el Service Worker de Firebase Messaging si está soportado */
+  async registrarServiceWorkerFCM(): Promise<void> {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log('[FCM] Service Worker registrado exitosamente.');
+      } catch (err) {
+        console.warn('[FCM] Registro de Service Worker opcional omitido:', err);
+      }
+    }
+  }
 }
 

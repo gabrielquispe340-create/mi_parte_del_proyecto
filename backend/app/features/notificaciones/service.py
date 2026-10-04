@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 from sqlalchemy.orm import Session
 
 from app.common.exceptions import ResourceNotFoundException
@@ -94,7 +95,7 @@ class NotificacionService:
         return PreferenciasNotificacionDTO.model_validate(pref)
 
     def crear_notificacion(self, req: CrearNotificacionInternaRequest) -> NotificacionDTO | None:
-        """Emite una notificación respetando las preferencias del destinatario."""
+        """Emite una notificación respetando las preferencias del destinatario y envía Push FCM."""
         notif = self.repo.crear_notificacion(
             user_id=req.user_id,
             notification_type=req.notification_type,
@@ -104,6 +105,19 @@ class NotificacionService:
         )
         if not notif:
             return None
+
+        # Si el usuario tiene activo el canal Push, enviar notificación Firebase FCM
+        pref = self.repo.obtener_o_crear_preferencias(req.user_id)
+        if pref.push_enabled:
+            from app.features.notificaciones import fcm_service
+
+            fcm_service.enviar_push_fcm(
+                db=self.db,
+                user_id=req.user_id,
+                title=req.title,
+                body=req.body,
+                link=req.link,
+            )
 
         return NotificacionDTO(
             id=notif.id,
@@ -116,3 +130,40 @@ class NotificacionService:
             created_at=notif.created_at,
             leida=False,
         )
+
+    def registrar_fcm_token(
+        self, user_id: uuid.UUID, fcm_token: str, device_type: str = "web", device_name: str | None = None
+    ) -> dict[str, Any]:
+        """Registra un token FCM de un dispositivo."""
+        from app.features.notificaciones import fcm_service
+
+        reg = fcm_service.registrar_token_dispositivo(
+            db=self.db,
+            user_id=user_id,
+            fcm_token=fcm_token,
+            device_type=device_type,
+            device_name=device_name,
+        )
+        return {"registrado": True, "token_id": str(reg.id), "device_type": reg.device_type}
+
+    def eliminar_fcm_token(self, fcm_token: str) -> dict[str, bool]:
+        """Desactiva un token FCM."""
+        from app.features.notificaciones import fcm_service
+
+        exito = fcm_service.desactivar_token_dispositivo(self.db, fcm_token)
+        return {"desactivado": exito}
+
+    def enviar_test_push_fcm(
+        self, user_id: uuid.UUID, title: str, body: str, link: str | None = None
+    ) -> dict[str, Any]:
+        """Envía un Push FCM de prueba directo al usuario."""
+        from app.features.notificaciones import fcm_service
+
+        return fcm_service.enviar_push_fcm(
+            db=self.db,
+            user_id=user_id,
+            title=title,
+            body=body,
+            link=link,
+        )
+

@@ -43,8 +43,19 @@ DDL = [
     "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS in_app_enabled BOOLEAN NOT NULL DEFAULT TRUE",
     "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS notify_stage_changes BOOLEAN NOT NULL DEFAULT TRUE",
     "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS notify_job_matches BOOLEAN NOT NULL DEFAULT TRUE",
-    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS notify_interview_events BOOLEAN NOT NULL DEFAULT TRUE",
-    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS notify_messages BOOLEAN NOT NULL DEFAULT TRUE",
+    # 3. Asegurar tabla user_device_token para Firebase Cloud Messaging (FCM)
+    """CREATE TABLE IF NOT EXISTS user_device_token (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+        fcm_token VARCHAR(500) UNIQUE NOT NULL,
+        device_type VARCHAR(20) NOT NULL DEFAULT 'web',
+        device_name VARCHAR(100),
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )""",
+    "CREATE INDEX IF NOT EXISTS ix_user_device_token_user_id ON user_device_token (user_id)",
+    "CREATE INDEX IF NOT EXISTS ix_user_device_token_fcm_token ON user_device_token (fcm_token)",
 ]
 
 

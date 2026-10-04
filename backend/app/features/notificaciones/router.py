@@ -6,10 +6,13 @@ from app.core.database import get_db
 from app.features.notificaciones.schema import (
     ContadorNoLeidasResponse,
     CrearNotificacionInternaRequest,
+    EliminarDeviceTokenRequest,
     NotificacionDTO,
     NotificacionesListResponse,
     PreferenciasNotificacionDTO,
     PreferenciasNotificacionUpdateRequest,
+    RegistrarDeviceTokenRequest,
+    TestPushFCMRequest,
 )
 from app.features.notificaciones.service import NotificacionService
 from app.security.dependencies import CurrentUser, get_current_user
@@ -100,3 +103,47 @@ def crear_notificacion_manual(
 ):
     """Emite una nueva notificación para un usuario (uso de sistema / moderación / reclutador)."""
     return NotificacionService(db).crear_notificacion(req=req)
+
+
+# ─── Endpoints Firebase Cloud Messaging (FCM) — HU-21 ─────────────────────────
+
+
+@router.post("/fcm/registrar-token", status_code=status.HTTP_200_OK)
+def registrar_token_fcm(
+    req: RegistrarDeviceTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Registra o actualiza el FCM token del dispositivo (Web o Móvil) para recibir Push."""
+    return NotificacionService(db).registrar_fcm_token(
+        user_id=current_user.id_usuario,
+        fcm_token=req.fcm_token,
+        device_type=req.device_type,
+        device_name=req.device_name,
+    )
+
+
+@router.post("/fcm/eliminar-token", status_code=status.HTTP_200_OK)
+def eliminar_token_fcm(
+    req: EliminarDeviceTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Desactiva un token FCM al cerrar sesión."""
+    return NotificacionService(db).eliminar_fcm_token(fcm_token=req.fcm_token)
+
+
+@router.post("/fcm/test-push", status_code=status.HTTP_200_OK)
+def enviar_test_push_fcm(
+    req: TestPushFCMRequest,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Envía un Push de prueba vía Firebase Cloud Messaging al usuario autenticado."""
+    return NotificacionService(db).enviar_test_push_fcm(
+        user_id=current_user.id_usuario,
+        title=req.title,
+        body=req.body,
+        link=req.link,
+    )
+

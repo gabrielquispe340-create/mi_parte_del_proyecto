@@ -136,6 +136,74 @@ class NotificacionService {
       }
     } catch (_) {}
 
-    return prefs;
+  /// Registra el FCM token del dispositivo ante el backend
+  Future<bool> registrarTokenFCM(
+    String accessToken,
+    String fcmToken, {
+    String deviceType = 'android',
+    String? deviceName,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/notificaciones/fcm/registrar-token');
+    try {
+      final res = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'fcm_token': fcmToken,
+          'device_type': deviceType,
+          'device_name': deviceName,
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Elimina un FCM token al cerrar sesión
+  Future<bool> eliminarTokenFCM(String accessToken, String fcmToken) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/notificaciones/fcm/eliminar-token');
+    try {
+      final res = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'fcm_token': fcmToken}),
+      ).timeout(const Duration(seconds: 15));
+
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Dispara un Push FCM de prueba
+  Future<bool> probarPushFCM(
+    String accessToken, {
+    String title = '🚀 Push Móvil FCM',
+    String body = 'Notificación Push recibida desde Firebase Cloud Messaging',
+    String link = '/notificaciones',
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/notificaciones/fcm/test-push');
+    try {
+      final res = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'title': title, 'body': body, 'link': link}),
+      ).timeout(const Duration(seconds: 15));
+
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 }
