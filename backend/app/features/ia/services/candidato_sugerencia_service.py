@@ -24,6 +24,18 @@ class CandidatoSugerenciaService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def _es_miembro_de(self, user_id: uuid.UUID, company_id: uuid.UUID) -> bool:
+        return (
+            self.db.scalar(
+                select(CompanyMember.user_id).where(
+                    CompanyMember.user_id == user_id,
+                    CompanyMember.company_id == company_id,
+                    CompanyMember.is_active.is_(True),
+                )
+            )
+            is not None
+        )
+
     def sugerir_candidatos_para_vacante(
         self,
         vacante_id: uuid.UUID,
@@ -44,7 +56,9 @@ class CandidatoSugerenciaService:
             .where(JobPosting.id == vacante_id)
         )
         vacante = self.db.scalar(stmt_vac)
-        if not vacante:
+        # Solo la empresa dueña de la vacante ve a sus postulantes; para cualquier
+        # otra se responde lo mismo que si no existiera.
+        if not vacante or not self._es_miembro_de(user_id, vacante.company_id):
             raise ResourceNotFoundException("La vacante solicitada no existe.")
 
         # 2. Cargar postulaciones o candidatos del pool

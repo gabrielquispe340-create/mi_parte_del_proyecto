@@ -19,7 +19,9 @@ from app.security.dependencies import CurrentUser, get_current_user, require_rol
 router = APIRouter(prefix="/ia", tags=["inteligencia-artificial"])
 
 _solo_egresado = require_roles("candidate")
-_solo_empresa_o_admin = require_roles("empresa", "platform_admin", "moderator", "institution_admin")
+# Igual que el pipeline de selección: además del rol, el servicio exige ser
+# miembro de la empresa dueña de la vacante.
+_solo_empresa_o_admin = require_roles("empresa", "platform_admin")
 
 
 @router.get("/_status")

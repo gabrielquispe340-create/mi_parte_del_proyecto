@@ -36,33 +36,18 @@ class _PreferenciasNotificacionesScreenState extends State<PreferenciasNotificac
 
   Future<void> _guardar() async {
     setState(() => _guardando = true);
-    final p = await _servicio.actualizarPreferencias(widget.accessToken, _prefs);
-    if (!mounted) return;
-    setState(() {
-      _prefs = p;
-      _guardando = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Preferencias de notificación guardadas'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  Future<void> _probarPushFCM() async {
-    final ok = await _servicio.probarPushFCM(
-      widget.accessToken,
-      title: '🔔 Push Firebase FCM Móvil',
-      body: '¡Excelente! La notificación Push móvil a través de Firebase está activa y funcionando.',
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'Push de prueba emitido exitosamente' : 'Push emitido al servidor'),
-        backgroundColor: Colors.indigo,
-      ),
-    );
+    try {
+      final p = await _servicio.actualizarPreferencias(widget.accessToken, _prefs);
+      if (!mounted) return;
+      setState(() => _prefs = p);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preferencias de notificación guardadas')),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
   }
 
   @override
@@ -98,27 +83,11 @@ class _PreferenciasNotificacionesScreenState extends State<PreferenciasNotificac
                     children: [
                       SwitchListTile(
                         secondary: const Icon(Icons.notifications_active, color: Colors.indigo),
-                        title: const Text('Notificaciones Push Móvil (FCM)'),
-                        subtitle: const Text('Alertas instantáneas emergentes en este dispositivo móvil'),
+                        title: const Text('Notificaciones push'),
+                        subtitle: const Text('Avisos emergentes fuera de la app, en los dispositivos donde estén disponibles'),
                         value: _prefs.pushEnabled,
                         onChanged: (val) => setState(() => _prefs = _prefs.copyWith(pushEnabled: val)),
                       ),
-                      if (_prefs.pushEnabled)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: OutlinedButton.icon(
-                              icon: const Icon(Icons.send_outlined, size: 16),
-                              label: const Text('Probar Push Firebase Ahora', style: TextStyle(fontSize: 12)),
-                              style: OutlinedButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                foregroundColor: Colors.indigo,
-                              ),
-                              onPressed: _probarPushFCM,
-                            ),
-                          ),
-                        ),
                       const Divider(height: 1),
                       SwitchListTile(
                         secondary: const Icon(Icons.mark_chat_unread_outlined, color: Colors.blue),

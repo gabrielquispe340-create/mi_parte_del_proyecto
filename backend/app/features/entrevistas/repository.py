@@ -5,6 +5,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
+from app.features.notificaciones.emisor import emitir_notificacion
 from app.models.candidato import CandidateProfile
 from app.models.empresa import CompanyMember
 from app.models.entrevista import Interview
@@ -122,16 +123,9 @@ class EntrevistasRepository:
         titulo: str,
         cuerpo: str,
         enlace: str | None = None,
-    ) -> Notification:
-        notif = Notification(
-            user_id=user_id,
-            notification_type=tipo,
-            title=titulo,
-            body=cuerpo,
-            link=enlace,
-        )
-        self.db.add(notif)
-        return notif
+    ) -> Notification | None:
+        """Respeta las preferencias del destinatario y manda el push (HU-21)."""
+        return emitir_notificacion(self.db, user_id, tipo, titulo, cuerpo, enlace)
 
     def mover_postulacion_a_etapa(
         self,

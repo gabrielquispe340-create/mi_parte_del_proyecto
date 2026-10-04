@@ -55,7 +55,7 @@ mobile/android/app/release
 infra/seed/
 
 # Credenciales (NUNCA commitear)
-**/firebase-adminsdk-*.json
+**/*firebase-adminsdk*.json
 **/*service-account*.json
 **/serviceAccountKey*.json
 !**/serviceAccountKey.example.json

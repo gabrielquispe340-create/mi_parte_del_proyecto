@@ -95,7 +95,7 @@ class NotificacionService:
         return PreferenciasNotificacionDTO.model_validate(pref)
 
     def crear_notificacion(self, req: CrearNotificacionInternaRequest) -> NotificacionDTO | None:
-        """Emite una notificación respetando las preferencias del destinatario y envía Push FCM."""
+        """Emite una notificación respetando las preferencias del destinatario (y el push, si corresponde)."""
         notif = self.repo.crear_notificacion(
             user_id=req.user_id,
             notification_type=req.notification_type,
@@ -105,19 +105,6 @@ class NotificacionService:
         )
         if not notif:
             return None
-
-        # Si el usuario tiene activo el canal Push, enviar notificación Firebase FCM
-        pref = self.repo.obtener_o_crear_preferencias(req.user_id)
-        if pref.push_enabled:
-            from app.features.notificaciones import fcm_service
-
-            fcm_service.enviar_push_fcm(
-                db=self.db,
-                user_id=req.user_id,
-                title=req.title,
-                body=req.body,
-                link=req.link,
-            )
 
         return NotificacionDTO(
             id=notif.id,
@@ -146,11 +133,11 @@ class NotificacionService:
         )
         return {"registrado": True, "token_id": str(reg.id), "device_type": reg.device_type}
 
-    def eliminar_fcm_token(self, fcm_token: str) -> dict[str, bool]:
-        """Desactiva un token FCM."""
+    def eliminar_fcm_token(self, fcm_token: str, user_id: uuid.UUID) -> dict[str, bool]:
+        """Desactiva un token FCM del usuario (los de otros usuarios no se tocan)."""
         from app.features.notificaciones import fcm_service
 
-        exito = fcm_service.desactivar_token_dispositivo(self.db, fcm_token)
+        exito = fcm_service.desactivar_token_dispositivo(self.db, fcm_token, user_id)
         return {"desactivado": exito}
 
     def enviar_test_push_fcm(
@@ -159,11 +146,13 @@ class NotificacionService:
         """Envía un Push FCM de prueba directo al usuario."""
         from app.features.notificaciones import fcm_service
 
-        return fcm_service.enviar_push_fcm(
+        resultado = fcm_service.enviar_push_fcm(
             db=self.db,
             user_id=user_id,
             title=title,
             body=body,
             link=link,
         )
+        self.db.commit()  # Persiste los tokens que Firebase haya rechazado.
+        return resultado
 

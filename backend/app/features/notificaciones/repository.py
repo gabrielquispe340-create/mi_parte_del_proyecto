@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from app.features.notificaciones.emisor import emitir_notificacion
 from app.models.notificacion import Notification, NotificationPreference
 
 
@@ -122,27 +123,9 @@ class NotificacionRepository:
         body: str | None = None,
         link: str | None = None,
     ) -> Notification | None:
-        """Crea una notificación en BD verificando antes las preferencias del usuario."""
-        pref = self.obtener_o_crear_preferencias(user_id)
-
-        # Validar preferencias según el tipo de notificación
-        if notification_type in ("stage_change", "application_status") and not pref.notify_stage_changes:
-            return None
-        if notification_type in ("job_match", "vacante_afinidad") and not pref.notify_job_matches:
-            return None
-        if notification_type in ("interview_scheduled", "interview_confirmed", "interview_rejected") and not pref.notify_interview_events:
-            return None
-        if notification_type in ("message_received", "mensaje_nuevo") and not pref.notify_messages:
-            return None
-
-        notif = Notification(
-            user_id=user_id,
-            notification_type=notification_type,
-            title=title.strip(),
-            body=body.strip() if body else None,
-            link=link.strip() if link else None,
-        )
-        self.db.add(notif)
+        """Crea una notificación respetando las preferencias del usuario (ver emisor.py)."""
+        notif = emitir_notificacion(self.db, user_id, notification_type, title, body, link)
         self.db.commit()
-        self.db.refresh(notif)
+        if notif is not None:
+            self.db.refresh(notif)
         return notif

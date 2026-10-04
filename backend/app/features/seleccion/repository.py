@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
+from app.features.notificaciones.emisor import emitir_notificacion
 from app.models.candidato import CandidateEducation, CandidateProfile
 from app.models.empresa import Company, CompanyMember
 from app.models.notificacion import Notification
@@ -224,16 +225,9 @@ class SeleccionRepository:
         titulo: str,
         cuerpo: str,
         enlace: str | None = None,
-    ) -> Notification:
-        notif = Notification(
-            user_id=user_id,
-            notification_type=tipo,
-            title=titulo,
-            body=cuerpo,
-            link=enlace,
-        )
-        self.db.add(notif)
-        return notif
+    ) -> Notification | None:
+        """Respeta las preferencias del destinatario y manda el push (HU-21)."""
+        return emitir_notificacion(self.db, user_id, tipo, titulo, cuerpo, enlace)
 
     def crear_nota_interna(
         self,
