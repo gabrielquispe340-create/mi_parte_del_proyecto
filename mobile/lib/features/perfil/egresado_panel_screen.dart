@@ -5,9 +5,11 @@ import '../../core/models/sesion.dart';
 import '../../core/services/perfil_service.dart';
 import '../auth/cambiar_password_screen.dart';
 import '../auth/login_screen.dart';
+import '../notificaciones/notificaciones_screen.dart';
 import '../postulaciones/mis_postulaciones_screen.dart';
 import '../recomendaciones/recomendaciones_screen.dart';
 import '../vacantes/vacantes_screen.dart';
+import '../../core/services/notificacion_service.dart';
 import 'editar_perfil_screen.dart';
 import 'mi_cv_screen.dart';
 
@@ -25,7 +27,9 @@ class EgresadoPanelScreen extends StatefulWidget {
 
 class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
   final _servicio = PerfilService();
+  final _notifService = NotificacionService();
   late Future<PerfilEgresado> _futuroPerfil;
+  int _noLeidas = 0;
 
   /// Se reemplaza al cambiar la contraseña, porque el backend emite tokens nuevos.
   late Sesion _sesion = widget.sesion;
@@ -34,12 +38,20 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
   void initState() {
     super.initState();
     _futuroPerfil = _servicio.obtenerMiPerfil(_sesion.accessToken);
+    _cargarNotificaciones();
+  }
+
+  Future<void> _cargarNotificaciones() async {
+    final count = await _notifService.obtenerContadorNoLeidas(_sesion.accessToken);
+    if (!mounted) return;
+    setState(() => _noLeidas = count);
   }
 
   void _recargar() {
     setState(() {
       _futuroPerfil = _servicio.obtenerMiPerfil(_sesion.accessToken);
     });
+    _cargarNotificaciones();
   }
 
   @override
@@ -48,6 +60,41 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
       appBar: AppBar(
         title: const Text('Mi panel'),
         actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                tooltip: 'Notificaciones',
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => NotificacionesScreen(accessToken: _sesion.accessToken),
+                    ),
+                  );
+                  _cargarNotificaciones();
+                },
+              ),
+              if (_noLeidas > 0)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Text(
+                      '$_noLeidas',
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Editar perfil',
@@ -120,6 +167,8 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
                 Text('Accesos', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 _accesoMiCv(context),
+                const SizedBox(height: 12),
+                _accesoNotificaciones(context),
                 const SizedBox(height: 12),
                 _accesoVacantes(context),
                 const SizedBox(height: 12),
@@ -296,6 +345,29 @@ class _EgresadoPanelScreenState extends State<EgresadoPanelScreen> {
               builder: (_) => VacantesScreen(accessToken: _sesion.accessToken),
             ),
           );
+        },
+      ),
+    );
+  }
+
+  Widget _accesoNotificaciones(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Badge(
+          isLabelVisible: _noLeidas > 0,
+          label: Text('$_noLeidas'),
+          child: const Icon(Icons.notifications_active_outlined, color: Colors.indigo),
+        ),
+        title: const Text('Notificaciones y Alertas'),
+        subtitle: const Text('Avisos de postulaciones, vacantes afines y preferencias'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => NotificacionesScreen(accessToken: _sesion.accessToken),
+            ),
+          );
+          _cargarNotificaciones();
         },
       ),
     );
