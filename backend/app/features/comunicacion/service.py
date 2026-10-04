@@ -89,8 +89,10 @@ class ComunicacionService:
                 if edu.field_of_study and edu.field_of_study.name:
                     candidato_carrera = edu.field_of_study.name
                     break
-                if edu.degree_title:
-                    candidato_carrera = edu.degree_title
+                # CandidateEducation no tiene degree_title: el nombre de la carrera
+                # cargada a mano está en program_name.
+                if edu.program_name:
+                    candidato_carrera = edu.program_name
                     break
         return vacante_titulo, empresa_nombre, candidato_nombre, candidato_carrera
 

@@ -19,15 +19,19 @@
           </div>
           <div class="hero-info" *ngIf="perfil() as p">
             <div class="hero-title-row">
-              <h1 class="user-name">{{ p.titulo_profesional || 'Perfil Profesional del Egresado' }}</h1>
-              <span class="badge-verification" [class.verified]="p.porcentaje_completitud >= 60">
+              <h1 class="user-name">{{ p.nombres }} {{ p.apellidos }}</h1>
+              <!-- La validación la hace la universidad, no depende del porcentaje completo. -->
+              <span class="badge-verification" [class.verified]="p.estado_validacion === 'APROBADO'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <span>{{ p.porcentaje_completitud >= 60 ? 'Perfil Verificado' : 'En proceso' }}</span>
+                <span>{{ p.estado_validacion === 'APROBADO' ? 'Validado por la universidad' : p.estado_validacion === 'RECHAZADO' ? 'Validación rechazada' : 'Validación pendiente' }}</span>
               </span>
             </div>
-            <p class="hero-sub">Matrícula: <strong>{{ p.matricula ?? 'Registrada' }}</strong> · Año de Egreso: <strong>{{ p.anio_egreso ?? '—' }}</strong></p>
+            <p class="hero-sub">
+              @if (p.titulo_profesional) { <strong>{{ p.titulo_profesional }}</strong> · }
+              Matrícula: <strong>{{ p.matricula ?? 'Registrada' }}</strong> · Año de Egreso: <strong>{{ p.anio_egreso ?? '—' }}</strong>
+            </p>
           </div>
         </div>
 

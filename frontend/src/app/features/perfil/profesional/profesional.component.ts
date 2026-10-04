@@ -9,6 +9,9 @@ import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../core/services/toast.service';
 
 interface Perfil {
+  nombres: string;
+  apellidos: string;
+  estado_validacion: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | string;
   porcentaje_completitud: number;
   disponibilidad: string | null;
   carrera_id: string | null;
@@ -257,6 +260,9 @@ export class ProfesionalComponent implements OnInit {
           this.perfil.set(resp.perfil);
         } else if (!this.perfil()) {
           this.perfil.set({
+            nombres: '',
+            apellidos: '',
+            estado_validacion: 'PENDIENTE',
             porcentaje_completitud: 0,
             disponibilidad: null,
             carrera_id: null,
