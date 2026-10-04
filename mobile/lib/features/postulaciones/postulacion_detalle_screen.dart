@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/entrevista.dart';
+import '../../core/models/mensaje.dart';
 import '../../core/models/postulacion.dart';
 import '../../core/services/entrevista_service.dart';
+import '../../core/services/mensaje_service.dart';
 import '../../core/services/postulacion_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
 import '../../core/widgets/insignia.dart';
 import '../../core/widgets/vistas_estado.dart';
+import '../mensajes/chat_screen.dart';
 import 'tarjeta_entrevista.dart';
 
 class _Detalle {
   final DetallePostulacion detalle;
   final List<Entrevista> entrevistas;
-  const _Detalle(this.detalle, this.entrevistas);
+
+  /// Conversación con la empresa, si ya hay mensajes (HU-19).
+  final ResumenConversacion? conversacion;
+  const _Detalle(this.detalle, this.entrevistas, this.conversacion);
 }
 
-/// Detalle de una postulación (HU-15): estado, entrevistas propuestas por la
-/// empresa (HU-20), historial y la opción de retirarla mientras siga activa.
+/// Detalle de una postulación (HU-15): estado, mensajes con la empresa
+/// (HU-19), entrevistas propuestas (HU-20), historial y la opción de retirarla
+/// mientras siga activa.
 class PostulacionDetalleScreen extends StatefulWidget {
   final String accessToken;
   final String postulacionId;
@@ -35,12 +42,37 @@ class _PostulacionDetalleScreenState extends State<PostulacionDetalleScreen> {
   bool _retirando = false;
 
   Future<_Detalle> _cargar() async {
-    final resultados = await Future.wait<Object>([
+    final resultados = await Future.wait<Object?>([
       _postulaciones.obtenerDetalle(widget.accessToken, widget.postulacionId),
       _entrevistas.listar(widget.accessToken, widget.postulacionId),
+      _conversacion(),
     ]);
     final entrevistas = [...resultados[1] as List<Entrevista>]..sort(_porPrioridad);
-    return _Detalle(resultados[0] as DetallePostulacion, entrevistas);
+    return _Detalle(resultados[0] as DetallePostulacion, entrevistas, resultados[2] as ResumenConversacion?);
+  }
+
+  /// Solo para la vista previa de la tarjeta de mensajes: si falla, el detalle carga igual.
+  Future<ResumenConversacion?> _conversacion() async {
+    try {
+      final conversaciones = await MensajeService().conversaciones(widget.accessToken);
+      return conversaciones.where((c) => c.postulacionId == widget.postulacionId).firstOrNull;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _abrirMensajes(String empresa) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          accessToken: widget.accessToken,
+          postulacionId: widget.postulacionId,
+          esEmpresa: false,
+          titulo: empresa,
+        ),
+      ),
+    );
+    await _recargar();
   }
 
   /// Primero lo que espera respuesta, después lo confirmado por venir (ambos por
@@ -55,7 +87,7 @@ class _PostulacionDetalleScreenState extends State<PostulacionDetalleScreen> {
   Future<void> _recargar() async {
     if (!mounted) return;
     final futuro = _cargar();
-    setState(() => _futuro = futuro);
+    setState(() { _futuro = futuro; });
     await futuro.then((_) {}, onError: (_) {});
   }
 
@@ -181,6 +213,15 @@ class _PostulacionDetalleScreenState extends State<PostulacionDetalleScreen> {
             ),
           ),
         ),
+        // Una postulación retirada o descartada solo muestra la conversación si ya existía.
+        if (datos.conversacion != null || !{'rejected', 'withdrawn'}.contains(p.estado)) ...[
+          const SizedBox(height: 12),
+          _TarjetaMensajes(
+            empresa: p.empresaNombre,
+            conversacion: datos.conversacion,
+            onTap: () => _abrirMensajes(p.empresaNombre),
+          ),
+        ],
         if (entrevistas.isNotEmpty) ...[
           const SizedBox(height: 22),
           TituloSeccion(entrevistas.length == 1 ? 'Entrevista' : 'Entrevistas'),
@@ -226,6 +267,49 @@ class _PostulacionDetalleScreenState extends State<PostulacionDetalleScreen> {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _TarjetaMensajes extends StatelessWidget {
+  final String empresa;
+  final ResumenConversacion? conversacion;
+  final VoidCallback onTap;
+  const _TarjetaMensajes({required this.empresa, required this.conversacion, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = conversacion;
+    final sinLeer = c != null && c.noLeidos > 0;
+    final vista = c == null
+        ? 'Escribile a la empresa sobre tu postulación.'
+        : '${c.ultimoEsMio ? 'Vos: ' : ''}${c.ultimoMensaje.replaceAll('\n', ' ')}';
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radio),
+        side: BorderSide(color: sinLeer ? AppColors.primarioBorde : AppColors.borde),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: const BoxDecoration(color: AppColors.primarioSuave, shape: BoxShape.circle),
+          child: const Icon(Icons.forum_outlined, color: AppColors.primario, size: 22),
+        ),
+        title: Text('Mensajes con $empresa', maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text(
+          vista,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: sinLeer ? const TextStyle(color: AppColors.texto, fontWeight: FontWeight.w600) : null,
+        ),
+        trailing: sinLeer
+            ? ContadorNoLeidos(c.noLeidos)
+            : const Icon(Icons.chevron_right_rounded, color: AppColors.textoTenue),
+      ),
     );
   }
 }

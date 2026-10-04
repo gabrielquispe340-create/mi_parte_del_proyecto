@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { Notificacion, PreferenciasNotificacion } from '../../../core/models/notificacion.models';
 import { NotificacionService } from '../../../core/services/notificacion.service';
 import { AuthService } from '../../auth/auth.service';
@@ -9,7 +9,7 @@ import { AuthService } from '../../auth/auth.service';
 @Component({
   selector: 'app-notificaciones-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './notificaciones-panel.component.html',
   styleUrl: './notificaciones-panel.component.scss',
 })

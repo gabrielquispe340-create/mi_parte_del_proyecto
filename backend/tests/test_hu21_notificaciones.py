@@ -150,7 +150,22 @@ def test_cp03_preferencias_notificacion_actualizar_y_consultar(setup_datos_hu21)
     assert data_put["notify_stage_changes"] is True  # Se mantiene intacto
 
 
-def test_cp04_respeto_de_preferencias_desactivadas(setup_datos_hu21):
+def _token_superadmin(db_session: Session) -> str:
+    """platform_admin sin universidad: el único que puede emitir notificaciones manuales."""
+    rol = db_session.query(Role).filter_by(name="platform_admin").first()
+    if not rol:
+        rol = Role(name="platform_admin")
+        db_session.add(rol)
+        db_session.flush()
+    admin = AppUser(email=f"super_{uuid.uuid4().hex[:6]}@egresa.bo", password_hash="x", account_status="active")
+    db_session.add(admin)
+    db_session.flush()
+    db_session.add(UserRole(user_id=admin.id, role_id=rol.id))
+    db_session.commit()
+    return create_access_token(str(admin.id), "platform_admin", {"roles": ["platform_admin"]})
+
+
+def test_cp04_respeto_de_preferencias_desactivadas(setup_datos_hu21, db_session):
     """CP03: Si el egresado tiene desactivadas las notificaciones de vacantes afines, no se crea."""
     token = setup_datos_hu21["token"]
     user_id = setup_datos_hu21["user_id"]
@@ -166,9 +181,22 @@ def test_cp04_respeto_de_preferencias_desactivadas(setup_datos_hu21):
         "title": "Oferta Recomendada",
         "body": "Ingeniero Cloud en Banco Mercantil",
     }
-    res = client.post("/api/notificaciones", json=payload, headers=headers)
+    headers_admin = {"Authorization": f"Bearer {_token_superadmin(db_session)}"}
+    res = client.post("/api/notificaciones", json=payload, headers=headers_admin)
     assert res.status_code == 201
     assert res.json() is None  # Rechazada silenciosamente por preferencia
+
+
+def test_cp06_un_usuario_comun_no_puede_emitir_notificaciones(setup_datos_hu21):
+    """Un egresado no puede mandarle avisos (con texto y enlace propios) a otro usuario."""
+    headers = {"Authorization": f"Bearer {setup_datos_hu21['token']}"}
+    payload = {
+        "user_id": str(uuid.uuid4()),
+        "notification_type": "aviso",
+        "title": "Tu cuenta fue suspendida",
+        "link": "https://sitio-falso.example",
+    }
+    assert client.post("/api/notificaciones", json=payload, headers=headers).status_code == 403
 
 
 def test_cp05_marcar_todas_leidas_y_eliminar(setup_datos_hu21):

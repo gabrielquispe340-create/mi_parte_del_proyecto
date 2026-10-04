@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/entrevista.dart';
 import '../../core/models/postulacion.dart';
 import '../../core/services/entrevista_service.dart';
+import '../../core/services/mensaje_service.dart';
 import '../../core/services/postulacion_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
@@ -18,7 +19,10 @@ enum _Filtro { activas, todas, finalizadas }
 class _Datos {
   final ResumenPostulaciones resumen;
   final Map<String, List<Entrevista>> entrevistas;
-  const _Datos(this.resumen, this.entrevistas);
+
+  /// Mensajes sin leer por postulación (HU-19).
+  final Map<String, int> noLeidos;
+  const _Datos(this.resumen, this.entrevistas, this.noLeidos);
 }
 
 /// Seguimiento de postulaciones (HU-15), con el aviso de entrevistas por
@@ -39,14 +43,27 @@ class _MisPostulacionesScreenState extends State<MisPostulacionesScreen> {
   Future<_Datos> _cargar() async {
     final resumen = await PostulacionService().obtenerMisPostulaciones(widget.accessToken);
     final activas = resumen.postulaciones.where((p) => !_estadosFinalizados.contains(p.estado)).map((p) => p.id);
-    final entrevistas = await EntrevistaService().deVariasPostulaciones(widget.accessToken, activas);
-    return _Datos(resumen, entrevistas);
+    final (entrevistas, noLeidos) = await (
+      EntrevistaService().deVariasPostulaciones(widget.accessToken, activas),
+      _noLeidosPorPostulacion(),
+    ).wait;
+    return _Datos(resumen, entrevistas, noLeidos);
+  }
+
+  /// El aviso de mensajes es un extra: si la consulta falla, la lista carga igual.
+  Future<Map<String, int>> _noLeidosPorPostulacion() async {
+    try {
+      final conversaciones = await MensajeService().conversaciones(widget.accessToken);
+      return {for (final c in conversaciones) if (c.noLeidos > 0) c.postulacionId: c.noLeidos};
+    } catch (_) {
+      return const {};
+    }
   }
 
   Future<void> _recargar() async {
     if (!mounted) return;
     final futuro = _cargar();
-    setState(() => _futuro = futuro);
+    setState(() { _futuro = futuro; });
     await futuro.then((_) {}, onError: (_) {});
   }
 
@@ -116,7 +133,12 @@ class _MisPostulacionesScreenState extends State<MisPostulacionesScreen> {
           )
         else
           for (final p in visibles) ...[
-            _TarjetaPostulacion(postulacion: p, entrevistas: datos.entrevistas[p.id] ?? const [], onTap: () => _abrir(p)),
+            _TarjetaPostulacion(
+              postulacion: p,
+              entrevistas: datos.entrevistas[p.id] ?? const [],
+              mensajesNoLeidos: datos.noLeidos[p.id] ?? 0,
+              onTap: () => _abrir(p),
+            ),
             const SizedBox(height: 12),
           ],
       ],
@@ -153,8 +175,14 @@ class _ChipFiltro extends StatelessWidget {
 class _TarjetaPostulacion extends StatelessWidget {
   final PostulacionItem postulacion;
   final List<Entrevista> entrevistas;
+  final int mensajesNoLeidos;
   final VoidCallback onTap;
-  const _TarjetaPostulacion({required this.postulacion, required this.entrevistas, required this.onTap});
+  const _TarjetaPostulacion({
+    required this.postulacion,
+    required this.entrevistas,
+    required this.mensajesNoLeidos,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -229,6 +257,14 @@ class _TarjetaPostulacion extends StatelessWidget {
                   icono: Icons.event_available_outlined,
                   texto: 'Entrevista ${cuandoSera(confirmada.inicio).toLowerCase()} a las ${hora(confirmada.inicio)}',
                   colores: (color: AppColors.exito, fondo: AppColors.exitoSuave),
+                ),
+              if (mensajesNoLeidos > 0)
+                _Aviso(
+                  icono: Icons.mark_chat_unread_outlined,
+                  texto: mensajesNoLeidos == 1
+                      ? '1 mensaje nuevo de ${p.empresaNombre}'
+                      : '$mensajesNoLeidos mensajes nuevos de ${p.empresaNombre}',
+                  colores: (color: AppColors.primario, fondo: AppColors.primarioSuave),
                 ),
             ],
           ),

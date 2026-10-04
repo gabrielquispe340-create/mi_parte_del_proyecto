@@ -25,6 +25,9 @@ class Entrevista {
   final bool requiereRevision;
   final String? empresaNombre;
   final String? vacanteTitulo;
+
+  /// Lo usa la agenda de la empresa.
+  final String? candidatoNombre;
   final DateTime creada;
 
   const Entrevista({
@@ -42,6 +45,7 @@ class Entrevista {
     required this.requiereRevision,
     required this.empresaNombre,
     required this.vacanteTitulo,
+    this.candidatoNombre,
     required this.creada,
   });
 
@@ -79,6 +83,7 @@ class Entrevista {
       requiereRevision: json['requires_manual_review'] as bool? ?? false,
       empresaNombre: _texto(json['empresa_nombre']),
       vacanteTitulo: _texto(json['vacante_titulo']),
+      candidatoNombre: _texto(json['candidato_nombre']),
       creada: fecha('created_at') ?? DateTime.now(),
     );
   }

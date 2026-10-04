@@ -136,6 +136,9 @@ class NotificacionService {
       }
     } catch (_) {}
 
+    throw const NotificacionException('No se pudieron guardar tus preferencias. Intentá de nuevo.');
+  }
+
   /// Registra el FCM token del dispositivo ante el backend
   Future<bool> registrarTokenFCM(
     String accessToken,

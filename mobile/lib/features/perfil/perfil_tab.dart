@@ -36,14 +36,14 @@ class _PerfilTabState extends State<PerfilTab> {
   late Future<PerfilEgresado> _futuro = _servicio.obtenerMiPerfil(widget.sesion.accessToken);
 
   void _recargar() {
-    if (mounted) setState(() => _futuro = _servicio.obtenerMiPerfil(widget.sesion.accessToken));
+    if (mounted) setState(() { _futuro = _servicio.obtenerMiPerfil(widget.sesion.accessToken); });
   }
 
   Future<void> _editar(PerfilEgresado perfil) async {
     final actualizado = await Navigator.of(context).push<PerfilEgresado>(
       MaterialPageRoute(builder: (_) => EditarPerfilScreen(accessToken: widget.sesion.accessToken, perfil: perfil)),
     );
-    if (actualizado != null && mounted) setState(() => _futuro = Future.value(actualizado));
+    if (actualizado != null && mounted) setState(() { _futuro = Future.value(actualizado); });
   }
 
   Future<void> _abrirCv() async {

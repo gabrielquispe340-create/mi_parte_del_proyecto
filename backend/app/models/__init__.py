@@ -39,6 +39,12 @@ from app.models.vacante import (
     SkillProficiencyLevel,
     WorkModality,
 )
+from app.models.comunicacion import (
+    Conversation,
+    ConversationMember,
+    Message,
+    MessageAttachment,
+)
 from app.models.entrevista import Interview
 from app.models.postulacion import (
     Application,
@@ -57,6 +63,10 @@ __all__ = [
     "ApplicationStageHistory",
     "ApplicationStatusHistory",
     "AuditLog",
+    "Conversation",
+    "ConversationMember",
+    "Message",
+    "MessageAttachment",
     "CandidateEducation",
     "CandidateLanguage",
     "CandidateProfile",

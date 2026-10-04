@@ -15,9 +15,7 @@
       </div>
     </div>
     <div class="header-right" style="display: flex; gap: 0.75rem; align-items: center;">
-      <a routerLink="/empresa/sugerencias-ia" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem; background: linear-gradient(135deg, #9333ea, #6366f1); border: none;">
-        <span>✨ Sugerencias IA (HU-24)</span>
-      </a>
+      <a routerLink="/empresa/sugerencias-ia" class="btn btn-secondary">Sugerencias IA</a>
       @if (vacanteSeleccionadaId()) {
         <button class="btn btn-secondary" (click)="abrirModalEtapas()">
           <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -231,7 +229,7 @@
               <div class="kanban-col" [class.col-terminal]="etapa.is_terminal">
                 <div class="col-header">
                   <div class="col-header__left">
-                    <span class="stage-step-badge">{{ etapa.stage_number }}</span>
+                    <span class="col-dot col-dot--stage"></span>
                     <span class="col-title" [title]="etapa.description || etapa.name">{{ etapa.name }}</span>
                   </div>
                   <span class="col-badge">{{ (candidatosPorEtapa()[etapa.id] ?? []).length }}</span>
@@ -418,6 +416,13 @@
         }
       }
 
+      <button class="btn-action btn-action--messages" (click)="abrirModalMensajes(c)" title="Mensajes directos con el candidato">
+        <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <span>Mensajes</span>
+      </button>
+
       <button class="btn-action btn-action--notes" (click)="abrirModalNotas(c)" title="Observaciones internas del equipo">
         <svg class="icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -563,7 +568,7 @@
         <select class="select-field" [ngModel]="etapaDestinoId()" (ngModelChange)="etapaDestinoId.set($event)">
           <option value="">-- Seleccionar etapa de destino --</option>
           @for (etapa of etapasParaAvanzar(); track etapa.id) {
-            <option [value]="etapa.id">Fase {{ etapa.stage_number }}: {{ etapa.name }}</option>
+            <option [value]="etapa.id">{{ etapa.name }}</option>
           }
         </select>
 
@@ -893,4 +898,34 @@
   </div>
 }
 
+<!-- ===== MODAL: MENSAJES CON EL CANDIDATO ===== -->
+@if (mostrarModalMensajes() && candidatoActivo(); as cand) {
+  <div class="modal-backdrop" (click)="cerrarModalMensajes()">
+    <div class="modal-panel modal-large" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header__title-box">
+          <svg class="icon-md text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+          </svg>
+          <h2>Mensajes con el Candidato</h2>
+        </div>
+        <button class="modal-close" (click)="cerrarModalMensajes()" title="Cerrar ventana">
+          <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
 
+      <div class="modal-body">
+        <app-hilo-mensajes
+          [postulacionId]="cand.postulacion_id"
+          modoVista="empresa"
+        ></app-hilo-mensajes>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" (click)="cerrarModalMensajes()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

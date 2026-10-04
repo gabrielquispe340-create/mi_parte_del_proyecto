@@ -24,6 +24,9 @@ class ApiConfig {
     defaultValue: false,
   );
 
+  /// Sitio web de EGRESA, para lo que se gestiona solo desde la web.
+  static const String urlWeb = 'https://egresa.up.railway.app';
+
   /// Backend de producción (Railway): funciona con cualquier conexión a internet.
   static const String _urlProduccion = 'https://backend-production-24e5.up.railway.app/api';
 

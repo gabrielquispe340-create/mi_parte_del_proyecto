@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../utils/formatos.dart';
 
 /// Par de colores (texto, fondo) de una insignia.
 typedef ColoresInsignia = ({Color color, Color fondo});
@@ -106,6 +107,47 @@ class AvatarEmpresa extends StatelessWidget {
       child: Text(
         nombre.isEmpty ? '?' : nombre[0].toUpperCase(),
         style: TextStyle(color: AppColors.primario, fontWeight: FontWeight.w700, fontSize: tamano * 0.4),
+      ),
+    );
+  }
+}
+
+/// Avatar redondo con las iniciales de una persona (los postulantes, en la app de empresas).
+class AvatarPersona extends StatelessWidget {
+  final String nombre;
+  final double tamano;
+  const AvatarPersona(this.nombre, {super.key, this.tamano = 44});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: tamano,
+      height: tamano,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(color: AppColors.violetaSuave, shape: BoxShape.circle),
+      child: Text(
+        iniciales(nombre),
+        style: TextStyle(color: AppColors.violeta, fontWeight: FontWeight.w700, fontSize: tamano * 0.36),
+      ),
+    );
+  }
+}
+
+/// Burbuja con la cantidad de mensajes sin leer.
+class ContadorNoLeidos extends StatelessWidget {
+  final int cantidad;
+  const ContadorNoLeidos(this.cantidad, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: AppColors.primario, borderRadius: BorderRadius.circular(999)),
+      child: Text(
+        cantidad > 99 ? '99+' : '$cantidad',
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
       ),
     );
   }

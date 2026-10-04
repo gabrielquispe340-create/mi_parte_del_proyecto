@@ -49,6 +49,32 @@ String cuandoSera(DateTime f, {DateTime? ahora}) {
   return capitalizar(fechaLarga(f));
 }
 
+/// Para listas de mensajes: "14:05" si es de hoy, "ayer", el día de la semana
+/// si pasó menos de una semana, o la fecha corta.
+String momentoCorto(DateTime f, {DateTime? ahora}) {
+  final dias = _soloFecha(ahora ?? DateTime.now()).difference(_soloFecha(f)).inDays;
+  if (dias <= 0) return hora(f);
+  if (dias == 1) return 'ayer';
+  if (dias < 7) return _dias[f.weekday - 1];
+  return fechaCorta(f);
+}
+
+/// Separador de días en una conversación: "Hoy", "Ayer" o "Jueves 2 de octubre".
+String diaDeConversacion(DateTime f, {DateTime? ahora}) {
+  final dias = _soloFecha(ahora ?? DateTime.now()).difference(_soloFecha(f)).inDays;
+  if (dias <= 0) return 'Hoy';
+  if (dias == 1) return 'Ayer';
+  return capitalizar(fechaLarga(f));
+}
+
+/// "850 KB", "1,4 MB".
+String tamanoLegible(int bytes) {
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).ceil()} KB';
+  return '${(bytes / (1024 * 1024)).toStringAsFixed(1).replaceAll('.', ',')} MB';
+}
+
+bool mismoDia(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
 String capitalizar(String texto) => texto.isEmpty ? texto : texto[0].toUpperCase() + texto.substring(1);
 
 /// Iniciales para los avatares: "Antonio Bravo" -> "AB".

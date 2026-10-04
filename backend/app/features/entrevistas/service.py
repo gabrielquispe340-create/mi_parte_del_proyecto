@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
 
@@ -18,6 +19,9 @@ from app.features.entrevistas.schema import (
     EntrevistaRevisar,
 )
 from app.models.entrevista import Interview
+
+# La agenda móvil pide un día o una semana; el tope evita consultas enormes.
+_MAXIMO_AGENDA = timedelta(days=31)
 
 
 class EntrevistasService:
@@ -148,6 +152,25 @@ class EntrevistasService:
             raise NotFoundException("Postulación no encontrada o no pertenece a su empresa.")
 
         items = self.repo.listar_por_postulacion(application_id)
+        return [self._mapear_out(it) for it in items]
+
+    def listar_agenda_empresa(
+        self,
+        user_id: uuid.UUID,
+        desde: datetime,
+        hasta: datetime,
+    ) -> list[EntrevistaOut]:
+        """App móvil de empresas: entrevistas de todas sus vacantes que empiezan en [desde, hasta)."""
+        # Sin zona horaria se asume UTC, igual que el resto del backend.
+        desde = desde if desde.tzinfo else desde.replace(tzinfo=timezone.utc)
+        hasta = hasta if hasta.tzinfo else hasta.replace(tzinfo=timezone.utc)
+        if hasta <= desde:
+            raise BadRequestException("La fecha final debe ser posterior a la inicial.")
+        if hasta - desde > _MAXIMO_AGENDA:
+            raise BadRequestException("Consultá la agenda de a 31 días como máximo.")
+
+        miembro = self._obtener_miembro_empresa(user_id)
+        items = self.repo.listar_por_empresa_y_rango(miembro.company_id, desde, hasta)
         return [self._mapear_out(it) for it in items]
 
     def reprogramar_entrevista(

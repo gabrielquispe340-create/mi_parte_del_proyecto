@@ -16,6 +16,7 @@ from app.features.seleccion.schema import (
     NotaInternaRequest,
     NotaInternaResponse,
     PipelineVacanteResponse,
+    PostulantesNuevosResponse,
     VacanteResumenSeleccion,
     CompararCandidatosRequest,
     CandidatoComparacionResponse,
@@ -35,6 +36,16 @@ def listar_vacantes_seleccion(
 ) -> list[VacanteResumenSeleccion]:
     """Listar vacantes de la empresa con métricas de candidatos en proceso de selección."""
     return SeleccionService(db).listar_vacantes(current_user.id_usuario)
+
+
+@router.get("/postulantes-nuevos", response_model=PostulantesNuevosResponse)
+def listar_postulantes_nuevos(
+    limite: int = Query(50, ge=1, le=200),
+    current_user: CurrentUser = Depends(_solo_empresa),
+    db: Session = Depends(get_db),
+) -> PostulantesNuevosResponse:
+    """App móvil de empresas: postulantes sin revisar de todas las vacantes, del más reciente al más viejo."""
+    return SeleccionService(db).listar_postulantes_nuevos(current_user.id_usuario, limite)
 
 
 @router.get("/vacantes/{id_vacante}/etapas", response_model=list[EtapaResponse])

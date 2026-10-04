@@ -16,6 +16,7 @@ from app.features.notificaciones.schema import (
 )
 from app.features.notificaciones.service import NotificacionService
 from app.security.dependencies import CurrentUser, get_current_user
+from app.security.tenant import AlcanceStaff, get_superadmin
 
 router = APIRouter(prefix="/notificaciones", tags=["notificaciones"])
 
@@ -99,9 +100,10 @@ def actualizar_preferencias_notificacion(
 def crear_notificacion_manual(
     req: CrearNotificacionInternaRequest,
     db: Session = Depends(get_db),
-    current_user: CurrentUser = Depends(get_current_user),
+    _superadmin: AlcanceStaff = Depends(get_superadmin),
 ):
-    """Emite una nueva notificación para un usuario (uso de sistema / moderación / reclutador)."""
+    """Emite una notificación manual para cualquier usuario. Solo el superadministrador:
+    los avisos de mensajes, entrevistas y etapas los genera el propio backend."""
     return NotificacionService(db).crear_notificacion(req=req)
 
 
@@ -130,7 +132,7 @@ def eliminar_token_fcm(
     current_user: CurrentUser = Depends(get_current_user),
 ):
     """Desactiva un token FCM al cerrar sesión."""
-    return NotificacionService(db).eliminar_fcm_token(fcm_token=req.fcm_token)
+    return NotificacionService(db).eliminar_fcm_token(fcm_token=req.fcm_token, user_id=current_user.id_usuario)
 
 
 @router.post("/fcm/test-push", status_code=status.HTTP_200_OK)

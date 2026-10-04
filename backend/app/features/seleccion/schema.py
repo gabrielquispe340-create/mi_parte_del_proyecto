@@ -80,6 +80,19 @@ class PipelineVacanteResponse(BaseModel):
     candidatos: list[CandidatoPipelineItem]
 
 
+class PostulanteNuevoItem(CandidatoPipelineItem):
+    """App móvil de empresas: postulante que nadie revisó todavía, con su vacante."""
+
+    vacante_id: uuid.UUID
+    vacante_titulo: str
+
+
+class PostulantesNuevosResponse(BaseModel):
+    empresa_nombre: str
+    total: int
+    postulantes: list[PostulanteNuevoItem]
+
+
 class AvanzarEtapaRequest(BaseModel):
     stage_id: uuid.UUID
     observacion: str | None = None

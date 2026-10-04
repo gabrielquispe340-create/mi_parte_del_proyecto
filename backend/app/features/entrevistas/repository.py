@@ -3,8 +3,9 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, contains_eager, joinedload
 
+from app.features.notificaciones.emisor import emitir_notificacion
 from app.models.candidato import CandidateProfile
 from app.models.empresa import CompanyMember
 from app.models.entrevista import Interview
@@ -63,6 +64,29 @@ class EntrevistasRepository:
         )
         return list(self.db.scalars(stmt).all())
 
+    def listar_por_empresa_y_rango(
+        self, company_id: uuid.UUID, desde: datetime, hasta: datetime
+    ) -> list[Interview]:
+        """Entrevistas de las vacantes de la empresa que empiezan en [desde, hasta)."""
+        stmt = (
+            select(Interview)
+            .join(Application, Interview.application_id == Application.id)
+            .join(JobPosting, Application.job_id == JobPosting.id)
+            .options(
+                contains_eager(Interview.application)
+                .contains_eager(Application.job_posting)
+                .joinedload(JobPosting.company),
+                contains_eager(Interview.application).joinedload(Application.candidate),
+            )
+            .where(
+                JobPosting.company_id == company_id,
+                Interview.scheduled_start >= desde,
+                Interview.scheduled_start < hasta,
+            )
+            .order_by(Interview.scheduled_start.asc())
+        )
+        return list(self.db.scalars(stmt).all())
+
     def guardar_entrevista(self, entrevista: Interview) -> Interview:
         self.db.add(entrevista)
         self.db.flush()
@@ -99,16 +123,9 @@ class EntrevistasRepository:
         titulo: str,
         cuerpo: str,
         enlace: str | None = None,
-    ) -> Notification:
-        notif = Notification(
-            user_id=user_id,
-            notification_type=tipo,
-            title=titulo,
-            body=cuerpo,
-            link=enlace,
-        )
-        self.db.add(notif)
-        return notif
+    ) -> Notification | None:
+        """Respeta las preferencias del destinatario y manda el push (HU-21)."""
+        return emitir_notificacion(self.db, user_id, tipo, titulo, cuerpo, enlace)
 
     def mover_postulacion_a_etapa(
         self,

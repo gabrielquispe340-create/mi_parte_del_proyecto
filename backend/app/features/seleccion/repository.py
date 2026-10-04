@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
+from app.features.notificaciones.emisor import emitir_notificacion
 from app.models.candidato import CandidateEducation, CandidateProfile
 from app.models.empresa import Company, CompanyMember
 from app.models.notificacion import Notification
@@ -108,6 +109,23 @@ class SeleccionRepository:
         )
         return list(self.db.scalars(stmt).all())
 
+    def obtener_postulaciones_nuevas_empresa(self, company_id: uuid.UUID) -> list[Application]:
+        """Postulaciones que nadie revisó todavía (estado "applied") en todas las vacantes de la empresa."""
+        stmt = (
+            select(Application)
+            .join(JobPosting, Application.job_id == JobPosting.id)
+            .options(
+                contains_eager(Application.job_posting),
+                joinedload(Application.candidate).joinedload(CandidateProfile.user),
+                joinedload(Application.candidate).selectinload(CandidateProfile.educations).joinedload(CandidateEducation.field_of_study),
+                joinedload(Application.current_stage),
+                selectinload(Application.notes),
+            )
+            .where(JobPosting.company_id == company_id, Application.current_status == "applied")
+            .order_by(Application.applied_at.desc())
+        )
+        return list(self.db.scalars(stmt).all())
+
     def obtener_postulacion_por_id(self, application_id: uuid.UUID) -> Application | None:
         stmt = (
             select(Application)
@@ -207,16 +225,9 @@ class SeleccionRepository:
         titulo: str,
         cuerpo: str,
         enlace: str | None = None,
-    ) -> Notification:
-        notif = Notification(
-            user_id=user_id,
-            notification_type=tipo,
-            title=titulo,
-            body=cuerpo,
-            link=enlace,
-        )
-        self.db.add(notif)
-        return notif
+    ) -> Notification | None:
+        """Respeta las preferencias del destinatario y manda el push (HU-21)."""
+        return emitir_notificacion(self.db, user_id, tipo, titulo, cuerpo, enlace)
 
     def crear_nota_interna(
         self,

@@ -198,3 +198,29 @@ def test_cp04_solo_empresa_o_admin_acceso(setup_datos_hu24):
 
     res = client.get(f"/api/ia/sugerencias-candidatos/{vacante_id}", headers=headers)
     assert res.status_code in (401, 403)
+
+
+def test_cp05_otra_empresa_no_ve_los_postulantes(setup_datos_hu24, db_session):
+    """Una empresa no puede pedir el ranking (nombres, ciudad, afinidad) de la vacante de otra."""
+    usuario = AppUser(email=f"otra_emp_{uuid.uuid4().hex[:6]}@empresa.bo", password_hash="x", account_status="active")
+    db_session.add(usuario)
+    db_session.flush()
+    db_session.add(UserRole(user_id=usuario.id, role_id=db_session.query(Role).filter_by(name="empresa").first().id))
+    otra = Company(
+        legal_name="Competencia SRL",
+        tax_id=f"NIT-{uuid.uuid4().hex[:8]}",
+        verification_status="verified",
+        account_status="active",
+    )
+    db_session.add(otra)
+    db_session.flush()
+    db_session.add(CompanyMember(user_id=usuario.id, company_id=otra.id, member_type="owner", is_active=True))
+    db_session.commit()
+
+    token = create_access_token(str(usuario.id), "empresa", {"roles": ["empresa"]})
+    res = client.get(
+        f"/api/ia/sugerencias-candidatos/{setup_datos_hu24['vacante_id']}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 404
+    assert "items" not in res.json()
