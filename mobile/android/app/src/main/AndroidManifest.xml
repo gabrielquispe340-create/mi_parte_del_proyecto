@@ -42,6 +42,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Avisos push (Firebase, HU-21): ícono de la barra de estado y color de acento. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notificacion" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/egresa_marino" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

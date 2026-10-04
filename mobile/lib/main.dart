@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'core/services/push_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/login_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PushService.inicializarFirebase();
   runApp(const EgresaApp());
 }
 
@@ -17,6 +20,7 @@ class EgresaApp extends StatelessWidget {
     return MaterialApp(
       title: 'EGRESA',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: mensajeroGlobal,
       theme: AppTheme.claro(),
       locale: const Locale('es'),
       supportedLocales: const [Locale('es')],

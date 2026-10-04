@@ -319,9 +319,13 @@ Moderador de UMSS: `moderador@umss.egresa.bo` / `Egresa2026!`.
 - **App de empresas:** entrá a la app con `empresa@prueba.com` / `Prueba123!`: pestañas
   Postulantes, Entrevistas y Mensajes.
 - **Notificaciones (HU-21):** campana en la web y en el Inicio de la app; en "Preferencias de
-  alertas" se apaga cada tipo de aviso (mensajes, entrevistas, etapas, vacantes afines). Los
-  avisos push necesitan configurar Firebase (variable `FIREBASE_SERVICE_ACCOUNT_JSON` en el
-  backend); sin eso, todo lo demás funciona igual.
+  alertas" se apaga cada tipo de aviso (mensajes, entrevistas, etapas, vacantes afines).
+  **Avisos push:** la app los pide al entrar (Android pregunta el permiso) y la web desde
+  Notificaciones → Preferencias → "Activar en este navegador"; ahí mismo "Enviar un aviso de
+  prueba" manda uno real a todos los dispositivos de la cuenta. El backend necesita la
+  variable `FIREBASE_SERVICE_ACCOUNT_JSON` (la llave privada de Firebase, nunca en el repo);
+  sin ella todo lo demás funciona igual. La configuración web (`environment*.ts`) y la de
+  Android (`mobile/lib/core/firebase_options.dart`) son identificadores públicos, no secretos.
 - **Sugerencias IA (HU-24):** con una empresa, botón "Sugerencias IA" en el dashboard o en
   "Gestionar Candidatos y Etapas": ranking de los postulantes de cada vacante por afinidad.
 - **Denuncia de ofertas (HU-22):** con un egresado, en el detalle de una vacante "Denunciar

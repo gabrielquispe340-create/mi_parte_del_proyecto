@@ -5,6 +5,7 @@ import { Observable, catchError, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { MessageResponse, RegistroEmpresaRequest } from '../../core/models/auth.models';
+import { PushService } from '../../core/services/push.service';
 import { TimeoutService } from '../../core/services/timeout.service';
 import { ETIQUETAS_ROL } from '../admin/gestion-roles/gestion-roles.model';
 
@@ -49,6 +50,7 @@ export class AuthService {
   });
 
   private readonly timeout = inject(TimeoutService);
+  private readonly push = inject(PushService);
 
   constructor(
     private readonly http: HttpClient,
@@ -56,6 +58,8 @@ export class AuthService {
   ) {
     if (this.estaAutenticado()) {
       this.timeout.start(() => this.cerrarSesion());
+      // Si este navegador ya dio permiso, renueva su token de avisos push (HU-21).
+      void this.push.sincronizar();
     }
   }
 
@@ -70,6 +74,7 @@ export class AuthService {
           localStorage.setItem(CORREO_KEY, correoIngresado);
           this.correo.set(correoIngresado);
           this.guardarSesion(respuesta);
+          void this.push.sincronizar();
         }),
       );
   }
@@ -89,6 +94,8 @@ export class AuthService {
 
   cerrarSesion(): void {
     this.timeout.stop();
+    // Antes de borrar el token de sesión: este navegador deja de recibir los avisos de la cuenta.
+    this.push.desregistrar(this.token());
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(ROL_KEY);

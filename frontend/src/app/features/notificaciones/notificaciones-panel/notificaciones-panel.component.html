@@ -164,18 +164,19 @@
             <div class="pref-section">
               <h4>Canales de Envío</h4>
               
-              <!-- PUSH NATIVO WEB -->
+              <!-- PUSH (Firebase Cloud Messaging) -->
               <label class="switch-row">
                 <div class="switch-text">
                   <div class="channel-title-row">
-                    <strong>📲 Notificaciones Push de Escritorio / Navegador</strong>
-                    @if (permisoPushConcedido) {
-                      <span class="badge-active">Permitido en Navegador</span>
-                    } @else {
-                      <span class="badge-pending">Requiere Permiso</span>
+                    <strong>Notificaciones push</strong>
+                    @switch (push.estado()) {
+                      @case ('activo') { <span class="badge-active">Activas en este navegador</span> }
+                      @case ('bloqueado') { <span class="badge-pending">Bloqueadas en el navegador</span> }
+                      @case ('no-soportado') { <span class="badge-pending">No disponibles en este navegador</span> }
+                      @default { <span class="badge-pending">Falta activarlas en este navegador</span> }
                     }
                   </div>
-                  <span>Recibir alertas instantáneas en la pantalla de tu dispositivo cuando ocurran cambios de etapa u ofertas afines.</span>
+                  <span>Avisos en la pantalla del dispositivo aunque EGRESA esté cerrada: cambios de etapa, entrevistas, mensajes y ofertas afines.</span>
                 </div>
                 <input
                   type="checkbox"
@@ -188,10 +189,19 @@
 
               @if (preferencias.push_enabled) {
                 <div class="push-test-box">
-                  <button type="button" class="btn-test-push" (click)="probarNotificacionPush()">
-                    🔔 Probar Notificación Push Ahora
-                  </button>
-                  <small class="push-test-hint">Haz clic para enviar un aviso emergente de prueba a tu pantalla.</small>
+                  @if (push.estado() === 'activo') {
+                    <button type="button" class="btn-test-push" (click)="probarNotificacionPush()" [disabled]="probandoPush">
+                      {{ probandoPush ? 'Enviando...' : 'Enviar un aviso de prueba' }}
+                    </button>
+                    <small class="push-test-hint">Llega a todos los dispositivos donde activaste los avisos, incluida la app.</small>
+                  } @else if (push.estado() === 'bloqueado') {
+                    <small class="push-test-hint">Para recibirlos, permití las notificaciones de este sitio desde el candado de la barra de direcciones y recargá la página.</small>
+                  } @else if (push.estado() !== 'no-soportado') {
+                    <button type="button" class="btn-test-push" (click)="activarPushEnNavegador()" [disabled]="activandoPush">
+                      {{ activandoPush ? 'Activando...' : 'Activar en este navegador' }}
+                    </button>
+                    <small class="push-test-hint">El navegador te va a pedir permiso para mostrar notificaciones.</small>
+                  }
                 </div>
               }
 
