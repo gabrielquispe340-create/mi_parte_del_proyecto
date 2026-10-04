@@ -90,7 +90,9 @@ class NotificacionRepository:
         if not pref:
             pref = NotificationPreference(
                 user_id=user_id,
-                email_notifications=True,
+                email_enabled=True,
+                push_enabled=True,
+                in_app_enabled=True,
                 notify_stage_changes=True,
                 notify_job_matches=True,
                 notify_interview_events=True,

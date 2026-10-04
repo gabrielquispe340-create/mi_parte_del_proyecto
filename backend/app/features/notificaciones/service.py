@@ -88,6 +88,8 @@ class NotificacionService:
     ) -> PreferenciasNotificacionDTO:
         """Guarda los cambios en las preferencias de notificaciones del usuario."""
         update_dict = req.model_dump(exclude_unset=True)
+        if "email_notifications" in update_dict and update_dict["email_notifications"] is not None:
+            update_dict["email_enabled"] = update_dict.pop("email_notifications")
         pref = self.repo.actualizar_preferencias(user_id, update_dict)
         return PreferenciasNotificacionDTO.model_validate(pref)
 

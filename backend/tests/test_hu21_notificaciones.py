@@ -55,7 +55,9 @@ def setup_datos_hu21(db_session: Session):
     # 3. Preferencias de notificación iniciales
     pref = NotificationPreference(
         user_id=cand_user.id,
-        email_notifications=True,
+        email_enabled=True,
+        push_enabled=True,
+        in_app_enabled=True,
         notify_stage_changes=True,
         notify_job_matches=True,
         notify_interview_events=True,
@@ -139,12 +141,12 @@ def test_cp03_preferencias_notificacion_actualizar_y_consultar(setup_datos_hu21)
     assert res_get.json()["notify_job_matches"] is True
 
     # 2. Desactivar notificaciones de vacantes afines
-    update_payload = {"notify_job_matches": False, "email_notifications": False}
+    update_payload = {"notify_job_matches": False, "email_enabled": False}
     res_put = client.put("/api/notificaciones/preferencias", json=update_payload, headers=headers)
     assert res_put.status_code == 200
     data_put = res_put.json()
     assert data_put["notify_job_matches"] is False
-    assert data_put["email_notifications"] is False
+    assert data_put["email_enabled"] is False
     assert data_put["notify_stage_changes"] is True  # Se mantiene intacto
 
 

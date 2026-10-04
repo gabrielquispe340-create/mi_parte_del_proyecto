@@ -38,7 +38,7 @@ def setup_datos_hu24(db_session: Session):
     # 2. Catálogo: Carrera y Habilidades
     carrera_sistemas = db_session.query(FieldOfStudy).filter_by(name="Ingeniería en Sistemas").first()
     if not carrera_sistemas:
-        carrera_sistemas = FieldOfStudy(name="Ingeniería en Sistemas", area="Tecnología")
+        carrera_sistemas = FieldOfStudy(name="Ingeniería en Sistemas", category="Tecnología")
         db_session.add(carrera_sistemas)
         db_session.flush()
 
@@ -91,7 +91,7 @@ def setup_datos_hu24(db_session: Session):
         title="Desarrollador Backend Python HU24",
         description="Buscamos desarrollador con Python y bases de datos relacionales",
         seniority_level="junior",
-        employment_type="full_time",
+        employment_type="permanent",
         work_modality="remote",
         city="Santa Cruz",
         status="published",
@@ -100,9 +100,9 @@ def setup_datos_hu24(db_session: Session):
     db_session.add(vacante)
     db_session.flush()
 
-    db_session.add(JobEducationPreference(job_id=vacante.id, field_of_study_id=carrera_sistemas.id))
-    db_session.add(JobSkill(job_id=vacante.id, skill_id=skill_python.id, min_proficiency="intermediate", weight=3))
-    db_session.add(JobSkill(job_id=vacante.id, skill_id=skill_sql.id, min_proficiency="intermediate", weight=2))
+    db_session.add(JobEducationPreference(job_posting_id=vacante.id, field_of_study_id=carrera_sistemas.id))
+    db_session.add(JobSkill(job_posting_id=vacante.id, skill_id=skill_python.id, min_proficiency="intermediate", weight=3))
+    db_session.add(JobSkill(job_posting_id=vacante.id, skill_id=skill_sql.id, min_proficiency="intermediate", weight=2))
 
     # 5. Candidato 1: Alta Afinidad (Tiene carrera Sistemas, Python y SQL)
     u1 = AppUser(email=f"cand_alto_{uuid.uuid4().hex[:6]}@uagrm.bo", password_hash="hash", account_status="active")
@@ -111,7 +111,7 @@ def setup_datos_hu24(db_session: Session):
     c1 = CandidateProfile(user_id=u1.id, first_name="Ana", last_name="Gutiérrez", professional_headline="Ingeniera de Software")
     db_session.add(c1)
     db_session.flush()
-    db_session.add(CandidateEducation(candidate_id=c1.id, field_of_study_id=carrera_sistemas.id, program_name="Ingeniería en Sistemas", is_current=False))
+    db_session.add(CandidateEducation(candidate_id=c1.id, field_of_study_id=carrera_sistemas.id, program_name="Ingeniería en Sistemas", academic_status="graduated"))
     db_session.add(CandidateSkill(candidate_id=c1.id, skill_id=skill_python.id, proficiency_level="advanced"))
     db_session.add(CandidateSkill(candidate_id=c1.id, skill_id=skill_sql.id, proficiency_level="intermediate"))
 

@@ -28,7 +28,9 @@ class ContadorNoLeidasResponse(BaseModel):
 
 
 class PreferenciasNotificacionDTO(BaseModel):
-    email_notifications: bool = True
+    email_enabled: bool = True
+    push_enabled: bool = True
+    in_app_enabled: bool = True
     notify_stage_changes: bool = True
     notify_job_matches: bool = True
     notify_interview_events: bool = True
@@ -38,7 +40,10 @@ class PreferenciasNotificacionDTO(BaseModel):
 
 
 class PreferenciasNotificacionUpdateRequest(BaseModel):
+    email_enabled: bool | None = None
     email_notifications: bool | None = None
+    push_enabled: bool | None = None
+    in_app_enabled: bool | None = None
     notify_stage_changes: bool | None = None
     notify_job_matches: bool | None = None
     notify_interview_events: bool | None = None

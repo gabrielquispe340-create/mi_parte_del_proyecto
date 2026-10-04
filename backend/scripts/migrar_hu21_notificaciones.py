@@ -1,6 +1,6 @@
 """Migración aditiva e idempotente para HU-21: Notificaciones y preferencias.
 
-Crea la tabla `notification_preference`, asegura la estructura de `notification`
+Crea o altera la tabla `notification_preference`, asegura la estructura de `notification`
 e indexa para consultas rápidas de historial y conteo de no leídas.
 
 Uso:
@@ -26,19 +26,25 @@ DDL = [
     "CREATE INDEX IF NOT EXISTS ix_notification_read_at ON notification (read_at)",
     "CREATE INDEX IF NOT EXISTS ix_notification_created_at ON notification (created_at DESC)",
 
-    # 2. Tabla notification_preference para controlar qué notificaciones recibe cada usuario
+    # 2. Asegurar columnas en notification_preference
     """CREATE TABLE IF NOT EXISTS notification_preference (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL UNIQUE REFERENCES app_user(id) ON DELETE CASCADE,
-        email_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+        user_id UUID PRIMARY KEY REFERENCES app_user(id) ON DELETE CASCADE,
+        email_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        push_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        in_app_enabled BOOLEAN NOT NULL DEFAULT TRUE,
         notify_stage_changes BOOLEAN NOT NULL DEFAULT TRUE,
         notify_job_matches BOOLEAN NOT NULL DEFAULT TRUE,
         notify_interview_events BOOLEAN NOT NULL DEFAULT TRUE,
         notify_messages BOOLEAN NOT NULL DEFAULT TRUE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )""",
-    "CREATE INDEX IF NOT EXISTS ix_notif_pref_user_id ON notification_preference (user_id)",
+    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS email_enabled BOOLEAN NOT NULL DEFAULT TRUE",
+    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS push_enabled BOOLEAN NOT NULL DEFAULT TRUE",
+    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS in_app_enabled BOOLEAN NOT NULL DEFAULT TRUE",
+    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS notify_stage_changes BOOLEAN NOT NULL DEFAULT TRUE",
+    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS notify_job_matches BOOLEAN NOT NULL DEFAULT TRUE",
+    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS notify_interview_events BOOLEAN NOT NULL DEFAULT TRUE",
+    "ALTER TABLE notification_preference ADD COLUMN IF NOT EXISTS notify_messages BOOLEAN NOT NULL DEFAULT TRUE",
 ]
 
 

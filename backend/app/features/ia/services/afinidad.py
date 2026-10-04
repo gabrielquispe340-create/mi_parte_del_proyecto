@@ -194,6 +194,11 @@ def evaluar(vacante: JobPosting, perfil: PerfilAfinidad) -> Afinidad:
     return Afinidad(porcentaje, criterios)
 
 
+def calcular_afinidad(perfil: PerfilAfinidad, vacante: JobPosting) -> Afinidad:
+    """Alias para evaluar afinidad candidato ↔ vacante."""
+    return evaluar(vacante, perfil)
+
+
 def _criterio(clave: str, fraccion: float, detalle: str, coincidencias=None, faltantes=None) -> Criterio:
     cumplimiento = round(max(0.0, min(1.0, fraccion)) * 100)
     estado = "cumple" if cumplimiento >= 100 else "parcial" if cumplimiento > 0 else "no_cumple"
