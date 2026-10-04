@@ -73,9 +73,13 @@ Abre 👉 http://localhost:4200
 
 La app es para **egresados**: buscar vacantes y postularse, seguir sus postulaciones,
 responder las entrevistas que proponen las empresas (confirmar, rechazar con un motivo,
-unirse a la videollamada o abrir la dirección en el mapa), completar el CV y ver las
-recomendaciones. Sin cuenta se pueden explorar las ofertas públicas. Las cuentas de empresa
-y de administración se usan desde la web.
+unirse a la videollamada o abrir la dirección en el mapa), chatear con la empresa (con
+adjuntos de hasta 5 MB), ver sus notificaciones, completar el CV y ver las recomendaciones.
+Sin cuenta se pueden explorar las ofertas públicas.
+
+Las **empresas** tienen una versión acotada: postulantes nuevos (sin revisar), la agenda de
+entrevistas del día y de la semana, y los mensajes con los candidatos. Publicar vacantes y
+mover el proceso de selección se hace en la web, igual que todo lo de administración.
 
 ```bash
 cd mobile
@@ -236,8 +240,9 @@ restablece las cuentas del Sprint 0 con las contraseñas del propio script; ojo,
 cambia la de `rrhh@tecnova.bo`.
 
 En una base nueva, antes hay que correr las migraciones aditivas, en este orden:
-`migrar_multitenant`, `migrar_cambio_password`, `migrar_planes` y `migrar_respaldos`
-(todas con `python -m scripts.<nombre>`; en la Supabase compartida ya están aplicadas).
+`migrar_multitenant`, `migrar_cambio_password`, `migrar_planes`, `migrar_respaldos`,
+`migrar_hu20_entrevistas` y `migrar_hu21_notificaciones` (todas con
+`python -m scripts.<nombre>`). Son idempotentes: se pueden volver a correr sin problema.
 
 ### Cuentas de prueba
 
@@ -308,6 +313,17 @@ Moderador de UMSS: `moderador@umss.egresa.bo` / `Egresa2026!`.
 - **Comparar candidatos (HU-18):** en "Gestionar Candidatos y Etapas", marcá 2 o 3 candidatos
   de la misma vacante con el checkbox de su tarjeta y tocá "Comparar candidatos" en la barra
   de abajo. Ojo: "Descartar candidato" desde la comparación descarta de verdad.
+- **Mensajes (HU-19):** la empresa escribe desde "Mensajes" en la tarjeta del candidato
+  (web) y el egresado responde desde Mis postulaciones (web) o desde la app, en el detalle
+  de la postulación o con el botón de mensajes del Inicio. Se pueden adjuntar archivos.
+- **App de empresas:** entrá a la app con `empresa@prueba.com` / `Prueba123!`: pestañas
+  Postulantes, Entrevistas y Mensajes.
+- **Notificaciones (HU-21):** campana en la web y en el Inicio de la app; en "Preferencias de
+  alertas" se apaga cada tipo de aviso (mensajes, entrevistas, etapas, vacantes afines). Los
+  avisos push necesitan configurar Firebase (variable `FIREBASE_SERVICE_ACCOUNT_JSON` en el
+  backend); sin eso, todo lo demás funciona igual.
+- **Sugerencias IA (HU-24):** con una empresa, botón "Sugerencias IA" en el dashboard o en
+  "Gestionar Candidatos y Etapas": ranking de los postulantes de cada vacante por afinidad.
 
 Si alguna deja de funcionar (alguien del equipo pudo haberla cambiado probando), se resetea corriendo los scripts de arriba o pidiendo que se actualice manualmente — avisen en el grupo antes de cambiarlas para no romper la sesión de otro compañero.
 
