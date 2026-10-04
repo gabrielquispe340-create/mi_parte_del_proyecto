@@ -1,0 +1,185 @@
+<div class="chat-panel">
+
+  <!-- Barra superior informativa del hilo -->
+  @if (conversacion(); as conv) {
+    <div class="chat-context-bar">
+      <div class="chat-context-bar__info">
+        <div class="chat-avatar">
+          @if (modoVista === 'empresa') {
+            {{ (conv.candidato_nombre || 'C').slice(0, 1).toUpperCase() }}
+          } @else {
+            {{ (conv.empresa_nombre || 'E').slice(0, 1).toUpperCase() }}
+          }
+        </div>
+        <div class="chat-context-bar__text">
+          @if (modoVista === 'empresa') {
+            <strong>{{ conv.candidato_nombre }}</strong>
+            <span>{{ conv.candidato_carrera || 'Postulante' }} · {{ conv.vacante_titulo }}</span>
+          } @else {
+            <strong>{{ conv.empresa_nombre }}</strong>
+            <span>Vacante: {{ conv.vacante_titulo }}</span>
+          }
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="btn-refresh"
+        (click)="cargarConversacion()"
+        [disabled]="cargando()"
+        title="Actualizar conversación"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span>Actualizar</span>
+      </button>
+    </div>
+  }
+
+  <!-- Alerta de error -->
+  @if (error()) {
+    <div class="chat-error-banner">
+      <svg class="icon-sm" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Contenedor del historial de mensajes -->
+  <div class="chat-messages-box" #contenedorMensajes>
+    @if (cargando()) {
+      <div class="chat-loading">
+        <div class="chat-spinner"></div>
+        <span>Cargando historial de mensajes...</span>
+      </div>
+    } @else if (mensajes().length === 0) {
+      <div class="chat-empty">
+        <svg class="chat-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <h4>Sin mensajes en esta postulación</h4>
+        @if (modoVista === 'empresa') {
+          <p>Envía el primer mensaje para contactar directamente al candidato sobre su proceso de selección.</p>
+        } @else {
+          <p>Aquí verás los mensajes enviados por la empresa y podrás responder o enviar documentación adicional.</p>
+        }
+      </div>
+    } @else {
+      @for (msg of mensajes(); track msg.id) {
+        <div class="msg-row" [class.msg-row--mine]="msg.es_mio" [class.msg-row--other]="!msg.es_mio">
+          <div class="msg-bubble">
+            <div class="msg-header">
+              <span class="msg-sender">
+                @if (msg.es_mio) {
+                  Tú ({{ msg.sender_rol === 'empresa' ? 'Empresa' : 'Candidato' }})
+                } @else {
+                  {{ msg.sender_nombre }}
+                }
+              </span>
+              <time class="msg-time">{{ formatearHora(msg.created_at) }}</time>
+            </div>
+
+            <p class="msg-content">{{ msg.content }}</p>
+
+            @if (msg.adjunto; as adj) {
+              <div class="msg-attachment">
+                <div class="msg-attachment__info">
+                  <svg class="msg-attachment__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                  </svg>
+                  <div class="msg-attachment__meta">
+                    <span class="msg-attachment__name" [title]="adj.original_filename">{{ adj.original_filename }}</span>
+                    @if (adj.file_size) {
+                      <span class="msg-attachment__size">{{ formatearTamano(adj.file_size) }}</span>
+                    }
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="msg-attachment__btn"
+                  (click)="descargarAdjunto(adj)"
+                  [disabled]="descargandoId() === adj.id"
+                  title="Descargar archivo adjunto"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>{{ descargandoId() === adj.id ? 'Descargando...' : 'Descargar' }}</span>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <!-- Chip de vista previa de archivo seleccionado -->
+  @if (archivoSeleccionado(); as file) {
+    <div class="selected-file-bar">
+      <div class="selected-file-bar__left">
+        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+        </svg>
+        <span class="selected-file-name">{{ file.name }}</span>
+        <span class="selected-file-size">({{ formatearTamano(file.size) }})</span>
+      </div>
+      <button type="button" class="btn-remove-file" (click)="quitarArchivo()" title="Quitar archivo adjunto">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+  }
+
+  <!-- Caja de redacción y envío -->
+  <div class="chat-composer">
+    <input
+      #inputArchivo
+      type="file"
+      class="hidden-file-input"
+      (change)="seleccionarArchivo($event)"
+    />
+
+    <button
+      type="button"
+      class="btn-attach"
+      (click)="inputArchivo.click()"
+      [disabled]="enviando()"
+      title="Adjuntar un archivo (máximo 5 MB)"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+      </svg>
+    </button>
+
+    <textarea
+      class="chat-input"
+      rows="2"
+      placeholder="Escribe un mensaje... (Enter para enviar, Shift+Enter para salto de línea)"
+      [ngModel]="nuevoMensaje()"
+      (ngModelChange)="nuevoMensaje.set($event)"
+      (keydown)="manejarTeclaEnter($event)"
+      [disabled]="enviando()"
+    ></textarea>
+
+    <button
+      type="button"
+      class="btn-send"
+      (click)="enviarMensaje()"
+      [disabled]="!puedeEnviar()"
+    >
+      <svg viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/>
+      </svg>
+      <span>{{ enviando() ? 'Enviando...' : 'Enviar' }}</span>
+    </button>
+  </div>
+
+  <div class="chat-footer-hint">
+    <span>Puedes adjuntar hasta 1 archivo por mensaje (tamaño máximo: 5 MB). El historial completo queda registrado en la postulación.</span>
+  </div>
+
+</div>
