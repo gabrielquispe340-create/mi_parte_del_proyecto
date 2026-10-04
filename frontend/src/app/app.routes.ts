@@ -182,6 +182,23 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'empresa/sugerencias-ia',
+    canActivate: [authGuard],
+    data: { roles: ['EMPRESA'] },
+    loadComponent: () =>
+      import('./features/ia/sugerencias-candidatos/sugerencias-candidatos.component').then(
+        (m) => m.SugerenciasCandidatosComponent,
+      ),
+  },
+  {
+    path: 'ia/sugerencias-candidatos',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/ia/sugerencias-candidatos/sugerencias-candidatos.component').then(
+        (m) => m.SugerenciasCandidatosComponent,
+      ),
+  },
+  {
     path: 'notificaciones',
     canActivate: [authGuard],
     loadComponent: () =>
