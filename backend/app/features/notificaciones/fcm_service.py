@@ -34,11 +34,23 @@ def inicializar_firebase() -> bool:
         cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH")
         cred_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON")
 
-        if cred_path and os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
+        # Rutas de autodescubrimiento si no se especificó variable de entorno
+        rutas_posibles = [
+            cred_path,
+            "serviceAccountKey.json",
+            "/app/serviceAccountKey.json",
+            os.path.join(os.getcwd(), "serviceAccountKey.json"),
+            os.path.join(os.getcwd(), "backend", "serviceAccountKey.json"),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "serviceAccountKey.json")),
+        ]
+
+        ruta_encontrada = next((p for p in rutas_posibles if p and os.path.exists(p)), None)
+
+        if ruta_encontrada:
+            cred = credentials.Certificate(ruta_encontrada)
             firebase_admin.initialize_app(cred)
             _firebase_initialized = True
-            logger.info("Firebase Admin inicializado desde archivo: %s", cred_path)
+            logger.info("Firebase Admin inicializado exitosamente desde: %s", ruta_encontrada)
             return True
         elif cred_json:
             cred_dict = json.loads(cred_json)
