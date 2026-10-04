@@ -11,11 +11,12 @@ import {
   ResumenPostulaciones,
 } from '../postulaciones.models';
 import { PostulacionesService } from '../postulaciones.service';
+import { HiloMensajesComponent } from '../../comunicacion/hilo-mensajes/hilo-mensajes.component';
 
 @Component({
   selector: 'app-mis-postulaciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, HiloMensajesComponent],
   templateUrl: './mis-postulaciones.component.html',
   styleUrl: './mis-postulaciones.component.scss',
 })
@@ -46,7 +47,7 @@ export class MisPostulacionesComponent implements OnInit {
   modalDetalleAbierto = signal<boolean>(false);
   cargandoDetalle = signal<boolean>(false);
   detalleSeleccionado = signal<DetallePostulacion | null>(null);
-  pestanaActiva = signal<'seguimiento' | 'vacante'>('seguimiento');
+  pestanaActiva = signal<'seguimiento' | 'vacante' | 'mensajes'>('seguimiento');
 
   // Modal de Retiro de Postulación
   modalRetirarAbierto = signal<boolean>(false);
@@ -105,7 +106,7 @@ export class MisPostulacionesComponent implements OnInit {
     this.cargarPostulaciones();
   }
 
-  abrirDetalle(postulacion: PostulacionItem, pestana: 'seguimiento' | 'vacante' = 'seguimiento'): void {
+  abrirDetalle(postulacion: PostulacionItem, pestana: 'seguimiento' | 'vacante' | 'mensajes' = 'seguimiento'): void {
     this.modalDetalleAbierto.set(true);
     this.cargandoDetalle.set(true);
     this.pestanaActiva.set(pestana);

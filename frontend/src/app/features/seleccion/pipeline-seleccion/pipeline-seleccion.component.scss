@@ -369,6 +369,7 @@
   border-radius: 50%;
   flex-shrink: 0;
 
+  &--stage { background: #1e3a8a; }
   &--pending { background: #ca8a04; }
   &--rejected { background: #dc2626; }
 }
@@ -633,6 +634,13 @@
     color: #475569;
     border-color: #cbd5e1;
     &:hover { background: #f1f5f9; color: #0f172a; border-color: #94a3b8; }
+  }
+
+  &--messages {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    &:hover { background: #dbeafe; color: #1e3a8a; border-color: #93c5fd; }
   }
 
   &--reject {

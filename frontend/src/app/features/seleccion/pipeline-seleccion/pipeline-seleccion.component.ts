@@ -20,11 +20,12 @@ import {
   PipelineVacanteResponse,
   VacanteResumenSeleccion,
 } from '../seleccion.models';
+import { HiloMensajesComponent } from '../../comunicacion/hilo-mensajes/hilo-mensajes.component';
 
 @Component({
   selector: 'app-pipeline-seleccion',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, HiloMensajesComponent],
   templateUrl: './pipeline-seleccion.component.html',
   styleUrls: ['./pipeline-seleccion.component.scss'],
   changeDetection: ChangeDetectionStrategy.Default,
@@ -72,6 +73,9 @@ export class PipelineSeleccionComponent implements OnInit {
   cargandoNotas = signal(false);
   guardandoNota = signal(false);
   errorNotas = signal<string | null>(null);
+
+  // ── Modal: Mensajería Interna ────────────────────────────────────────
+  mostrarModalMensajes = signal(false);
 
   // ── Entrevistas (HU-20) ──────────────────────────────────────────────
   mapaEntrevistas = signal<Record<string, Entrevista[]>>({});
@@ -380,6 +384,16 @@ export class PipelineSeleccionComponent implements OnInit {
         this.guardandoNota.set(false);
       },
     });
+  }
+
+  // ── Mensajería Interna ───────────────────────────────────────────────
+  abrirModalMensajes(candidato: CandidatoPipelineItem): void {
+    this.candidatoActivo.set(candidato);
+    this.mostrarModalMensajes.set(true);
+  }
+
+  cerrarModalMensajes(): void {
+    this.mostrarModalMensajes.set(false);
   }
 
   // ── Gestión de Entrevistas (HU-20) ───────────────────────────────────
