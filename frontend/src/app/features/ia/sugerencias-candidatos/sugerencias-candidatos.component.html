@@ -22,7 +22,7 @@
         </select>
       </div>
 
-      <a routerLink="/postulaciones/seleccion" class="btn-pipeline">
+      <a routerLink="/seleccion" [queryParams]="{ vacante: vacanteSeleccionadaId() || null }" class="btn-pipeline">
         Ir al pipeline de selección
       </a>
     </div>
@@ -148,7 +148,7 @@
                 >
                   🔍 Ver Desglose de Criterios
                 </button>
-                <a routerLink="/postulaciones/seleccion" class="btn-goto-pipeline">
+                <a routerLink="/seleccion" [queryParams]="{ vacante: vacanteSeleccionadaId() || null }" class="btn-goto-pipeline">
                   Mover en Pipeline →
                 </a>
               </div>
