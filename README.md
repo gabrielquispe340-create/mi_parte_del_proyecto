@@ -324,6 +324,11 @@ Moderador de UMSS: `moderador@umss.egresa.bo` / `Egresa2026!`.
   backend); sin eso, todo lo demás funciona igual.
 - **Sugerencias IA (HU-24):** con una empresa, botón "Sugerencias IA" en el dashboard o en
   "Gestionar Candidatos y Etapas": ranking de los postulantes de cada vacante por afinidad.
+- **Denuncia de ofertas (HU-22):** con un egresado, en el detalle de una vacante "Denunciar
+  oferta" (web) o el menú ⋮ del detalle (app). Con 3 denuncias que cuentan qué pasó (al menos
+  20 caracteres), la oferta se oculta sola. El admin de la universidad las revisa en
+  "Denuncias de ofertas" y decide mantenerla, suspenderla o eliminarla; la empresa y quienes
+  denunciaron reciben el aviso. No necesita migración: usa la tabla `moderation_report`.
 
 Si alguna deja de funcionar (alguien del equipo pudo haberla cambiado probando), se resetea corriendo los scripts de arriba o pidiendo que se actualice manualmente — avisen en el grupo antes de cambiarlas para no romper la sesión de otro compañero.
 

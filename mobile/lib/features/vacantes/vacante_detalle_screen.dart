@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
 import '../../core/widgets/insignia.dart';
 import '../auth/registro_egresado_screen.dart';
+import 'denunciar_oferta.dart';
 import 'postulacion_screen.dart';
 
 /// Detalle de una vacante. Sin [accessToken] (visitante, HU-34) invita a
@@ -29,7 +30,25 @@ class VacanteDetalleScreen extends StatelessWidget {
     ].where((d) => d.$3.isNotEmpty).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalle de la vacante')),
+      appBar: AppBar(
+        title: const Text('Detalle de la vacante'),
+        actions: [
+          if (accessToken case final token?)
+            PopupMenuButton<void>(
+              tooltip: 'Más opciones',
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  onTap: () => denunciarOferta(context, token, vacante),
+                  child: const ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.outlined_flag_rounded, color: AppColors.peligro),
+                    title: Text('Denunciar oferta'),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [

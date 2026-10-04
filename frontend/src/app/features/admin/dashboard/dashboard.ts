@@ -40,7 +40,14 @@ interface PanelAdmin {
     vacantes_publicadas: number;
     postulaciones: number;
   };
-  pendientes: { egresados: number; empresas: number; vacantes: number; universidades: number; respaldo: number };
+  pendientes: {
+    egresados: number;
+    empresas: number;
+    vacantes: number;
+    universidades: number;
+    respaldo: number;
+    denuncias: number;
+  };
   accesos_hoy: number;
   accesos_fallidos_hoy: number;
   actividad: ActividadApi[];
@@ -49,7 +56,7 @@ interface PanelAdmin {
 type Tono = 'exito' | 'peligro' | 'info' | 'neutro';
 
 interface Tarea {
-  clave: 'universidades' | 'respaldos' | 'egresados' | 'empresas' | 'vacantes';
+  clave: 'universidades' | 'respaldos' | 'egresados' | 'empresas' | 'vacantes' | 'denuncias';
   titulo: string;
   ayuda: string;
   cantidad: number;
@@ -258,6 +265,14 @@ export class Dashboard implements OnInit {
         ayuda: 'Vacantes enviadas a revisión antes de publicarse.',
         cantidad: p.pendientes.vacantes,
         ruta: '/admin/moderacion-vacantes',
+        query: null,
+      },
+      {
+        clave: 'denuncias',
+        titulo: 'Ofertas denunciadas',
+        ayuda: 'Usuarios reportaron ofertas sospechosas. Con 3 denuncias se ocultan hasta que decidas.',
+        cantidad: p.pendientes.denuncias,
+        ruta: '/admin/denuncias',
         query: null,
       },
     ];

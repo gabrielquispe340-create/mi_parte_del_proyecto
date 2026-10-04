@@ -1,0 +1,120 @@
+
+<div class="admin-container">
+  <header class="admin-header">
+    <div>
+      <div class="header-badge">{{ auth.institucion() || 'Todas las universidades' }}</div>
+      <h1>Denuncias de ofertas</h1>
+      <p class="subtitle">
+        Ofertas que los usuarios marcaron como sospechosas. Con {{ umbral() }} denuncias con detalle, la oferta
+        se oculta sola hasta que decidas.
+      </p>
+    </div>
+    <button type="button" class="btn-refresh" (click)="cargar()" [disabled]="cargando()">Actualizar</button>
+  </header>
+
+  @if (cargando()) {
+    <div class="estado">
+      <div class="spinner"></div>
+      <p>Cargando denuncias...</p>
+    </div>
+  } @else if (error()) {
+    <div class="estado estado--error">
+      <p>{{ error() }}</p>
+      <button type="button" class="btn-refresh" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    @if (vacantes().length === 0) {
+      <div class="estado">
+        <p class="vacio-titulo">No hay denuncias pendientes</p>
+        <p>Cuando alguien denuncie una oferta de una empresa de tu universidad, aparece acá.</p>
+      </div>
+    }
+
+    <div class="lista">
+      @for (v of vacantes(); track v.vacante_id) {
+        <article class="tarjeta" [class.tarjeta--oculta]="v.oculta">
+          <div class="tarjeta-cabecera">
+            <div>
+              <a [routerLink]="['/vacantes', v.vacante_id]" target="_blank" class="titulo">{{ v.titulo }}</a>
+              <p class="meta">{{ v.empresa_nombre }}@if (v.ciudad) { · {{ v.ciudad }} }</p>
+            </div>
+            <div class="estado-oferta">
+              @if (v.oculta) {
+                <span class="chip chip--oculta">Oculta a los egresados</span>
+              } @else if (v.estado_vacante === 'published') {
+                <span class="chip chip--visible">Visible</span>
+              } @else {
+                <span class="chip">No publicada</span>
+              }
+              <span class="umbral">{{ v.denuncias_que_cuentan }} de {{ umbral() }} con detalle</span>
+            </div>
+          </div>
+
+          <ul class="denuncias">
+            @for (d of v.denuncias; track d.id) {
+              <li>
+                <div class="denuncia-cabecera">
+                  <span class="categoria">{{ etiquetaCategoria(d.categoria) }}</span>
+                  <span class="autor">{{ d.denunciante_nombre }} · {{ d.created_at | date: 'd MMM, HH:mm' }}</span>
+                </div>
+                @if (d.descripcion) {
+                  <p class="texto">{{ d.descripcion }}</p>
+                }
+                @if (!d.cuenta_para_umbral) {
+                  <p class="sin-detalle">Sin detalle suficiente: no cuenta para ocultar la oferta.</p>
+                }
+              </li>
+            }
+          </ul>
+
+          <div class="acciones">
+            <button type="button" class="btn btn--neutro" (click)="abrirDecision(v, 'mantener')">Mantener publicada</button>
+            <button type="button" class="btn btn--aviso" (click)="abrirDecision(v, 'suspender')">Suspender</button>
+            <button type="button" class="btn btn--peligro" (click)="abrirDecision(v, 'eliminar')">Eliminar</button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <app-paginador
+      [total]="total()"
+      [pagina]="pagina()"
+      (paginaChange)="irAPagina($event)"
+      [tamanio]="tamanio()"
+      (tamanioChange)="cambiarTamanio($event)"
+      etiqueta="ofertas denunciadas"
+    />
+  }
+
+  @if (enRevision(); as v) {
+    <div class="modal-overlay" (click)="cerrarDecision()">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="decision-titulo" (click)="$event.stopPropagation()">
+        <h2 id="decision-titulo">{{ decisiones[decision()].titulo }}</h2>
+        <p class="modal-oferta">{{ v.titulo }} · {{ v.empresa_nombre }}</p>
+        <p class="modal-desc">{{ decisiones[decision()].explicacion }}</p>
+
+        <label for="nota-decision">
+          {{ notaObligatoria() ? 'Motivo para la empresa' : 'Nota interna (opcional)' }}
+          @if (notaObligatoria()) { <span class="requerido">*</span> }
+        </label>
+        <textarea id="nota-decision" rows="3" maxlength="500" [ngModel]="nota()" (ngModelChange)="nota.set($event)"
+          [placeholder]="notaObligatoria() ? 'Ej.: la oferta pedía un pago para postular.' : 'Ej.: el sueldo es real, lo confirmamos con la empresa.'"></textarea>
+
+        @if (errorDecision()) {
+          <p class="modal-error" role="alert">{{ errorDecision() }}</p>
+        }
+
+        <div class="modal-acciones">
+          <button type="button" class="btn btn--neutro" (click)="cerrarDecision()" [disabled]="procesando()">Cancelar</button>
+          <button type="button" class="btn"
+            [class.btn--primario]="decision() === 'mantener'"
+            [class.btn--aviso-lleno]="decision() === 'suspender'"
+            [class.btn--peligro-lleno]="decision() === 'eliminar'"
+            (click)="confirmar()" [disabled]="!puedeConfirmar()">
+            {{ procesando() ? 'Guardando...' : decisiones[decision()].boton }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -13,6 +13,7 @@ from app.common.exceptions import (
     ResourceNotFoundException,
 )
 from app.features.ia.services import afinidad as motor_afinidad
+from app.features.moderacion import reglas as reglas_denuncias
 from app.features.vacantes.repository import VacanteRepository
 from app.features.vacantes.schema import (
     CriterioAfinidadResponse,
@@ -250,9 +251,10 @@ class VacanteService:
             page_size=page_size,
         )
         total_pages = math.ceil(total / page_size) if total > 0 else 1
+        ocultas = reglas_denuncias.vacantes_ocultas(self.db, [v.id for v in items])
 
         return VacantePaginadaResponse(
-            items=[self._a_dto(v) for v in items],
+            items=[self._a_dto(v).model_copy(update={"oculta_por_denuncias": v.id in ocultas}) for v in items],
             total=total,
             page=page,
             page_size=page_size,
@@ -308,7 +310,7 @@ class VacanteService:
         if vacante is None:
             raise ResourceNotFoundException("La vacante solicitada no existe.")
 
-        if vacante.status == JobStatus.PUBLISHED.value:
+        if vacante.status == JobStatus.PUBLISHED.value and not reglas_denuncias.esta_oculta(self.db, vacante.id):
             institucion = self._institucion_para_busqueda(current_user.id_usuario if current_user else None)
             if institucion is not None and not empresa_habilitada_en(self.db, vacante.company_id, institucion):
                 raise ResourceNotFoundException("La vacante solicitada no existe.")
@@ -750,11 +752,20 @@ class VacanteService:
         return VacantesBuscadasResponse(total=total, limit=limit, offset=offset, items=vacantes_dto)
 
     def obtener_detalle_busqueda(
-        self, vacante_id: uuid.UUID, usuario_id: uuid.UUID | None = None
+        self, vacante_id: uuid.UUID, usuario_id: uuid.UUID | None = None, es_staff: bool = False
     ) -> VacanteDetalleBusquedaResponse:
-        """Obtiene el detalle enriquecido (afinidad, contacto de empresa) de una vacante publicada."""
+        """Obtiene el detalle enriquecido (afinidad, contacto de empresa) de una vacante publicada.
+
+        Una vacante sin publicar, retirada u oculta por denuncias (HU-22) solo la ven su
+        empresa y el staff; para el resto es como si no existiera.
+        """
         vacante = self.repo.obtener_por_id_con_afinidad(vacante_id, self._institucion_para_busqueda(usuario_id))
         if not vacante:
+            raise ResourceNotFoundException("La vacante solicitada no existe o no está disponible.")
+        publica = vacante.status == JobStatus.PUBLISHED.value and not reglas_denuncias.esta_oculta(
+            self.db, vacante.id
+        )
+        if not publica and not es_staff and not self._es_de_su_empresa(vacante, usuario_id):
             raise ResourceNotFoundException("La vacante solicitada no existe o no está disponible.")
 
         self.repo.incrementar_vistas(vacante_id)
@@ -787,6 +798,20 @@ class VacanteService:
         """Obtiene estadísticas agregadas públicas con caché de 24 horas (HU-34)."""
         stats = self.repo.obtener_estadisticas_agregadas()
         return EstadisticasPublicasResponse(**stats)
+
+    def _es_de_su_empresa(self, vacante: JobPosting, usuario_id: uuid.UUID | None) -> bool:
+        if usuario_id is None:
+            return False
+        return (
+            self.db.scalar(
+                select(CompanyMember.user_id).where(
+                    CompanyMember.user_id == usuario_id,
+                    CompanyMember.company_id == vacante.company_id,
+                    CompanyMember.is_active.is_(True),
+                )
+            )
+            is not None
+        )
 
     def _institucion_para_busqueda(self, usuario_id: uuid.UUID | None) -> uuid.UUID | None:
         """Universidad del egresado autenticado; None (sin filtro) para anónimos, empresas y staff."""

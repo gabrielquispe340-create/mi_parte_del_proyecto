@@ -310,6 +310,10 @@
       flex-direction: column;
       gap: 0.75rem;
 
+      .sidebar-denuncia {
+        align-self: center;
+      }
+
       .btn {
         display: inline-flex;
         align-items: center;

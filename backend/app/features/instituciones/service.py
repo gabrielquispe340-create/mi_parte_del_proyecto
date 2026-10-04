@@ -21,6 +21,7 @@ from app.features.vacantes.repository import empresa_vinculada_a
 from app.models.candidato import CandidateProfile
 from app.models.empresa import Company, CompanyMember
 from app.models.institucion import CompanyInstitution, Institution, SaasPlan, UniversitySignupRequest
+from app.models.moderacion import ModerationReport
 from app.models.postulacion import Application
 from app.models.respaldo import SystemBackup
 from app.models.seguridad import AuditLog
@@ -244,6 +245,7 @@ class InstitucionService:
                 vacantes=cifras["vacantes_por_moderar"],
                 universidades=cifras.get("universidades_pendientes", 0),
                 respaldo=1 if institution_id is None and cifras.get("respaldos_recientes", 0) == 0 else 0,
+                denuncias=cifras["ofertas_denunciadas"],
             ),
             accesos_hoy=cifras["accesos_hoy"],
             accesos_fallidos_hoy=cifras["accesos_fallidos_hoy"],
@@ -264,6 +266,12 @@ class InstitucionService:
         )
         vacantes_por_moderar = select(func.count(JobPosting.id)).where(
             JobPosting.status == JobStatus.PENDING_REVIEW.value
+        )
+        # Igual que el listado de Denuncias: ofertas (no denuncias) con alguna pendiente.
+        ofertas_denunciadas = (
+            select(func.count(func.distinct(ModerationReport.job_id)))
+            .join(JobPosting, JobPosting.id == ModerationReport.job_id)
+            .where(ModerationReport.status == "pending")
         )
         vinculo_aprobado = [CompanyInstitution.status == "approved"]
 
@@ -286,6 +294,7 @@ class InstitucionService:
             vacantes_por_moderar = vacantes_por_moderar.where(
                 empresa_vinculada_a(institution_id, ("approved", "pending"))
             )
+            ofertas_denunciadas = ofertas_denunciadas.where(empresa_vinculada_a(institution_id))
             vinculo_aprobado.append(CompanyInstitution.institution_id == institution_id)
             del_tenant = AuditLog.user_id.in_(usuarios_de_institucion(institution_id))
             accesos = accesos.where(del_tenant)
@@ -309,6 +318,7 @@ class InstitucionService:
             "vacantes_publicadas": vacantes_publicadas,
             "empresas_pendientes": empresas_pendientes,
             "vacantes_por_moderar": vacantes_por_moderar,
+            "ofertas_denunciadas": ofertas_denunciadas,
             "accesos_hoy": accesos,
             "accesos_fallidos_hoy": fallidos,
         }

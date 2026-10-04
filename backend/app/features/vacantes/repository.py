@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlalchemy import delete, distinct, func, or_, select, update
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.features.moderacion.reglas import no_oculta_por_denuncias
 from app.models.catalogo import FieldOfStudy, JobCategory
 from app.models.empresa import Company
 from app.models.institucion import CompanyInstitution
@@ -118,8 +119,9 @@ class VacanteRepository:
         institution_id: uuid.UUID | None = None,
     ) -> tuple[list[JobPosting], int]:
         """Lista vacantes publicadas para búsqueda pública o de candidatos."""
-        stmt = self._query_base_con_relaciones().where(JobPosting.status == JobStatus.PUBLISHED.value)
-        count_stmt = select(func.count(JobPosting.id)).where(JobPosting.status == JobStatus.PUBLISHED.value)
+        visible = (JobPosting.status == JobStatus.PUBLISHED.value, no_oculta_por_denuncias())
+        stmt = self._query_base_con_relaciones().where(*visible)
+        count_stmt = select(func.count(JobPosting.id)).where(*visible)
 
         if institution_id is not None:
             stmt = stmt.where(empresa_vinculada_a(institution_id))
@@ -272,7 +274,9 @@ class VacanteRepository:
         institution_id: uuid.UUID | None = None,
     ) -> tuple[list[JobPosting], int]:
         """Busca vacantes publicadas aplicando filtros combinados y paginación por límite/desplazamiento."""
-        stmt = select(JobPosting).where(JobPosting.status == JobStatus.PUBLISHED.value, empresa_no_suspendida())
+        stmt = select(JobPosting).where(
+            JobPosting.status == JobStatus.PUBLISHED.value, empresa_no_suspendida(), no_oculta_por_denuncias()
+        )
 
         if institution_id is not None:
             stmt = stmt.where(empresa_vinculada_a(institution_id))
@@ -437,6 +441,7 @@ class VacanteRepository:
                     JobPosting.application_deadline >= now_utc,
                 ),
                 Company.account_status == "active",
+                no_oculta_por_denuncias(),
             )
         )
         total_vacantes = self.db.scalar(stmt_vacantes) or 0
