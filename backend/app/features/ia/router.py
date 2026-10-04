@@ -56,3 +56,4 @@ def sugerir_candidatos_vacante(
         user_id=current_user.id_usuario,
         umbral_minimo=umbral_minimo,
     )
+

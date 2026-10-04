@@ -160,3 +160,4 @@ class CandidatoSugerenciaService:
             total_coincidentes=len(candidatos_dto),
             items=candidatos_dto,
         )
+

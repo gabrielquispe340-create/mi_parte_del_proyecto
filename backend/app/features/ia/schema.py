@@ -61,3 +61,4 @@ class SugerenciasCandidatosResponse(BaseModel):
     total_postulantes: int
     total_coincidentes: int
     items: list[CandidatoSugeridoDTO]
+

@@ -54,3 +54,4 @@ export interface SugerenciasCandidatosResponse {
   total_coincidentes: number;
   items: CandidatoSugerido[];
 }
+

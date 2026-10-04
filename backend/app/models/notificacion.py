@@ -49,3 +49,4 @@ class NotificationPreference(Base):
     )
 
     user = relationship("AppUser")
+

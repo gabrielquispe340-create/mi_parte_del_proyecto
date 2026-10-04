@@ -164,9 +164,55 @@
             <div class="pref-section">
               <h4>Canales de Envío</h4>
               
+              <!-- PUSH NATIVO WEB -->
               <label class="switch-row">
                 <div class="switch-text">
-                  <strong>Notificaciones por Correo Electrónico</strong>
+                  <div class="channel-title-row">
+                    <strong>📲 Notificaciones Push de Escritorio / Navegador</strong>
+                    @if (permisoPushConcedido) {
+                      <span class="badge-active">Permitido en Navegador</span>
+                    } @else {
+                      <span class="badge-pending">Requiere Permiso</span>
+                    }
+                  </div>
+                  <span>Recibir alertas instantáneas en la pantalla de tu dispositivo cuando ocurran cambios de etapa u ofertas afines.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [checked]="preferencias.push_enabled"
+                  (change)="togglePushPermiso($event)"
+                  name="push_enabled"
+                />
+              </label>
+
+              @if (preferencias.push_enabled) {
+                <div class="push-test-box">
+                  <button type="button" class="btn-test-push" (click)="probarNotificacionPush()">
+                    🔔 Probar Notificación Push Ahora
+                  </button>
+                  <small class="push-test-hint">Haz clic para enviar un aviso emergente de prueba a tu pantalla.</small>
+                </div>
+              }
+
+              <!-- IN-APP -->
+              <label class="switch-row">
+                <div class="switch-text">
+                  <strong>🔔 Alertas en la Plataforma (In-App)</strong>
+                  <span>Mostrar indicador numérico y panel desplegable en la barra de navegación superior.</span>
+                </div>
+                <input
+                  type="checkbox"
+                  class="custom-toggle"
+                  [(ngModel)]="preferencias.in_app_enabled"
+                  name="in_app_enabled"
+                />
+              </label>
+
+              <!-- EMAIL -->
+              <label class="switch-row">
+                <div class="switch-text">
+                  <strong>✉️ Notificaciones por Correo Electrónico</strong>
                   <span>Recibir un resumen por email cuando ocurran eventos importantes.</span>
                 </div>
                 <input

@@ -106,3 +106,4 @@ export class SugerenciasCandidatosComponent implements OnInit {
     return 'badge-gray';
   }
 }
+

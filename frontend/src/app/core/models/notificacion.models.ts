@@ -21,7 +21,10 @@ export interface ContadorNoLeidas {
 }
 
 export interface PreferenciasNotificacion {
-  email_notifications: boolean;
+  email_enabled?: boolean;
+  email_notifications?: boolean;
+  push_enabled?: boolean;
+  in_app_enabled?: boolean;
   notify_stage_changes: boolean;
   notify_job_matches: boolean;
   notify_interview_events: boolean;

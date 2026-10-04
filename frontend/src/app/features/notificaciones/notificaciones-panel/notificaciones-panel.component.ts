@@ -30,6 +30,8 @@ export class NotificacionesPanelComponent implements OnInit {
   // Preferencias
   preferencias: PreferenciasNotificacion = {
     email_notifications: true,
+    push_enabled: true,
+    in_app_enabled: true,
     notify_stage_changes: true,
     notify_job_matches: true,
     notify_interview_events: true,
@@ -37,6 +39,12 @@ export class NotificacionesPanelComponent implements OnInit {
   };
   isLoadingPreferencias = false;
   isSavingPreferencias = false;
+  get pushSoportado(): boolean {
+    return typeof window !== 'undefined' && 'Notification' in window;
+  }
+  get permisoPushConcedido(): boolean {
+    return this.notifService.tienePermisoWebPush();
+  }
 
   // Toast / Mensajes
   mensajeExito: string | null = null;
@@ -49,6 +57,44 @@ export class NotificacionesPanelComponent implements OnInit {
     }
     this.cargarHistorial();
     this.cargarPreferencias();
+  }
+
+  async togglePushPermiso(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (input.checked) {
+      const concedido = await this.notifService.solicitarPermisoWebPush();
+      if (!concedido) {
+        this.preferencias.push_enabled = false;
+        input.checked = false;
+        this.mostrarMensaje('El navegador no tiene permiso para enviar notificaciones Push. Habilítalo en los ajustes del sitio.', true);
+      } else {
+        this.preferencias.push_enabled = true;
+        this.mostrarMensaje('Notificaciones Push del navegador activadas exitosamente.');
+      }
+    } else {
+      this.preferencias.push_enabled = false;
+    }
+  }
+
+  probarNotificacionPush(): void {
+    if (!this.notifService.tienePermisoWebPush()) {
+      this.notifService.solicitarPermisoWebPush().then((concedido) => {
+        if (concedido) {
+          this.notifService.emitirNotificacionWebPush('🔔 Notificación Push de Prueba', {
+            body: '¡Excelente! Las notificaciones Push de escritorio están funcionando activas en tu navegador.',
+            link: '/notificaciones',
+          });
+        } else {
+          this.mostrarMensaje('Debes permitir las notificaciones en el navegador para recibir Push.', true);
+        }
+      });
+    } else {
+      this.notifService.emitirNotificacionWebPush('🔔 Notificación Push de Prueba', {
+        body: '¡Excelente! Las notificaciones Push de escritorio están funcionando activas en tu navegador.',
+        link: '/notificaciones',
+      });
+      this.mostrarMensaje('Se ha enviado la notificación Push a tu sistema operativo / navegador.');
+    }
   }
 
   cargarHistorial(): void {
