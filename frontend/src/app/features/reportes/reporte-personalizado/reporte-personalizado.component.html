@@ -1,0 +1,445 @@
+<div class="reportes" [class.reportes--empresa]="esEmpresa()">
+  @if (esEmpresa()) {
+    <a routerLink="/dashboard" class="volver">← Volver al panel</a>
+  }
+
+  <header class="cabecera">
+    <div class="insignia">
+      {{ esEmpresa() ? 'Empresa' : auth.institucion() || 'Todas las universidades' }}
+    </div>
+    <h1>Reportes personalizados</h1>
+    <p>
+      Elegí qué querés reportar, filtrá, elegí las columnas y su orden, mirá la vista previa y
+      exportala a Excel, PDF o HTML, o mandala por correo.
+    </p>
+  </header>
+
+  @if (cargando()) {
+    <div class="estado">
+      <div class="spinner"></div>
+      <p>Cargando reportes…</p>
+    </div>
+  } @else if (error()) {
+    <div class="estado estado--error">{{ error() }}</div>
+  } @else if (catalogo(); as cat) {
+    @if (!cat.plan_permite) {
+      <section class="plan">
+        <span class="plan-icono" aria-hidden="true">⭐</span>
+        <div>
+          <h2>Reportes no incluidos en tu plan</h2>
+          <p>{{ cat.mensaje_plan }}</p>
+        </div>
+      </section>
+    } @else {
+      <!-- 1. Qué reportar -->
+      <section class="paso">
+        <h2><span class="numero">1</span> ¿Qué querés reportar?</h2>
+        <div class="fuentes" role="radiogroup" aria-label="Tipo de reporte">
+          @for (f of cat.fuentes; track f.clave) {
+            <button
+              type="button"
+              class="fuente"
+              role="radio"
+              [attr.aria-checked]="fuenteClave() === f.clave"
+              [class.fuente--activa]="fuenteClave() === f.clave"
+              (click)="elegirFuente(f)"
+            >
+              <span class="fuente-icono" aria-hidden="true">{{ icono(f.clave) }}</span>
+              <span class="fuente-nombre">{{ f.nombre }}</span>
+              <span class="fuente-desc">{{ f.descripcion }}</span>
+            </button>
+          }
+        </div>
+      </section>
+
+      @if (fuente(); as f) {
+        <div class="configuracion">
+          <!-- 2. Filtros -->
+          <section class="paso">
+            <div class="paso-cabecera">
+              <h2><span class="numero">2</span> Filtros</h2>
+              @if (cantidadFiltros() > 0) {
+                <button type="button" class="enlace" (click)="limpiarFiltros()">
+                  Quitar filtros ({{ cantidadFiltros() }})
+                </button>
+              }
+            </div>
+            <p class="ayuda">Dejá vacío lo que no quieras filtrar.</p>
+            <div class="filtros">
+              @for (filtro of f.filtros; track filtro.clave) {
+                <div class="filtro" [class.filtro--ancho]="filtro.tipo === 'opciones'">
+                  <span class="filtro-etiqueta">{{ filtro.etiqueta }}</span>
+                  @switch (filtro.tipo) {
+                    @case ('texto') {
+                      <input
+                        type="text"
+                        [(ngModel)]="filtros[filtro.clave]"
+                        [name]="'f-' + filtro.clave"
+                        placeholder="Contiene…"
+                        maxlength="120"
+                      />
+                    }
+                    @case ('opciones') {
+                      <div class="opciones">
+                        @for (op of filtro.opciones; track op.valor) {
+                          <button
+                            type="button"
+                            class="opcion"
+                            [class.opcion--activa]="opcionElegida(filtro.clave, op.valor)"
+                            [attr.aria-pressed]="opcionElegida(filtro.clave, op.valor)"
+                            (click)="alternarOpcion(filtro.clave, op.valor)"
+                          >
+                            {{ op.etiqueta }}
+                          </button>
+                        } @empty {
+                          <span class="sin-opciones">Sin opciones</span>
+                        }
+                      </div>
+                    }
+                    @case ('fechas') {
+                      <div class="rango">
+                        <input
+                          type="date"
+                          [(ngModel)]="rango(filtro.clave).desde"
+                          [name]="'fd-' + filtro.clave"
+                          aria-label="Desde"
+                        />
+                        <span>a</span>
+                        <input
+                          type="date"
+                          [(ngModel)]="rango(filtro.clave).hasta"
+                          [name]="'fh-' + filtro.clave"
+                          aria-label="Hasta"
+                        />
+                      </div>
+                    }
+                    @case ('numeros') {
+                      <div class="rango">
+                        <input
+                          type="number"
+                          [(ngModel)]="numeros(filtro.clave).min"
+                          [name]="'nm-' + filtro.clave"
+                          placeholder="Mín."
+                          min="0"
+                        />
+                        <span>a</span>
+                        <input
+                          type="number"
+                          [(ngModel)]="numeros(filtro.clave).max"
+                          [name]="'nx-' + filtro.clave"
+                          placeholder="Máx."
+                          min="0"
+                        />
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            </div>
+          </section>
+
+          <div class="columna-derecha">
+            <!-- 3. Columnas -->
+            <section class="paso">
+              <div class="paso-cabecera">
+                <h2><span class="numero">3</span> Columnas</h2>
+                @if (columnasDisponibles().length) {
+                  <button type="button" class="enlace" (click)="todasLasColumnas()">
+                    Agregar todas
+                  </button>
+                }
+              </div>
+              <p class="ayuda">
+                Aparecen en el reporte en este orden. Usá las flechas para reordenar.
+              </p>
+              <ol class="elegidas">
+                @for (
+                  clave of columnas();
+                  track clave;
+                  let i = $index, primera = $first, ultima = $last
+                ) {
+                  <li>
+                    <span class="orden-n">{{ i + 1 }}</span>
+                    <span class="elegida-nombre">{{ columna(clave)?.etiqueta }}</span>
+                    <button
+                      type="button"
+                      class="mini"
+                      [disabled]="primera"
+                      (click)="moverColumna(i, -1)"
+                      aria-label="Subir"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      class="mini"
+                      [disabled]="ultima"
+                      (click)="moverColumna(i, 1)"
+                      aria-label="Bajar"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      class="mini mini--quitar"
+                      (click)="quitarColumna(clave)"
+                      aria-label="Quitar"
+                    >
+                      ✕
+                    </button>
+                  </li>
+                } @empty {
+                  <li class="vacia">Elegí al menos una columna de abajo.</li>
+                }
+              </ol>
+              @if (columnasDisponibles().length) {
+                <div class="disponibles">
+                  @for (c of columnasDisponibles(); track c.clave) {
+                    <button type="button" class="chip-agregar" (click)="agregarColumna(c.clave)">
+                      + {{ c.etiqueta }}
+                    </button>
+                  }
+                </div>
+              }
+            </section>
+
+            <!-- 4. Orden -->
+            <section class="paso">
+              <h2><span class="numero">4</span> Orden de las filas</h2>
+              <div class="ordenes">
+                @for (o of orden(); track $index; let i = $index) {
+                  <div class="orden">
+                    <span class="orden-txt">{{ i === 0 ? 'Ordenar por' : 'Después por' }}</span>
+                    <select
+                      [value]="o.columna"
+                      (change)="cambiarOrden(i, 'columna', $any($event.target).value)"
+                      aria-label="Columna"
+                    >
+                      @for (c of f.columnas; track c.clave) {
+                        <option [value]="c.clave" [selected]="c.clave === o.columna">
+                          {{ c.etiqueta }}
+                        </option>
+                      }
+                    </select>
+                    <select
+                      [value]="o.direccion"
+                      (change)="cambiarOrden(i, 'direccion', $any($event.target).value)"
+                      aria-label="Dirección"
+                    >
+                      <option value="asc" [selected]="o.direccion === 'asc'">
+                        Menor a mayor (A→Z)
+                      </option>
+                      <option value="desc" [selected]="o.direccion === 'desc'">
+                        Mayor a menor (Z→A)
+                      </option>
+                    </select>
+                    <button
+                      type="button"
+                      class="mini mini--quitar"
+                      (click)="quitarOrden(i)"
+                      aria-label="Quitar orden"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+              @if (puedeAgregarOrden()) {
+                <button type="button" class="enlace" (click)="agregarOrden()">
+                  + Agregar otro orden
+                </button>
+              }
+
+              <label class="titulo">
+                <span>Título del reporte (opcional)</span>
+                <input
+                  type="text"
+                  [(ngModel)]="titulo"
+                  name="titulo"
+                  maxlength="120"
+                  [placeholder]="'Reporte de ' + f.nombre.toLowerCase()"
+                />
+              </label>
+            </section>
+          </div>
+        </div>
+
+        <div class="barra-generar">
+          <span>
+            <strong>{{ f.nombre }}</strong> · {{ columnas().length }} columna(s) ·
+            {{ cantidadFiltros() }} filtro(s)
+          </span>
+          <button
+            type="button"
+            class="btn btn-primario"
+            [disabled]="generando() || !columnas().length"
+            (click)="generar()"
+          >
+            {{
+              generando() ? 'Generando…' : vista() ? '↻ Actualizar vista previa' : 'Generar reporte'
+            }}
+          </button>
+        </div>
+
+        @if (vista(); as v) {
+          <section class="resultado" [class.resultado--viejo]="desactualizado()">
+            <div class="resultado-cabecera">
+              <div>
+                <h2>{{ titulo.trim() || 'Reporte de ' + f.nombre.toLowerCase() }}</h2>
+                @for (linea of v.descripcion; track $index) {
+                  <p class="resultado-meta">{{ linea }}</p>
+                }
+                @if (desactualizado()) {
+                  <p class="aviso-viejo">
+                    Cambiaste la configuración: actualizá la vista previa antes de exportar.
+                  </p>
+                }
+              </div>
+              <div class="exportar">
+                <button
+                  type="button"
+                  class="btn btn-secundario"
+                  [disabled]="!!exportando()"
+                  (click)="exportar('excel')"
+                >
+                  {{ exportando() === 'excel' ? 'Generando…' : '📊 Excel' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secundario"
+                  [disabled]="!!exportando()"
+                  (click)="exportar('pdf')"
+                >
+                  {{ exportando() === 'pdf' ? 'Generando…' : '📄 PDF' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secundario"
+                  [disabled]="!!exportando()"
+                  (click)="exportar('html')"
+                >
+                  {{ exportando() === 'html' ? 'Generando…' : '🌐 HTML' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secundario"
+                  [disabled]="!cat.correo_disponible"
+                  [title]="
+                    cat.correo_disponible
+                      ? 'Enviar por correo'
+                      : 'El envío por correo no está configurado en el servidor'
+                  "
+                  (click)="abrirEnvio()"
+                >
+                  ✉ Correo
+                </button>
+              </div>
+            </div>
+
+            @if (v.total === 0) {
+              <p class="vacio">Ningún registro cumple los filtros elegidos.</p>
+            } @else {
+              <div class="tabla-marco">
+                <table>
+                  <thead>
+                    <tr>
+                      @for (c of v.columnas; track c.clave) {
+                        <th [class.num]="c.tipo === 'numero'">{{ c.etiqueta }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (fila of v.filas; track $index) {
+                      <tr>
+                        @for (c of v.columnas; track c.clave; let j = $index) {
+                          <td [class.num]="c.tipo === 'numero'" [class.fecha]="c.tipo === 'fecha'">
+                            {{ celda(c, fila[j]) }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <app-paginador
+                [total]="v.total"
+                [pagina]="pagina()"
+                (paginaChange)="cambiarPagina($event)"
+                [tamanio]="tamanio()"
+                (tamanioChange)="cambiarTamanio($event)"
+                [opcionesTamanio]="[25, 50, 100]"
+                etiqueta="registros"
+              />
+            }
+          </section>
+        }
+      }
+    }
+  }
+</div>
+
+@if (envio(); as e) {
+  <div class="modal-fondo" (click)="cerrarEnvio()" role="presentation">
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-envio"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="titulo-envio">Enviar reporte por correo</h2>
+      <p class="modal-desc">
+        Se manda como archivo adjunto con los filtros, columnas y orden actuales.
+      </p>
+      <label>
+        <span>Para</span>
+        <input
+          type="text"
+          [value]="e.destinatarios"
+          (input)="actualizarEnvio('destinatarios', $any($event.target).value)"
+          placeholder="correo@ejemplo.com, otro@ejemplo.com"
+          [disabled]="e.enviando"
+        />
+        <small>Hasta 10 correos, separados por coma.</small>
+      </label>
+      <label>
+        <span>Formato</span>
+        <select
+          [value]="e.formato"
+          (change)="actualizarEnvio('formato', $any($event.target).value)"
+          [disabled]="e.enviando"
+        >
+          <option value="pdf">PDF</option>
+          <option value="excel">Excel</option>
+          <option value="html">HTML</option>
+        </select>
+      </label>
+      <label>
+        <span>Mensaje (opcional)</span>
+        <textarea
+          rows="3"
+          maxlength="1000"
+          [value]="e.mensaje"
+          (input)="actualizarEnvio('mensaje', $any($event.target).value)"
+          [disabled]="e.enviando"
+        ></textarea>
+      </label>
+      @if (e.error) {
+        <p class="modal-error">{{ e.error }}</p>
+      }
+      <div class="modal-acciones">
+        <button
+          type="button"
+          class="btn btn-secundario"
+          (click)="cerrarEnvio()"
+          [disabled]="e.enviando"
+        >
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primario" (click)="enviar()" [disabled]="e.enviando">
+          {{ e.enviando ? 'Enviando…' : 'Enviar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

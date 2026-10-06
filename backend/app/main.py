@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,6 +8,7 @@ from app.common import health
 from app.common.exception_handlers import register_exception_handlers
 from app.core.config import get_settings
 from app.core.database import Base, SessionLocal, engine
+from app.core.esquema import asegurar_esquema_requisitos
 from app.core.logging import configure_logging
 import app.models  # noqa: F401 (registra todos los modelos en el metadata)
 from app.models.usuario import Role
@@ -26,6 +28,8 @@ from app.features.reportes import router as reportes
 from app.features.respaldos import router as respaldos
 from app.features.roles import router as roles
 from app.features.seleccion import router as seleccion
+from app.features.tareas import router as tareas
+from app.features.tareas.planificador import planificador
 from app.features.vacantes import router as vacantes
 from app.features.validacion import router as validacion
 
@@ -42,6 +46,14 @@ _ROLES_BASE = ("candidate", "moderator", "platform_admin", "empresa")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Columnas y tablas de los requisitos generales (bitácora cifrada, copias automáticas,
+    # tareas). Antes de create_all: así scheduled_task_run se crea con sus CHECK y RLS.
+    try:
+        with engine.begin() as conn:
+            if cambios := asegurar_esquema_requisitos(conn):
+                logging.getLogger(__name__).info("Esquema actualizado: %s", ", ".join(cambios))
+    except Exception:  # noqa: BLE001 - sin permisos de DDL se sigue: la migración se corre a mano
+        logging.getLogger(__name__).exception("No se pudo asegurar el esquema de los requisitos generales")
     # Provisional: crea las tablas faltantes al arrancar. Se reemplaza por
     # migraciones de Alembic cuando el esquema quede estable.
     Base.metadata.create_all(bind=engine)
@@ -51,7 +63,10 @@ async def lifespan(app: FastAPI):
             if nombre not in existentes:
                 db.add(Role(name=nombre))
         db.commit()
+    # Tareas automáticas diarias (copia de seguridad, vacantes vencidas, boletín de ofertas).
+    planificador.iniciar()
     yield
+    planificador.detener()
 
 
 app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
@@ -85,6 +100,7 @@ routers = [
     moderacion.router,
     reportes.router,
     respaldos.router,
+    tareas.router,
     ia.router,
 ]
 

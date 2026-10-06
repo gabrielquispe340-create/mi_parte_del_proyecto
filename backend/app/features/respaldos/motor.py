@@ -31,7 +31,7 @@ from app.core.database import engine
 FORMATO = "egresa-respaldo"
 VERSION_FORMATO = 1
 # El catálogo de copias no se respalda ni se restaura: tiene que sobrevivir para poder volver atrás.
-TABLAS_EXCLUIDAS = frozenset({"system_backup"})
+TABLAS_EXCLUIDAS = frozenset({"system_backup", "scheduled_task_run"})
 TABLA_BITACORA = "audit_log"
 _BLOQUE = 64 * 1024
 

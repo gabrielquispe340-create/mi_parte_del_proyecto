@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/models/notificacion.dart';
 import '../../core/services/notificacion_service.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import 'preferencias_notificaciones_screen.dart';
 
 class NotificacionesScreen extends StatefulWidget {
@@ -109,6 +110,7 @@ class _NotificacionesScreenState extends State<NotificacionesScreen> {
       appBar: AppBar(
         title: const Text('Notificaciones'),
         actions: [
+          const BotonAyuda('notificaciones'),
           IconButton(
             icon: const Icon(Icons.tune),
             tooltip: 'Preferencias de alertas',

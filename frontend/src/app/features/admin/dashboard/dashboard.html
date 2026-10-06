@@ -197,7 +197,12 @@
           <a routerLink="/admin/bitacora" class="enlace">Bitácora →</a>
         </header>
 
-        @if (actividad().length === 0) {
+        @if (bitacoraBloqueada()) {
+          <p class="vacio">
+            🔒 La actividad está en la bitácora confidencial.
+            <a routerLink="/admin/bitacora" class="enlace">Abrila con la clave de desarrollador</a> para verla acá.
+          </p>
+        } @else if (actividad().length === 0) {
           <p class="vacio">Sin acciones de gestión registradas todavía.</p>
         } @else {
           <ul class="actividad">

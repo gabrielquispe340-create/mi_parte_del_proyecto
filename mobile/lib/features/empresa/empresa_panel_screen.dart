@@ -6,6 +6,7 @@ import '../../core/services/mensaje_service.dart';
 import '../../core/services/push_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/abrir_afuera.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../auth/login_screen.dart';
 import '../mensajes/bandeja_mensajes_screen.dart';
 import 'agenda_tab.dart';
@@ -79,7 +80,8 @@ class _EmpresaPanelScreenState extends State<EmpresaPanelScreen> {
   @override
   Widget build(BuildContext context) {
     final token = widget.sesion.accessToken;
-    final acciones = [MenuCuentaEmpresa(onCerrarSesion: _cerrarSesion)];
+    final menu = MenuCuentaEmpresa(onCerrarSesion: _cerrarSesion);
+    List<Widget> acciones(String temaAyuda) => [BotonAyuda(temaAyuda, esEmpresa: true), menu];
 
     return PopScope(
       // El botón atrás de Android vuelve primero a Postulantes en vez de cerrar la app.
@@ -94,11 +96,11 @@ class _EmpresaPanelScreenState extends State<EmpresaPanelScreen> {
             PostulantesTab(
               key: ValueKey('postulantes-${_versiones[0]}'),
               accessToken: token,
-              acciones: acciones,
+              acciones: acciones('postulantes'),
             ),
             _siVisitada(
               1,
-              AgendaTab(key: ValueKey('agenda-${_versiones[1]}'), accessToken: token, acciones: acciones),
+              AgendaTab(key: ValueKey('agenda-${_versiones[1]}'), accessToken: token, acciones: acciones('agenda')),
             ),
             _siVisitada(
               2,
@@ -106,7 +108,7 @@ class _EmpresaPanelScreenState extends State<EmpresaPanelScreen> {
                 key: ValueKey('mensajes-${_versiones[2]}'),
                 accessToken: token,
                 esEmpresa: true,
-                acciones: acciones,
+                acciones: acciones('mensajes'),
                 onNoLeidos: _actualizarNoLeidos,
               ),
             ),

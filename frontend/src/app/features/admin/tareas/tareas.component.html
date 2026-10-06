@@ -1,0 +1,130 @@
+<div class="admin-container">
+  <header class="admin-header">
+    <div class="header-badge">Plataforma SaaS · Superadmin</div>
+    <h1>Tareas automáticas</h1>
+    <p class="subtitle">
+      Procesos que la plataforma corre sola todos los días, sin que nadie tenga que hacer nada. Cada
+      ejecución queda registrada acá y en la bitácora.
+    </p>
+  </header>
+
+  @if (cargando()) {
+    <div class="estado">
+      <div class="spinner"></div>
+      <p>Cargando tareas…</p>
+    </div>
+  } @else if (error()) {
+    <div class="estado estado--error">{{ error() }}</div>
+  } @else if (panel(); as p) {
+    <div class="aviso" [class.aviso--apagado]="!p.planificador_activo">
+      <span class="punto"></span>
+      @if (p.planificador_activo) {
+        <p>
+          <strong>Activas.</strong> Se ejecutan una vez por día desde las
+          {{ p.hora_diaria.toString().padStart(2, '0') }}:00 (hora de Bolivia). Si el servidor
+          estaba apagado a esa hora, corren apenas vuelve.
+        </p>
+      } @else {
+        <p>
+          <strong>Apagadas en este servidor.</strong> Corren solas en producción; acá podés
+          ejecutarlas a mano con «Ejecutar ahora».
+        </p>
+      }
+    </div>
+
+    <section class="tareas">
+      @for (t of p.tareas; track t.clave) {
+        <article class="tarea">
+          <div class="tarea-cabecera">
+            <span class="tarea-icono" aria-hidden="true">{{ icono(t.clave) }}</span>
+            <div class="tarea-titulos">
+              <h2>{{ t.nombre }}</h2>
+              <p>{{ t.descripcion }}</p>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secundario"
+              [disabled]="ejecutando() !== null"
+              (click)="ejecutar(t)"
+            >
+              {{ ejecutando() === t.clave ? 'Ejecutando…' : '▶ Ejecutar ahora' }}
+            </button>
+          </div>
+
+          <dl class="tarea-datos">
+            <div>
+              <dt>Horario</dt>
+              <dd>{{ t.horario }}</dd>
+            </div>
+            <div>
+              <dt>Próxima ejecución</dt>
+              <dd>{{ t.proxima ? fecha(t.proxima) : 'Solo manual en este servidor' }}</dd>
+            </div>
+            <div>
+              <dt>Última ejecución</dt>
+              <dd>
+                @if (t.ultima; as u) {
+                  <span class="chip" [attr.data-estado]="u.estado">{{
+                    etiquetaEstado[u.estado]
+                  }}</span>
+                  {{ fecha(u.inicio) }} · {{ origen(u) }}
+                } @else {
+                  Todavía no corrió
+                }
+              </dd>
+            </div>
+          </dl>
+
+          @if (t.ultima?.resumen; as resumen) {
+            <p class="resumen" [class.resumen--error]="t.ultima?.estado === 'failure'">
+              {{ resumen }}
+            </p>
+          }
+          @if (t.clave === 'respaldo_diario') {
+            <p class="enlace">
+              <a routerLink="/admin/respaldos">Ver las copias en Copias de seguridad →</a>
+            </p>
+          }
+
+          @if (t.historial.length > 1) {
+            <button type="button" class="btn-historial" (click)="alternarHistorial(t.clave)">
+              {{
+                abiertas().has(t.clave)
+                  ? 'Ocultar historial'
+                  : 'Ver historial (' + t.historial.length + ')'
+              }}
+            </button>
+            @if (abiertas().has(t.clave)) {
+              <table class="historial">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Origen</th>
+                    <th>Estado</th>
+                    <th>Duración</th>
+                    <th>Resultado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of t.historial; track c.id) {
+                    <tr>
+                      <td class="nowrap">{{ fecha(c.inicio) }}</td>
+                      <td>{{ origen(c) }}</td>
+                      <td>
+                        <span class="chip" [attr.data-estado]="c.estado">{{
+                          etiquetaEstado[c.estado]
+                        }}</span>
+                      </td>
+                      <td class="nowrap">{{ duracion(c) }}</td>
+                      <td>{{ c.resumen ?? '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          }
+        </article>
+      }
+    </section>
+  }
+</div>

@@ -7,6 +7,7 @@ import '../../core/services/mensaje_service.dart';
 import '../../core/services/postulacion_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../../core/widgets/insignia.dart';
 import '../../core/widgets/vistas_estado.dart';
 import 'postulacion_detalle_screen.dart';
@@ -79,7 +80,7 @@ class _MisPostulacionesScreenState extends State<MisPostulacionesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis postulaciones')),
+      appBar: AppBar(title: const Text('Mis postulaciones'), actions: const [BotonAyuda('postulaciones')]),
       body: FutureBuilder<_Datos>(
         future: _futuro,
         builder: (context, snapshot) {

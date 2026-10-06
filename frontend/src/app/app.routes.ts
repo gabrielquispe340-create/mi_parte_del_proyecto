@@ -105,6 +105,17 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/respaldos/respaldos.component').then((m) => m.RespaldosComponent),
       },
       {
+        path: 'tareas',
+        loadComponent: () => import('./features/admin/tareas/tareas.component').then((m) => m.TareasComponent),
+      },
+      {
+        path: 'reportes',
+        loadComponent: () =>
+          import('./features/reportes/reporte-personalizado/reporte-personalizado.component').then(
+            (m) => m.ReportePersonalizadoComponent,
+          ),
+      },
+      {
         path: 'bitacora',
         loadComponent: () => import('./features/admin/bitacora/bitacora.component').then((m) => m.BitacoraComponent),
       },
@@ -130,6 +141,20 @@ export const routes: Routes = [
       import('./features/postulaciones/mis-postulaciones/mis-postulaciones.component').then(
         (m) => m.MisPostulacionesComponent,
       ),
+  },
+  {
+    path: 'reportes',
+    canActivate: [authGuard],
+    data: { roles: ['empresa'] },
+    loadComponent: () =>
+      import('./features/reportes/reporte-personalizado/reporte-personalizado.component').then(
+        (m) => m.ReportePersonalizadoComponent,
+      ),
+  },
+  {
+    path: 'ayuda',
+    loadComponent: () =>
+      import('./features/ayuda/centro-ayuda/centro-ayuda.component').then((m) => m.CentroAyudaComponent),
   },
   {
     path: 'recomendaciones',

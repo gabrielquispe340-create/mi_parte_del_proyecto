@@ -25,6 +25,7 @@ from app.security.password_hasher import verify_password
 from app.security.tenant import AlcanceStaff
 
 _MODULO = "respaldos"
+_AUTOR_SISTEMA = "Sistema (tarea diaria)"
 _CONFIRMACION = "RESTAURAR"
 _MAX_SUBIDA = 200 * 1024 * 1024
 
@@ -186,15 +187,40 @@ class RespaldoService:
 
     # ─── Auxiliares ─────────────────────────────────────────────────────────
 
-    def _generar(self, alcance: AlcanceStaff, *, kind: str, nota: str | None) -> SystemBackup:
-        usuario = self._usuario(alcance)
+    def generar_automatico(self) -> tuple[SystemBackup, int]:
+        """Copia diaria de las tareas programadas; conserva solo las últimas automáticas.
+
+        Devuelve la copia nueva y cuántas copias automáticas viejas se eliminaron.
+        """
+        respaldo = self._generar(None, kind="automatica", nota="Copia diaria automática")
+        conservar = max(get_settings().respaldos_automaticos_conservar, 1)
+        viejas = self.db.scalars(
+            select(SystemBackup)
+            .where(SystemBackup.kind == "automatica")
+            .order_by(SystemBackup.created_at.desc())
+            .offset(conservar)
+        ).all()
+        for vieja in viejas:
+            (carpeta_respaldos() / vieja.file_name).unlink(missing_ok=True)
+            self.db.delete(vieja)
+        self.bitacora.registrar(
+            modulo=_MODULO,
+            accion="respaldo_automatico",
+            detalles=f"archivo={respaldo.file_name} filas={respaldo.rows_count} eliminadas={len(viejas)}",
+        )
+        self.db.commit()
+        return respaldo, len(viejas)
+
+    def _generar(self, alcance: AlcanceStaff | None, *, kind: str, nota: str | None) -> SystemBackup:
+        # Sin alcance la genera el sistema (tarea diaria), no un usuario.
+        usuario = self._usuario(alcance) if alcance is not None else None
         nombre = f"egresa-respaldo-{datetime.now(timezone.utc):%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:4]}.zip"
         destino = carpeta_respaldos() / nombre
         # Se escribe en un temporal y se mueve al final: nunca queda un .zip a medias.
         with tempfile.NamedTemporaryFile(dir=carpeta_respaldos(), suffix=".parcial", delete=False) as tmp:
             temporal = Path(tmp.name)
         try:
-            resumen = motor.generar(temporal, autor=usuario.email)
+            resumen = motor.generar(temporal, autor=usuario.email if usuario else _AUTOR_SISTEMA)
             shutil.move(temporal, destino)
         finally:
             temporal.unlink(missing_ok=True)
@@ -206,8 +232,8 @@ class RespaldoService:
             rows_count=resumen.filas,
             kind=kind,
             note=nota.strip() if nota and nota.strip() else None,
-            created_by=usuario.id,
-            created_by_email=usuario.email,
+            created_by=usuario.id if usuario else None,
+            created_by_email=usuario.email if usuario else _AUTOR_SISTEMA,
         )
         self.db.add(respaldo)
         self.db.flush()

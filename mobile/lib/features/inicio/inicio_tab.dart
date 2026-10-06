@@ -11,6 +11,7 @@ import '../../core/services/perfil_service.dart';
 import '../../core/services/postulacion_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../../core/widgets/insignia.dart';
 import '../../core/widgets/vistas_estado.dart';
 import '../mensajes/bandeja_mensajes_screen.dart';
@@ -278,6 +279,7 @@ class _Saludo extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
+        const BotonAyuda('inicio', color: AppColors.primario),
         IconButton(
           onPressed: onNotificaciones,
           tooltip: 'Notificaciones y alertas',

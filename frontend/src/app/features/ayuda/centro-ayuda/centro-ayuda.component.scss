@@ -1,0 +1,250 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.ayuda {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 4rem;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: #1e293b;
+}
+
+.volver {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4f46e5;
+  text-decoration: none;
+}
+
+.hero {
+  padding: 2rem 2rem 1.75rem;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(129, 140, 248, 0.35), transparent 45%),
+    linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+  color: #ffffff;
+
+  .marca {
+    margin: 0 0 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #c7d2fe;
+  }
+
+  h1 {
+    margin: 0 0 0.4rem;
+    font-size: 2rem;
+    font-weight: 800;
+  }
+
+  .bajada {
+    margin: 0 0 1.25rem;
+    color: #e0e7ff;
+  }
+}
+
+.buscador {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 560px;
+  padding: 0.25rem 0.9rem;
+  border-radius: 0.8rem;
+  background: #ffffff;
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.5);
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.7rem 0;
+    border: none;
+    font: inherit;
+    font-size: 0.95rem;
+    color: #0f172a;
+    outline: none;
+  }
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0.5rem;
+
+  button {
+    padding: 0.45rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 9999px;
+    background: #ffffff;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+
+    &.activo {
+      border-color: #4f46e5;
+      background: #4f46e5;
+      color: #ffffff;
+    }
+  }
+}
+
+.grupo {
+  margin-top: 1.5rem;
+
+  h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+}
+
+.temas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.tema {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  background: #ffffff;
+  scroll-margin-top: 1rem;
+
+  &--abierto {
+    border-color: #a5b4fc;
+    box-shadow: 0 8px 24px -16px rgba(79, 70, 229, 0.5);
+  }
+}
+
+.tema-cabecera {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem 1rem;
+  width: 100%;
+  padding: 1rem 1.15rem;
+  text-align: left;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+
+  .tema-titulo {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .tema-resumen {
+    grid-column: 1;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  .flecha {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    font-size: 1.3rem;
+    color: #4f46e5;
+  }
+}
+
+.tema-cuerpo {
+  padding: 0 1.15rem 1.1rem;
+  border-top: 1px solid #f1f5f9;
+
+  h3 {
+    margin: 1rem 0 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+
+  ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #334155;
+
+    li {
+      margin-bottom: 0.35rem;
+    }
+  }
+
+  details {
+    margin-bottom: 0.4rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.6rem;
+    background: #f8fafc;
+
+    summary {
+      padding: 0.6rem 0.8rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    p {
+      margin: 0;
+      padding: 0 0.8rem 0.7rem;
+      font-size: 0.87rem;
+      line-height: 1.5;
+      color: #475569;
+    }
+  }
+}
+
+.vacio {
+  margin-top: 2rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.pie {
+  margin-top: 2.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+
+  kbd {
+    padding: 0.1rem 0.4rem;
+    border: 1px solid #cbd5e1;
+    border-bottom-width: 2px;
+    border-radius: 0.3rem;
+    background: #ffffff;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .ayuda {
+    padding: 1rem 1rem 4rem;
+  }
+
+  .hero {
+    padding: 1.5rem 1.25rem;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+}

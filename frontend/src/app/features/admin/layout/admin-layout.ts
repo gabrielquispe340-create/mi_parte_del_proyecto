@@ -7,7 +7,19 @@ import { NotificacionesCampanaComponent } from '../../../shared/components/notif
 interface ItemMenu {
   ruta: string;
   etiqueta: string;
-  tipoIcono: 'dashboard' | 'universidades' | 'roles' | 'validacion' | 'empresas' | 'moderacion' | 'denuncias' | 'bitacora' | 'respaldos' | 'notificaciones';
+  tipoIcono:
+    | 'dashboard'
+    | 'universidades'
+    | 'roles'
+    | 'validacion'
+    | 'empresas'
+    | 'moderacion'
+    | 'denuncias'
+    | 'reportes'
+    | 'bitacora'
+    | 'respaldos'
+    | 'tareas'
+    | 'notificaciones';
   exacta: boolean;
   /** Solo para el superadmin del SaaS (admin sin universidad). */
   soloSuperadmin?: boolean;
@@ -21,8 +33,10 @@ const ITEMS_MENU: ItemMenu[] = [
   { ruta: '/admin/empresas', tipoIcono: 'empresas', etiqueta: 'Gestión de empresas', exacta: false },
   { ruta: '/admin/moderacion-vacantes', tipoIcono: 'moderacion', etiqueta: 'Moderación de ofertas', exacta: false },
   { ruta: '/admin/denuncias', tipoIcono: 'denuncias', etiqueta: 'Denuncias de ofertas', exacta: false },
+  { ruta: '/admin/reportes', tipoIcono: 'reportes', etiqueta: 'Reportes personalizados', exacta: false },
   { ruta: '/admin/bitacora', tipoIcono: 'bitacora', etiqueta: 'Bitácora del sistema', exacta: false },
   { ruta: '/admin/respaldos', tipoIcono: 'respaldos', etiqueta: 'Copias de seguridad', exacta: false, soloSuperadmin: true },
+  { ruta: '/admin/tareas', tipoIcono: 'tareas', etiqueta: 'Tareas automáticas', exacta: false, soloSuperadmin: true },
   { ruta: '/admin/notificaciones', tipoIcono: 'notificaciones', etiqueta: 'Centro de Alertas', exacta: false },
 ];
 

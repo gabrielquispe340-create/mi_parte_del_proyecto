@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 
-export type TipoRespaldo = 'manual' | 'previa_restauracion' | 'subido';
+export type TipoRespaldo = 'manual' | 'previa_restauracion' | 'subido' | 'automatica';
 
 export interface Respaldo {
   id: string;

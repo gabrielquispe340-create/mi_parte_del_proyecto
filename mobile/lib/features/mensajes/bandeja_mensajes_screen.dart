@@ -4,6 +4,7 @@ import '../../core/models/mensaje.dart';
 import '../../core/services/mensaje_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../../core/widgets/insignia.dart';
 import '../../core/widgets/vistas_estado.dart';
 import 'chat_screen.dart';
@@ -65,7 +66,7 @@ class _BandejaMensajesScreenState extends State<BandejaMensajesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mensajes'), actions: widget.acciones),
+      appBar: AppBar(title: const Text('Mensajes'), actions: widget.acciones ?? const [BotonAyuda('mensajes')]),
       body: FutureBuilder<List<ResumenConversacion>>(
         future: _futuro,
         builder: (context, snapshot) {

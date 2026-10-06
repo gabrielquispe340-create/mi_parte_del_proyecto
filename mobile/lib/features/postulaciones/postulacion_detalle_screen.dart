@@ -8,6 +8,7 @@ import '../../core/services/mensaje_service.dart';
 import '../../core/services/postulacion_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../../core/widgets/insignia.dart';
 import '../../core/widgets/vistas_estado.dart';
 import '../mensajes/chat_screen.dart';
@@ -149,7 +150,7 @@ class _PostulacionDetalleScreenState extends State<PostulacionDetalleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Postulación')),
+      appBar: AppBar(title: const Text('Postulación'), actions: const [BotonAyuda('postulaciones')]),
       body: FutureBuilder<_Detalle>(
         future: _futuro,
         builder: (context, snapshot) {
