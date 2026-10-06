@@ -241,8 +241,9 @@ cambia la de `rrhh@tecnova.bo`.
 
 En una base nueva, antes hay que correr las migraciones aditivas, en este orden:
 `migrar_multitenant`, `migrar_cambio_password`, `migrar_planes`, `migrar_respaldos`,
-`migrar_hu20_entrevistas` y `migrar_hu21_notificaciones` (todas con
-`python -m scripts.<nombre>`). Son idempotentes: se pueden volver a correr sin problema.
+`migrar_hu20_entrevistas`, `migrar_hu21_notificaciones` y `migrar_requisitos_generales`
+(todas con `python -m scripts.<nombre>`). Son idempotentes: se pueden volver a correr sin
+problema. La última también la aplica el backend solo al arrancar.
 
 ### Cuentas de prueba
 
@@ -333,6 +334,37 @@ Moderador de UMSS: `moderador@umss.egresa.bo` / `Egresa2026!`.
   20 caracteres), la oferta se oculta sola. El admin de la universidad las revisa en
   "Denuncias de ofertas" y decide mantenerla, suspenderla o eliminarla; la empresa y quienes
   denunciaron reciben el aviso. No necesita migración: usa la tabla `moderation_report`.
+
+**Requisitos generales de la materia:**
+
+- **Bitácora confidencial (requisito 3):** registra usuario, IP, fecha y hora, módulo y
+  acción, y cada entrada se guarda cifrada (X25519 + AES-256-GCM): en la base solo se ve
+  `cifrado`. Para leerla, "Bitácora del sistema" pide la **clave de desarrollador**; la
+  clave no se guarda en ningún lado del sistema. El servidor solo tiene la clave pública,
+  en la variable `BITACORA_CLAVE_PUBLICA`. Para generar un par nuevo:
+  `python -m scripts.clave_bitacora` (muestra la clave de desarrollador una sola vez; si se
+  pierde, las entradas cifradas con ella no se recuperan). Las entradas viejas sin cifrar se
+  cifran con `python -m scripts.cifrar_bitacora --confirmar` (antes, una copia de
+  seguridad). Sin la variable, la bitácora funciona como antes, sin cifrar.
+- **Reportes personalizados (requisito 5):** "Reportes personalizados" en el menú del admin
+  y "Reportes" en el panel de la empresa. Se elige la fuente (egresados, empresas, vacantes
+  o postulaciones), los filtros, las columnas y su orden y el orden de las filas; se ve la
+  vista previa y se exporta a Excel, PDF o HTML o se manda por correo. El admin ve solo su
+  universidad y la empresa solo lo suyo. El plan Básico no incluye reportes (probalo con
+  un admin de la UMSA). El correo usa SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+  `SMTP_PASSWORD`, `SMTP_FROM`) o la API de Brevo (`BREVO_API_KEY`, con `SMTP_FROM`
+  verificado en Brevo); Railway bloquea SMTP en sus planes básicos.
+- **Ayuda en línea (requisito 4):** botón **?** (o la tecla F1) en todas las pantallas de
+  la web, que abre la ayuda de esa pantalla, y el centro de ayuda en `/ayuda`. En la app, el
+  ícono de ayuda de la barra superior de cada pantalla.
+- **Tareas automáticas y backup automático (requisitos 1 y 6):** todos los días desde las
+  03:00 (hora de Bolivia) el backend hace una copia de seguridad completa (conserva las
+  últimas 7), cierra las vacantes vencidas avisando a la empresa y manda a cada egresado el
+  boletín con las ofertas nuevas que coinciden con su perfil. El superadmin ve el historial y
+  las puede ejecutar a mano en "Tareas automáticas". Corren solas en Railway y no en las
+  computadoras del equipo (`TAREAS_AUTOMATICAS_ACTIVAS=true` para forzarlas;
+  `TAREAS_HORA_DIARIA` cambia la hora). Las copias se guardan en `STORAGE_LOCAL_PATH`: en
+  Railway conviene montar un volumen en `/app/storage` para que no se pierdan al redesplegar.
 
 Si alguna deja de funcionar (alguien del equipo pudo haberla cambiado probando), se resetea corriendo los scripts de arriba o pidiendo que se actualice manualmente — avisen en el grupo antes de cambiarlas para no romper la sesión de otro compañero.
 

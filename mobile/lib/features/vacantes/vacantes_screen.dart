@@ -5,6 +5,7 @@ import '../../core/models/vacante.dart';
 import '../../core/services/vacante_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../../core/widgets/tarjeta_vacante.dart';
 import '../../core/widgets/vistas_estado.dart';
 import '../auth/registro_egresado_screen.dart';
@@ -67,6 +68,7 @@ class _VacantesScreenState extends State<VacantesScreen> {
       appBar: AppBar(
         title: Text(_anonimo ? 'Ofertas laborales' : 'Vacantes'),
         actions: [
+          const BotonAyuda('vacantes'),
           if (!_anonimo)
             IconButton(
               tooltip: 'Recomendadas para vos',

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/models/vacante.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../../core/widgets/insignia.dart';
 import '../auth/registro_egresado_screen.dart';
 import 'denunciar_oferta.dart';
@@ -33,6 +34,7 @@ class VacanteDetalleScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Detalle de la vacante'),
         actions: [
+          const BotonAyuda('vacante'),
           if (accessToken case final token?)
             PopupMenuButton<void>(
               tooltip: 'Más opciones',

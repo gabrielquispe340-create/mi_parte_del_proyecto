@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { PaginadorComponent, paginar } from '../../../shared/components/paginador/paginador.component';
 import { AuthService } from '../../auth/auth.service';
+import { BitacoraClaveService } from '../bitacora/bitacora-clave.service';
+import { BitacoraService } from '../bitacora/bitacora.service';
 import { ETIQUETAS_ROL } from '../gestion-roles/gestion-roles.model';
 
 interface ResumenUniversidad {
@@ -51,6 +53,8 @@ interface PanelAdmin {
   accesos_hoy: number;
   accesos_fallidos_hoy: number;
   actividad: ActividadApi[];
+  /** Bitácora cifrada: la actividad se pide a /bitacora con la clave de desarrollador. */
+  bitacora_protegida?: boolean;
 }
 
 type Tono = 'exito' | 'peligro' | 'info' | 'neutro';
@@ -80,6 +84,14 @@ interface Actividad {
 }
 
 const TEXTO_ACCION: Record<string, string> = {
+  exportar_reporte: 'Exportó un reporte personalizado',
+  enviar_reporte: 'Envió un reporte por correo',
+  respaldo_automatico: 'Se hizo la copia de seguridad diaria',
+  cerrar_vacantes_vencidas: 'Se cerraron las vacantes vencidas',
+  boletin_ofertas: 'Se envió el boletín diario de ofertas',
+  ejecutar_tarea: 'Ejecutó una tarea automática a mano',
+  abrir_bitacora: 'Abrió la bitácora confidencial',
+  clave_bitacora_incorrecta: 'Intentó abrir la bitácora con una clave incorrecta',
   decidir_egresado: 'Revisó la validación de un egresado',
   decidir_empresa: 'Revisó la verificación de una empresa',
   suspender_empresa: 'Suspendió una empresa',
@@ -195,6 +207,8 @@ function porcentaje(parte: number, total: number): number {
 })
 export class Dashboard implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly bitacora = inject(BitacoraService);
+  private readonly bitacoraClave = inject(BitacoraClaveService);
   readonly auth = inject(AuthService);
 
   readonly panel = signal<PanelAdmin | null>(null);
@@ -326,7 +340,15 @@ export class Dashboard implements OnInit {
     paginar(this.panel()?.universidades ?? [], this.paginaUniversidades(), this.tamanioUniversidades()),
   );
 
-  readonly actividad = computed(() => (this.panel()?.actividad ?? []).map(describir));
+  /** Con la bitácora cifrada, la actividad que se descifró con la clave ingresada en esta sesión. */
+  readonly actividadProtegida = signal<ActividadApi[] | null>(null);
+  readonly bitacoraBloqueada = computed(() => !!this.panel()?.bitacora_protegida && !this.bitacoraClave.clave());
+
+  readonly actividad = computed(() => {
+    const panel = this.panel();
+    const lista = panel?.bitacora_protegida ? (this.actividadProtegida() ?? []) : (panel?.actividad ?? []);
+    return lista.map(describir);
+  });
 
   ngOnInit(): void {
     this.cargar();
@@ -339,11 +361,31 @@ export class Dashboard implements OnInit {
       next: (datos) => {
         this.panel.set(datos);
         this.cargando.set(false);
+        this.cargarActividadProtegida();
       },
       error: () => {
         this.error.set('No se pudo cargar el panel. Verificá que el servidor esté en línea.');
         this.cargando.set(false);
       },
+    });
+  }
+
+  private cargarActividadProtegida(): void {
+    const clave = this.bitacoraClave.clave();
+    if (!this.panel()?.bitacora_protegida || !clave) return;
+    this.bitacora.listar(clave, {}, { limite: 8, sinAccesos: true }).subscribe({
+      next: (logs) =>
+        this.actividadProtegida.set(
+          logs.map((l) => ({
+            fecha: l.fecha,
+            usuario: l.usuario_correo,
+            modulo: l.modulo,
+            accion: l.accion,
+            detalles: l.detalles,
+            resultado: l.resultado,
+          })),
+        ),
+      error: () => this.actividadProtegida.set([]),
     });
   }
 }

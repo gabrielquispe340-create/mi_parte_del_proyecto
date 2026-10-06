@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { MessageResponse, RegistroEmpresaRequest } from '../../core/models/auth.models';
 import { PushService } from '../../core/services/push.service';
 import { TimeoutService } from '../../core/services/timeout.service';
+import { BitacoraClaveService } from '../admin/bitacora/bitacora-clave.service';
 import { ETIQUETAS_ROL } from '../admin/gestion-roles/gestion-roles.model';
 
 const TOKEN_KEY = 'token';
@@ -51,6 +52,7 @@ export class AuthService {
 
   private readonly timeout = inject(TimeoutService);
   private readonly push = inject(PushService);
+  private readonly bitacoraClave = inject(BitacoraClaveService);
 
   constructor(
     private readonly http: HttpClient,
@@ -96,6 +98,8 @@ export class AuthService {
     this.timeout.stop();
     // Antes de borrar el token de sesión: este navegador deja de recibir los avisos de la cuenta.
     this.push.desregistrar(this.token());
+    // La clave de la bitácora confidencial no pasa a la próxima cuenta que entre en esta pestaña.
+    this.bitacoraClave.olvidar();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(ROL_KEY);

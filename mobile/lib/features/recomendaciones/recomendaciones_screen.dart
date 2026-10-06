@@ -4,6 +4,7 @@ import '../../core/theme/app_theme.dart';
 
 import '../../core/models/recomendacion.dart';
 import '../../core/services/recomendacion_service.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../perfil/mi_cv_screen.dart';
 import '../vacantes/postulacion_screen.dart';
 import '../vacantes/vacante_detalle_screen.dart';
@@ -63,7 +64,10 @@ class _RecomendacionesScreenState extends State<RecomendacionesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vacantes recomendadas'),
-        actions: [IconButton(icon: const Icon(Icons.refresh), tooltip: 'Recalcular', onPressed: _recargar)],
+        actions: [
+          const BotonAyuda('recomendaciones'),
+          IconButton(icon: const Icon(Icons.refresh), tooltip: 'Recalcular', onPressed: _recargar),
+        ],
       ),
       body: FutureBuilder<Recomendaciones>(
         future: _futuro,

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,7 +10,12 @@ from app.core.database import Base
 
 
 class AuditLog(Base):
-    """Bitácora de operaciones (tabla audit_log del esquema nuevo)."""
+    """Bitácora de operaciones (tabla audit_log del esquema nuevo).
+
+    Con la bitácora confidencial activa (BITACORA_CLAVE_PUBLICA) cada entrada va entera en
+    payload_cifrado: usuario, IP, módulo, acción, resultado, detalle y fecha y hora exactas.
+    Las columnas en claro quedan vacías o con "cifrado", y created_at guarda solo el día.
+    """
 
     __tablename__ = "audit_log"
 
@@ -24,6 +29,7 @@ class AuditLog(Base):
     result: Mapped[str] = mapped_column(String(20), nullable=False, default="success")
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
     details_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    payload_cifrado: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     @property

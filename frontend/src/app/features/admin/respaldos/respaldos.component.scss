@@ -34,6 +34,16 @@
     margin: 0;
     font-size: 0.9375rem;
     color: #64748b;
+
+    &--nota {
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+
+      a {
+        color: #4f46e5;
+        font-weight: 600;
+      }
+    }
   }
 }
 
@@ -248,6 +258,11 @@
   font-weight: 700;
   background: #eef2ff;
   color: #4338ca;
+
+  &[data-tipo='automatica'] {
+    background: #ecfdf5;
+    color: #047857;
+  }
 
   &[data-tipo='previa_restauracion'] {
     background: #fff7ed;

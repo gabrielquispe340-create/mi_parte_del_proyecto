@@ -83,3 +83,5 @@ class PanelAdminResponse(BaseModel):
     accesos_hoy: int
     accesos_fallidos_hoy: int
     actividad: list[ActividadPanel]
+    # Con la bitácora cifrada la actividad no viaja acá: el panel la pide a /bitacora con la clave.
+    bitacora_protegida: bool = False

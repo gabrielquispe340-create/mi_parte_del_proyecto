@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import { ToastService } from '../../../core/services/toast.service';
 import { PaginadorComponent, paginar } from '../../../shared/components/paginador/paginador.component';
@@ -10,6 +11,7 @@ const ETIQUETA_TIPO: Record<TipoRespaldo, string> = {
   manual: 'Manual',
   previa_restauracion: 'Antes de restaurar',
   subido: 'Subida',
+  automatica: 'Automática',
 };
 const DIAS_AVISO = 7;
 const CONFIRMACION = 'RESTAURAR';
@@ -31,7 +33,7 @@ function mensajeDeError(err: HttpErrorResponse, porDefecto: string): string {
 @Component({
   selector: 'app-respaldos',
   standalone: true,
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent],
   templateUrl: './respaldos.component.html',
   styleUrl: './respaldos.component.scss',
 })

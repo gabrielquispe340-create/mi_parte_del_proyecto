@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     smtp_user: str | None = None
     smtp_password: str | None = None
     smtp_from: str = "no-reply@egresa.uagrm.edu.bo"
+    # Alternativa a SMTP por HTTPS (Railway bloquea SMTP en sus planes básicos).
+    brevo_api_key: str | None = None
 
     # Contraseña de las cuentas demo de scripts.sembrar_multitenant (no se versiona).
     demo_password: str | None = None
@@ -50,6 +52,20 @@ class Settings(BaseSettings):
     # Interruptor del servicio de IA (recomendaciones y afinidad). En false la plataforma
     # sigue funcionando y solo avisa que las recomendaciones no están disponibles.
     ia_recomendaciones_activas: bool = True
+
+    # Tareas automáticas diarias (copia de seguridad, cierre de vacantes vencidas, boletín
+    # de ofertas). Se ejecutan una vez por día desde la hora indicada (hora de Bolivia).
+    # Sin definir, corren solo en el servidor (producción o Railway), no en la computadora
+    # de quien levanta el backend contra la base compartida.
+    tareas_automaticas_activas: bool | None = None
+    tareas_hora_diaria: int = 3
+    respaldos_automaticos_conservar: int = 7
+
+    # Bitácora confidencial: clave pública derivada de la clave de desarrollador
+    # (python -m scripts.clave_bitacora). Con ella el servidor cifra cada entrada, pero
+    # solo quien tiene la clave de desarrollador puede leerlas. Sin definir, la bitácora
+    # se guarda sin cifrar (modo de desarrollo).
+    bitacora_clave_publica: str | None = None
 
     @model_validator(mode="after")
     def _exigir_jwt_secret_en_produccion(self) -> "Settings":

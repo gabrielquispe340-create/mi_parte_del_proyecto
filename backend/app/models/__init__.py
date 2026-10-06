@@ -24,6 +24,7 @@ from app.models.institucion import (
 from app.models.moderacion import ModerationReport
 from app.models.notificacion import Notification, NotificationPreference
 from app.models.respaldo import SystemBackup
+from app.models.tarea import ScheduledTaskRun
 from app.models.seguridad import AuditLog, LoginAttempt
 from app.models.usuario import AppUser, Role, UserRole
 from app.models.vacante import (
@@ -95,6 +96,7 @@ __all__ = [
     "PlanPayment",
     "Role",
     "SaasPlan",
+    "ScheduledTaskRun",
     "ScreeningOption",
     "ScreeningQuestion",
     "Sector",

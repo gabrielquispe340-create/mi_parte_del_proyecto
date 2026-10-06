@@ -5,6 +5,7 @@ import '../../core/models/sesion.dart';
 import '../../core/services/perfil_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatos.dart';
+import '../../core/widgets/boton_ayuda.dart';
 import '../../core/widgets/insignia.dart';
 import '../../core/widgets/vistas_estado.dart';
 import '../auth/cambiar_password_screen.dart';
@@ -90,7 +91,7 @@ class _PerfilTabState extends State<PerfilTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi perfil')),
+      appBar: AppBar(title: const Text('Mi perfil'), actions: const [BotonAyuda('perfil')]),
       body: FutureBuilder<PerfilEgresado>(
         future: _futuro,
         builder: (context, snapshot) {

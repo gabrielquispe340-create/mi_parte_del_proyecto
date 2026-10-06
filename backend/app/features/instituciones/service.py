@@ -24,7 +24,8 @@ from app.models.institucion import CompanyInstitution, Institution, SaasPlan, Un
 from app.models.moderacion import ModerationReport
 from app.models.postulacion import Application
 from app.models.respaldo import SystemBackup
-from app.models.seguridad import AuditLog
+from app.features.bitacora.service import BitacoraService
+from app.models.seguridad import AuditLog, LoginAttempt
 from app.models.usuario import AppUser, Role, UserRole
 from app.models.vacante import JobPosting, JobStatus
 from app.security.tenant import usuarios_de_institucion
@@ -250,6 +251,7 @@ class InstitucionService:
             accesos_hoy=cifras["accesos_hoy"],
             accesos_fallidos_hoy=cifras["accesos_fallidos_hoy"],
             actividad=self._actividad(institution_id),
+            bitacora_protegida=BitacoraService.cifrado_activo(),
         )
 
     def _cifras_del_panel(self, institution_id: uuid.UUID | None) -> dict[str, int]:
@@ -260,9 +262,12 @@ class InstitucionService:
         números coincidan: una empresa con la cuenta suspendida no cuenta como pendiente.
         """
         inicio_hoy = datetime.now(_ZONA_BOLIVIA).replace(hour=0, minute=0, second=0, microsecond=0)
-        accesos = select(func.count(AuditLog.id)).where(AuditLog.action == "login", AuditLog.created_at >= inicio_hoy)
-        fallidos = select(func.count(AuditLog.id)).where(
-            AuditLog.action == "login_fallido", AuditLog.created_at >= inicio_hoy
+        # Los accesos salen de login_attempt: la bitácora puede estar cifrada.
+        accesos = select(func.count(LoginAttempt.id)).where(
+            LoginAttempt.success.is_(True), LoginAttempt.created_at >= inicio_hoy
+        )
+        fallidos = select(func.count(LoginAttempt.id)).where(
+            LoginAttempt.success.is_(False), LoginAttempt.created_at >= inicio_hoy
         )
         vacantes_por_moderar = select(func.count(JobPosting.id)).where(
             JobPosting.status == JobStatus.PENDING_REVIEW.value
@@ -296,7 +301,7 @@ class InstitucionService:
             )
             ofertas_denunciadas = ofertas_denunciadas.where(empresa_vinculada_a(institution_id))
             vinculo_aprobado.append(CompanyInstitution.institution_id == institution_id)
-            del_tenant = AuditLog.user_id.in_(usuarios_de_institucion(institution_id))
+            del_tenant = LoginAttempt.user_id.in_(usuarios_de_institucion(institution_id))
             accesos = accesos.where(del_tenant)
             fallidos = fallidos.where(del_tenant)
 
@@ -337,7 +342,13 @@ class InstitucionService:
         return {nombre: valor or 0 for nombre, valor in fila._mapping.items()}
 
     def _actividad(self, institution_id: uuid.UUID | None) -> list[ActividadPanel]:
-        """Últimas acciones de gestión; los inicios de sesión se resumen aparte en accesos_hoy."""
+        """Últimas acciones de gestión; los inicios de sesión se resumen aparte en accesos_hoy.
+
+        Con la bitácora cifrada no se puede leer sin la clave de desarrollador: el panel la
+        pide a /bitacora cuando el administrador ya la ingresó.
+        """
+        if BitacoraService.cifrado_activo():
+            return []
         stmt = (
             select(AuditLog, AppUser.email)
             .outerjoin(AppUser, AppUser.id == AuditLog.user_id)

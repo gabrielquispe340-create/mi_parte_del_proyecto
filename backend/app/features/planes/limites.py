@@ -75,6 +75,12 @@ def _plan_vigente(db: Session, institution_id: uuid.UUID) -> tuple[Institution, 
     return institucion, resolver_plan(institucion, planes_por_codigo(db)).vigente
 
 
+def plan_vigente(db: Session, institution_id: uuid.UUID) -> SaasPlan | None:
+    """El plan que fija hoy los límites de la universidad (el Básico si el pago está vencido)."""
+    datos = _plan_vigente(db, institution_id)
+    return datos[1] if datos else None
+
+
 def verificar_cupo_egresados(db: Session, institution_id: uuid.UUID) -> None:
     datos = _plan_vigente(db, institution_id)
     if datos is None:

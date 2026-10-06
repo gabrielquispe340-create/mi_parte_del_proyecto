@@ -1,106 +1,200 @@
 <div class="admin-container">
   <header class="admin-header">
     <div>
-      <div class="header-badge">Administración Institucional • {{ auth.institucion() || 'Todas las universidades' }}</div>
+      <div class="header-badge">
+        Administración Institucional • {{ auth.institucion() || 'Todas las universidades' }}
+      </div>
       <h1>Bitácora del Sistema</h1>
       <p class="subtitle">
-        Consulta el historial de operaciones críticas registradas por la plataforma y expórtalo para auditoría.
+        Historial de operaciones con usuario, IP, fecha y hora, módulo y acción.
+        @if (estado()?.cifrada) {
+          Es <strong>confidencial</strong>: se guarda cifrada y solo se lee con la clave de
+          desarrollador.
+        }
       </p>
     </div>
+    @if (estado()?.cifrada && !bloqueada()) {
+      <button type="button" class="btn-cerrar" (click)="cerrar()">🔒 Cerrar bitácora</button>
+    }
   </header>
 
-  <form class="filter-bar filtros-form" (ngSubmit)="buscar()">
-    <div class="filtros-grid">
-      <label>
-        <span>Usuario ID</span>
-        <input type="number" [(ngModel)]="filtros.usuarioId" name="usuarioId" placeholder="ID del usuario" />
-      </label>
-      <label>
-        <span>Módulo</span>
-        <input type="text" [(ngModel)]="filtros.modulo" name="modulo" placeholder="auth, validacion_institucional…" />
-      </label>
-      <label>
-        <span>Acción</span>
-        <input type="text" [(ngModel)]="filtros.accion" name="accion" placeholder="login, decidir_egresado…" />
-      </label>
-      <label>
-        <span>Desde</span>
-        <input type="datetime-local" [(ngModel)]="filtros.fechaDesde" name="fechaDesde" />
-      </label>
-      <label>
-        <span>Hasta</span>
-        <input type="datetime-local" [(ngModel)]="filtros.fechaHasta" name="fechaHasta" />
-      </label>
-    </div>
-
-    <div class="filtros-acciones">
-      <button type="submit" class="btn-primary-sm" [disabled]="cargando()">
-        {{ cargando() ? 'Buscando…' : '🔍 Buscar' }}
-      </button>
-      <button type="button" class="btn-refresh" (click)="exportar('excel')">📊 Exportar Excel</button>
-      <button type="button" class="btn-refresh" (click)="exportar('pdf')">📄 Exportar PDF</button>
-    </div>
-  </form>
-
-  @if (error()) {
-    <div class="error-state error-inline">
-      <p>{{ error() }}</p>
+  @if (estado() && !estado()!.cifrada) {
+    <div class="aviso-claro">
+      ⚠ En este servidor la bitácora se guarda <strong>sin cifrar</strong>. Para protegerla hay que
+      configurar BITACORA_CLAVE_PUBLICA (ver README).
     </div>
   }
 
-  @if (cargando()) {
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <p>Cargando bitácora...</p>
-    </div>
-  } @else {
-    <div class="table-card">
-      @if (logs().length === 0) {
-        <div class="empty-state">
-          <p>Sin registros para los filtros aplicados.</p>
+  @if (bloqueada()) {
+    <section class="candado">
+      <div class="candado-icono" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="4" y="10.5" width="16" height="10" rx="2.2" />
+          <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" stroke-linecap="round" />
+          <circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none" />
+        </svg>
+      </div>
+      <h2>Bitácora confidencial</h2>
+      <p>
+        Las entradas están cifradas en la base de datos: ni el administrador de la base puede
+        leerlas. Ingresá la
+        <strong>clave de desarrollador</strong> para verlas.
+      </p>
+      <form class="candado-form" (ngSubmit)="abrir()">
+        <div class="campo-clave">
+          <input
+            [type]="mostrarClave() ? 'text' : 'password'"
+            name="clave"
+            [(ngModel)]="claveIngresada"
+            placeholder="EGRESA-XXXXX-XXXXX-…"
+            autocomplete="off"
+            spellcheck="false"
+            [disabled]="abriendo()"
+            aria-label="Clave de desarrollador"
+          />
+          <button type="button" class="ver" (click)="mostrarClave.set(!mostrarClave())">
+            {{ mostrarClave() ? 'Ocultar' : 'Ver' }}
+          </button>
         </div>
-      } @else {
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Usuario</th>
-                <th>IP</th>
-                <th>Módulo</th>
-                <th>Acción</th>
-                <th class="text-center">Resultado</th>
-                <th>Detalles</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (log of logsPagina(); track log.id) {
-                <tr [class.is-fallo]="!log.resultado">
-                  <td class="fecha-cell">{{ log.fecha }}</td>
-                  <td>{{ log.usuario_id ?? '—' }}</td>
-                  <td>{{ log.ip ?? '—' }}</td>
-                  <td>{{ log.modulo }}</td>
-                  <td>{{ log.accion }}</td>
-                  <td class="text-center">
-                    <span class="badge" [class.badge-verificada]="log.resultado" [class.badge-suspendida]="!log.resultado">
-                      {{ log.resultado ? 'Éxito' : 'Fallo' }}
-                    </span>
-                  </td>
-                  <td class="detalles-cell">{{ log.detalles ?? '—' }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-
-        <app-paginador
-          [total]="logs().length"
-          [(pagina)]="pagina"
-          [(tamanio)]="tamanio"
-          [opcionesTamanio]="[15, 30, 50, 100]"
-          etiqueta="registros"
-        />
+        <button
+          type="submit"
+          class="btn-primary-sm"
+          [disabled]="abriendo() || !claveIngresada.trim()"
+        >
+          {{ abriendo() ? 'Comprobando…' : 'Abrir bitácora' }}
+        </button>
+      </form>
+      @if (errorClave()) {
+        <p class="candado-error">{{ errorClave() }}</p>
       }
-    </div>
+      <p class="candado-nota">
+        La clave no se guarda: al recargar la página o cerrar sesión hay que volver a ingresarla.
+        Cada intento queda registrado.
+      </p>
+    </section>
+  } @else {
+    <form class="filter-bar filtros-form" (ngSubmit)="buscar()">
+      <div class="filtros-grid">
+        <label>
+          <span>Usuario</span>
+          <input
+            type="text"
+            [(ngModel)]="filtros.usuario"
+            name="usuario"
+            placeholder="Parte del correo"
+          />
+        </label>
+        <label>
+          <span>Módulo</span>
+          <input
+            type="text"
+            [(ngModel)]="filtros.modulo"
+            name="modulo"
+            placeholder="auth, reportes, tareas…"
+          />
+        </label>
+        <label>
+          <span>Acción</span>
+          <input
+            type="text"
+            [(ngModel)]="filtros.accion"
+            name="accion"
+            placeholder="login, exportar_reporte…"
+          />
+        </label>
+        <label>
+          <span>Desde</span>
+          <input type="datetime-local" [(ngModel)]="filtros.fechaDesde" name="fechaDesde" />
+        </label>
+        <label>
+          <span>Hasta</span>
+          <input type="datetime-local" [(ngModel)]="filtros.fechaHasta" name="fechaHasta" />
+        </label>
+      </div>
+
+      <div class="filtros-acciones">
+        <button type="submit" class="btn-primary-sm" [disabled]="cargando()">
+          {{ cargando() ? 'Buscando…' : '🔍 Buscar' }}
+        </button>
+        <button type="button" class="btn-refresh" (click)="limpiar()">Limpiar</button>
+        <button type="button" class="btn-refresh" (click)="exportar('excel')">
+          📊 Exportar Excel
+        </button>
+        <button type="button" class="btn-refresh" (click)="exportar('pdf')">📄 Exportar PDF</button>
+      </div>
+    </form>
+
+    @if (error()) {
+      <div class="error-state error-inline">
+        <p>{{ error() }}</p>
+      </div>
+    }
+
+    @if (cargando()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>{{ estado()?.cifrada ? 'Descifrando bitácora…' : 'Cargando bitácora…' }}</p>
+      </div>
+    } @else {
+      <div class="table-card">
+        @if (logs().length === 0) {
+          <div class="empty-state">
+            <p>Sin registros para los filtros aplicados.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha y hora</th>
+                  <th>Usuario</th>
+                  <th>IP</th>
+                  <th>Módulo</th>
+                  <th>Acción</th>
+                  <th class="text-center">Resultado</th>
+                  <th>Detalles</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (log of logsPagina(); track log.id) {
+                  <tr [class.is-fallo]="!log.resultado">
+                    <td class="fecha-cell">
+                      {{ fecha(log.fecha) }}
+                      @if (log.cifrada) {
+                        <span class="candadito" title="Guardada cifrada">🔒</span>
+                      }
+                    </td>
+                    <td [title]="log.usuario_id ?? ''">
+                      {{ log.usuario_correo ?? (log.usuario_id ? 'Usuario eliminado' : 'Sistema') }}
+                    </td>
+                    <td>{{ log.ip ?? '—' }}</td>
+                    <td>{{ log.modulo }}</td>
+                    <td>{{ log.accion }}</td>
+                    <td class="text-center">
+                      <span
+                        class="badge"
+                        [class.badge-verificada]="log.resultado"
+                        [class.badge-suspendida]="!log.resultado"
+                      >
+                        {{ log.resultado ? 'Éxito' : 'Fallo' }}
+                      </span>
+                    </td>
+                    <td class="detalles-cell">{{ log.detalles ?? '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <app-paginador
+            [total]="logs().length"
+            [(pagina)]="pagina"
+            [(tamanio)]="tamanio"
+            [opcionesTamanio]="[15, 30, 50, 100]"
+            etiqueta="registros"
+          />
+        }
+      </div>
+    }
   }
 </div>

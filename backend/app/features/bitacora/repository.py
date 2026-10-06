@@ -1,11 +1,9 @@
-import uuid
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.seguridad import AuditLog
-from app.security.tenant import usuarios_de_institucion
 
 
 class BitacoraRepository:
@@ -17,26 +15,18 @@ class BitacoraRepository:
         self.db.flush()
         return log
 
-    def listar(
-        self,
-        usuario_id: uuid.UUID | str | None = None,
-        modulo: str | None = None,
-        accion: str | None = None,
-        fecha_desde: datetime | None = None,
-        fecha_hasta: datetime | None = None,
-        institution_id: uuid.UUID | None = None,
-    ) -> list[AuditLog]:
-        stmt = select(AuditLog).order_by(AuditLog.created_at.desc())
-        if institution_id is not None:
-            stmt = stmt.where(AuditLog.user_id.in_(usuarios_de_institucion(institution_id)))
-        if usuario_id is not None:
-            stmt = stmt.where(AuditLog.user_id == usuario_id)
-        if modulo is not None:
-            stmt = stmt.where(AuditLog.entity_type == modulo)
-        if accion is not None:
-            stmt = stmt.where(AuditLog.action == accion)
-        if fecha_desde is not None:
-            stmt = stmt.where(AuditLog.created_at >= fecha_desde)
-        if fecha_hasta is not None:
-            stmt = stmt.where(AuditLog.created_at <= fecha_hasta)
+    def entradas(self, desde: datetime | None = None, hasta: datetime | None = None) -> list[AuditLog]:
+        """Entradas por día, de la más nueva a la más vieja.
+
+        Con la bitácora cifrada, created_at solo tiene el día: el resto de los filtros
+        (usuario, módulo, hora exacta, universidad) se aplica después de descifrar.
+        """
+        stmt = select(AuditLog).order_by(AuditLog.created_at.desc(), AuditLog.id)
+        if desde is not None:
+            stmt = stmt.where(AuditLog.created_at >= desde)
+        if hasta is not None:
+            stmt = stmt.where(AuditLog.created_at <= hasta)
         return list(self.db.scalars(stmt))
+
+    def contar_sin_cifrar(self) -> int:
+        return self.db.scalar(select(func.count(AuditLog.id)).where(AuditLog.payload_cifrado.is_(None))) or 0

@@ -1,0 +1,87 @@
+<div class="ayuda">
+  <a [routerLink]="volverA()" class="volver">← Volver a EGRESA</a>
+
+  <header class="hero">
+    <p class="marca">Centro de ayuda</p>
+    <h1>¿En qué te ayudamos?</h1>
+    <p class="bajada">
+      Guías paso a paso y preguntas frecuentes para egresados, empresas y universidades.
+    </p>
+    <div class="buscador">
+      <span aria-hidden="true">🔍</span>
+      <input
+        type="search"
+        [value]="consulta()"
+        (input)="buscar($any($event.target).value)"
+        placeholder="Ej.: postularme, reportes, clave de la bitácora…"
+        aria-label="Buscar en la ayuda"
+        autofocus
+      />
+    </div>
+  </header>
+
+  <nav class="filtros" aria-label="Tipo de cuenta">
+    <button type="button" [class.activo]="audiencia() === 'todas'" (click)="audiencia.set('todas')">
+      Todos los temas
+    </button>
+    @for (a of audiencias; track a.clave) {
+      <button
+        type="button"
+        [class.activo]="audiencia() === a.clave"
+        (click)="audiencia.set(a.clave)"
+      >
+        {{ a.icono }} {{ a.nombre }}
+      </button>
+    }
+  </nav>
+
+  @for (grupo of porAudiencia(); track grupo.clave) {
+    <section class="grupo">
+      <h2>{{ grupo.icono }} {{ grupo.nombre }}</h2>
+      <div class="temas">
+        @for (t of grupo.temas; track t.id) {
+          <article class="tema" [id]="'tema-' + t.id" [class.tema--abierto]="abierto() === t.id">
+            <button
+              type="button"
+              class="tema-cabecera"
+              (click)="alternar(t)"
+              [attr.aria-expanded]="abierto() === t.id"
+            >
+              <span class="tema-titulo">{{ t.titulo }}</span>
+              <span class="tema-resumen">{{ t.resumen }}</span>
+              <span class="flecha" aria-hidden="true">{{ abierto() === t.id ? '−' : '+' }}</span>
+            </button>
+            @if (abierto() === t.id) {
+              <div class="tema-cuerpo">
+                @if (t.pasos.length) {
+                  <h3>Paso a paso</h3>
+                  <ol>
+                    @for (paso of t.pasos; track $index) {
+                      <li>{{ paso }}</li>
+                    }
+                  </ol>
+                }
+                @if (t.preguntas.length) {
+                  <h3>Preguntas frecuentes</h3>
+                  @for (p of t.preguntas; track $index) {
+                    <details>
+                      <summary>{{ p.pregunta }}</summary>
+                      <p>{{ p.respuesta }}</p>
+                    </details>
+                  }
+                }
+              </div>
+            }
+          </article>
+        }
+      </div>
+    </section>
+  } @empty {
+    <p class="vacio">No encontramos temas con «{{ consulta() }}». Probá con otras palabras.</p>
+  }
+
+  <footer class="pie">
+    En cualquier pantalla tocá el botón <strong>?</strong> (o la tecla <kbd>F1</kbd>) para ver la
+    ayuda de esa pantalla.
+  </footer>
+</div>
