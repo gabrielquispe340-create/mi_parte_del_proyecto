@@ -78,7 +78,7 @@
                     />
                   </td>
                   <td class="text-center">
-                    <div class="validacion-botones">
+                    <div class="validacion-botones" *appPermiso="'boton.validacion.decidir'">
                       <button type="button" class="btn-success-sm" title="Aprobar egresado" (click)="aprobar(perfil)">
                         ✅ Aprobar
                       </button>

@@ -120,7 +120,7 @@
             <td class="text-center">
               <label class="switch"
                 [title]="emp.notificaciones_activas ? 'Notificaciones activas' : 'Notificaciones desactivadas'">
-                <input type="checkbox" [checked]="emp.notificaciones_activas" [disabled]="!emp.activo"
+                <input type="checkbox" [checked]="emp.notificaciones_activas" [disabled]="!emp.activo || !puedeConfigurar()"
                   (change)="toggleNotificaciones(emp, $event)" />
                 <span class="slider"></span>
               </label>
@@ -130,7 +130,7 @@
             <td class="text-center">
               <label class="switch"
                 [title]="emp.postulaciones_activas ? 'Postulaciones habilitadas' : 'Postulaciones inhabilitadas'">
-                <input type="checkbox" [checked]="emp.postulaciones_activas" [disabled]="!emp.activo"
+                <input type="checkbox" [checked]="emp.postulaciones_activas" [disabled]="!emp.activo || !puedeConfigurar()"
                   (change)="togglePostulaciones(emp, $event)" />
                 <span class="slider"></span>
               </label>
@@ -148,6 +148,7 @@
 
             <!-- Acciones -->
             <td class="text-center">
+              <ng-container *appPermiso="'boton.empresas.validar'">
               <div *ngIf="emp.estado_verificacion === 'PENDIENTE'" class="validacion-cell">
                 <div class="validacion-botones">
                   <button type="button" class="btn-success-sm" title="Aprobar empresa"
@@ -162,7 +163,9 @@
                 <input type="text" class="motivo-input" placeholder="Motivo si rechazas..."
                   [(ngModel)]="motivosRechazo[emp.id]" [disabled]="isDecidiendo[emp.id]" />
               </div>
+              </ng-container>
 
+              <ng-container *appPermiso="'boton.empresas.baja'">
               <button *ngIf="emp.estado_verificacion !== 'PENDIENTE' && emp.activo" type="button"
                 class="btn-danger-sm" title="Dar de baja lógica" (click)="abrirModalBajaLogica(emp)">
                 🗑️ Desactivar
@@ -172,6 +175,7 @@
                 class="btn-success-sm" title="Restaurar empresa" (click)="restaurarEmpresa(emp)">
                 ♻️ Reactivar
               </button>
+              </ng-container>
             </td>
           </tr>
         </tbody>

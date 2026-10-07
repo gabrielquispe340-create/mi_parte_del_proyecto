@@ -22,7 +22,8 @@ from app.features.reportes.service import ReporteService
 from app.models.empresa import CompanyMember
 from app.models.usuario import AppUser
 from app.security.dependencies import CurrentUser, get_current_user
-from app.security.tenant import alcance_staff
+from app.security.permisos import exigir_permiso
+from app.security.tenant import AlcanceStaff, alcance_staff
 from app.shared.email_service import EmailService
 
 router = APIRouter(prefix="/reportes", tags=["reportes"])
@@ -35,11 +36,24 @@ class PlanSinReportes(AppException):
 
 
 class Solicitante:
-    def __init__(self, contexto: Contexto, usuario: CurrentUser, correo: str | None, mensaje_plan: str | None) -> None:
+    def __init__(
+        self,
+        contexto: Contexto,
+        usuario: CurrentUser,
+        correo: str | None,
+        mensaje_plan: str | None,
+        alcance: AlcanceStaff | None = None,
+    ) -> None:
         self.contexto = contexto
         self.usuario = usuario
         self.correo = correo
         self.mensaje_plan = mensaje_plan
+        # Solo el personal de la universidad; sus botones dependen de los permisos de su grupo.
+        self.alcance = alcance
+
+    def exigir(self, db: Session, codigo: str) -> None:
+        if self.alcance is not None:
+            exigir_permiso(db, self.alcance, codigo)
 
 
 def get_solicitante(current_user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)) -> Solicitante:
@@ -47,6 +61,8 @@ def get_solicitante(current_user: CurrentUser = Depends(get_current_user), db: S
     correo = usuario.email if usuario else None
     if _ROLES_STAFF & set(current_user.roles):
         institucion = alcance_staff(db, current_user)
+        alcance = AlcanceStaff(current_user, institucion)
+        exigir_permiso(db, alcance, "menu.reportes")
         mensaje_plan = None
         plan = plan_vigente(db, institucion) if institucion else None
         if plan is not None and not plan.employability_reports:
@@ -54,7 +70,9 @@ def get_solicitante(current_user: CurrentUser = Depends(get_current_user), db: S
                 f"El plan {plan.name} de tu universidad no incluye reportes personalizados. "
                 "Están disponibles en los planes Profesional e Institucional."
             )
-        return Solicitante(Contexto(rol="staff", institution_id=institucion), current_user, correo, mensaje_plan)
+        return Solicitante(
+            Contexto(rol="staff", institution_id=institucion), current_user, correo, mensaje_plan, alcance
+        )
     if "empresa" in current_user.roles:
         company_id = db.scalar(
             select(CompanyMember.company_id).where(
@@ -104,6 +122,7 @@ def exportar(
     solicitante: Solicitante = Depends(get_habilitado),
     db: Session = Depends(get_db),
 ):
+    solicitante.exigir(db, "boton.reportes.exportar")
     archivo = ReporteService(db).exportar(
         solicitante.contexto, consulta, solicitante.correo, solicitante.usuario.id_usuario, get_client_ip(request)
     )
@@ -125,6 +144,7 @@ def enviar(
     solicitante: Solicitante = Depends(get_habilitado),
     db: Session = Depends(get_db),
 ):
+    solicitante.exigir(db, "boton.reportes.correo")
     destinatarios = ReporteService(db).enviar(
         solicitante.contexto, consulta, solicitante.correo, solicitante.usuario.id_usuario, get_client_ip(request)
     )

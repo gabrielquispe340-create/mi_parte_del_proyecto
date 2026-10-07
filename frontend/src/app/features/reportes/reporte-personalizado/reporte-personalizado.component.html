@@ -296,6 +296,7 @@
                 }
               </div>
               <div class="exportar">
+                <ng-container *appPermiso="'boton.reportes.exportar'">
                 <button
                   type="button"
                   class="btn btn-secundario"
@@ -320,7 +321,9 @@
                 >
                   {{ exportando() === 'html' ? 'Generando…' : '🌐 HTML' }}
                 </button>
+                </ng-container>
                 <button
+                  *appPermiso="'boton.reportes.correo'"
                   type="button"
                   class="btn btn-secundario"
                   [disabled]="!cat.correo_disponible"

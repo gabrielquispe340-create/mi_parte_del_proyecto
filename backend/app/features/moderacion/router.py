@@ -17,7 +17,8 @@ from app.features.moderacion.schema import (
 )
 from app.features.moderacion.service import DenunciaService
 from app.security.dependencies import CurrentUser, get_current_user
-from app.security.tenant import AlcanceStaff, get_alcance_staff
+from app.security.permisos import requiere_permiso
+from app.security.tenant import AlcanceStaff
 
 router = APIRouter(prefix="/moderacion", tags=["moderacion"])
 
@@ -52,7 +53,7 @@ def mi_denuncia(
 def listar_denuncias_pendientes(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("menu.denuncias")),
     db: Session = Depends(get_db),
 ):
     """HU-22: ofertas con denuncias pendientes de las empresas habilitadas en la universidad."""
@@ -64,7 +65,7 @@ def resolver_denuncias(
     vacante_id: uuid.UUID,
     data: ResolucionDenunciaRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.denuncias.resolver")),
     db: Session = Depends(get_db),
 ):
     """HU-22: mantener, suspender o eliminar la oferta denunciada; cierra sus denuncias pendientes."""

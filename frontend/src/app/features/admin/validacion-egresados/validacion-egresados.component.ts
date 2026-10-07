@@ -6,11 +6,12 @@ import { PaginadorComponent, paginar } from '../../../shared/components/paginado
 import { AuthService } from '../../auth/auth.service';
 import { Carrera, PerfilEgresado } from './validacion-egresados.model';
 import { ValidacionEgresadosService } from './validacion-egresados.service';
+import { PermisoDirective } from '../../../shared/directives/permiso.directive';
 
 @Component({
   selector: 'app-validacion-egresados',
   standalone: true,
-  imports: [CommonModule, FormsModule, PaginadorComponent],
+  imports: [CommonModule, FormsModule, PaginadorComponent, PermisoDirective],
   templateUrl: './validacion-egresados.component.html',
   styleUrl: './validacion-egresados.component.scss',
 })

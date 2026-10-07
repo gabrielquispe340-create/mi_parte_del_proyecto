@@ -10,6 +10,7 @@ import { AuthService } from '../../auth/auth.service';
 import { BitacoraClaveService } from './bitacora-clave.service';
 import { BitacoraFiltros, BitacoraLog, EstadoBitacora } from './bitacora.model';
 import { BitacoraService } from './bitacora.service';
+import { PermisoDirective } from '../../../shared/directives/permiso.directive';
 
 const BLOQUEADA = 423;
 
@@ -21,7 +22,7 @@ function mensajeDeError(err: HttpErrorResponse, porDefecto: string): string {
 @Component({
   selector: 'app-bitacora',
   standalone: true,
-  imports: [FormsModule, PaginadorComponent],
+  imports: [FormsModule, PaginadorComponent, PermisoDirective],
   templateUrl: './bitacora.component.html',
   styleUrl: './bitacora.component.scss',
 })

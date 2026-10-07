@@ -18,6 +18,7 @@ import {
   VistaPrevia,
 } from '../reportes.models';
 import { ReportesService } from '../reportes.service';
+import { PermisoDirective } from '../../../shared/directives/permiso.directive';
 
 const ICONO_FUENTE: Record<string, string> = {
   egresados: '🎓',
@@ -47,7 +48,7 @@ function mensajeDeError(err: HttpErrorResponse, porDefecto: string): string {
 @Component({
   selector: 'app-reporte-personalizado',
   standalone: true,
-  imports: [FormsModule, RouterLink, PaginadorComponent],
+  imports: [FormsModule, RouterLink, PaginadorComponent, PermisoDirective],
   templateUrl: './reporte-personalizado.component.html',
   styleUrl: './reporte-personalizado.component.scss',
 })

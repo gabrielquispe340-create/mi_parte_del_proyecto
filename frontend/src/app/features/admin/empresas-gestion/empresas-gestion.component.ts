@@ -6,13 +6,15 @@ import { Empresa } from '../../../core/models/empresa.models';
 import { EmpresaService } from '../../../core/services/empresa.service';
 import { PaginadorComponent, paginar } from '../../../shared/components/paginador/paginador.component';
 import { AuthService } from '../../auth/auth.service';
+import { PermisoDirective } from '../../../shared/directives/permiso.directive';
+import { PermisosService } from '../../../core/services/permisos.service';
 
 const FILTROS_VALIDOS = ['TODAS', 'ACTIVAS', 'INACTIVAS', 'PENDIENTES'];
 
 @Component({
   selector: 'app-empresas-gestion',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, PaginadorComponent],
+  imports: [CommonModule, FormsModule, RouterLink, PaginadorComponent, PermisoDirective],
   templateUrl: './empresas-gestion.component.html',
   styleUrl: './empresas-gestion.component.scss',
 })
@@ -21,6 +23,9 @@ export class EmpresasGestionComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   readonly auth = inject(AuthService);
+  private readonly permisos = inject(PermisosService);
+  /** Interruptores de notificaciones y postulaciones: formulario con permiso propio. */
+  readonly puedeConfigurar = () => this.permisos.puede('formulario.empresas.configuracion');
 
   readonly pagina = signal(1);
   readonly tamanio = signal(10);

@@ -5,7 +5,7 @@
         {{ esSuperadmin() ? 'Superadmin · Vista global' : 'Admin · ' + auth.institucion() }}
       </span>
       @if (planPropio(); as plan) {
-        <a routerLink="/admin/universidades" class="chip-plan" [class.chip-plan--alerta]="plan.estado_pago === 'pendiente' || plan.estado_pago === 'vencido'">
+        <a *appPermiso="'menu.universidades'" routerLink="/admin/universidades" class="chip-plan" [class.chip-plan--alerta]="plan.estado_pago === 'pendiente' || plan.estado_pago === 'vencido'">
           Plan {{ plan.nombre }}{{ plan.estado_pago === 'pendiente' || plan.estado_pago === 'vencido' ? ' · pago pendiente' : '' }}
         </a>
       }
@@ -94,7 +94,7 @@
     </section>
 
     <!-- 2. Indicadores generales -->
-    <section class="kpis">
+    <section class="kpis" *appPermiso="'etiqueta.dashboard.indicadores'">
       @for (k of kpis(); track k.etiqueta) {
         <article class="kpi">
           <span class="kpi-etiqueta">{{ k.etiqueta }}</span>
@@ -115,7 +115,7 @@
             <h2>{{ esSuperadmin() ? 'Universidades clientes' : 'Tu universidad' }}</h2>
             <p>Egresados, empresas y movimiento de {{ esSuperadmin() ? 'cada universidad' : 'tu universidad' }}.</p>
           </div>
-          <a routerLink="/admin/universidades" class="enlace">Ver detalle →</a>
+          <a *appPermiso="'menu.universidades'" routerLink="/admin/universidades" class="enlace">Ver detalle →</a>
         </header>
 
         @if (p.universidades.length === 0) {
@@ -183,7 +183,7 @@
       </section>
 
       <!-- 4. Actividad reciente -->
-      <section class="tarjeta">
+      <section class="tarjeta" *appPermiso="'etiqueta.dashboard.actividad'">
         <header class="tarjeta-cabecera">
           <div>
             <h2>Actividad reciente</h2>
@@ -194,7 +194,7 @@
               }
             </p>
           </div>
-          <a routerLink="/admin/bitacora" class="enlace">Bitácora →</a>
+          <a *appPermiso="'menu.bitacora'" routerLink="/admin/bitacora" class="enlace">Bitácora →</a>
         </header>
 
         @if (bitacoraBloqueada()) {

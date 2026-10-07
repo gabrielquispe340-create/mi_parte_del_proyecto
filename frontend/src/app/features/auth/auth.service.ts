@@ -5,6 +5,7 @@ import { Observable, catchError, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { MessageResponse, RegistroEmpresaRequest } from '../../core/models/auth.models';
+import { PermisosService } from '../../core/services/permisos.service';
 import { PushService } from '../../core/services/push.service';
 import { TimeoutService } from '../../core/services/timeout.service';
 import { BitacoraClaveService } from '../admin/bitacora/bitacora-clave.service';
@@ -28,6 +29,8 @@ export interface LoginResponse {
   institucion_nombre: string | null;
   /** La cuenta tiene una contraseña temporal creada por un admin. */
   debe_cambiar_password?: boolean;
+  /** Componentes del panel que puede usar (requisito 2: grupos y permisos). */
+  permisos?: string[];
 }
 
 /** Pantalla de inicio de cada rol tras iniciar sesión. */
@@ -53,6 +56,7 @@ export class AuthService {
   private readonly timeout = inject(TimeoutService);
   private readonly push = inject(PushService);
   private readonly bitacoraClave = inject(BitacoraClaveService);
+  private readonly permisos = inject(PermisosService);
 
   constructor(
     private readonly http: HttpClient,
@@ -91,6 +95,7 @@ export class AuthService {
     this.rol.set(respuesta.rol);
     this.institucion.set(respuesta.institucion_nombre ?? '');
     this.debeCambiarPassword.set(!!respuesta.debe_cambiar_password);
+    this.permisos.establecer(respuesta.rol, respuesta.permisos);
     this.timeout.start(() => this.cerrarSesion());
   }
 
@@ -100,6 +105,7 @@ export class AuthService {
     this.push.desregistrar(this.token());
     // La clave de la bitácora confidencial no pasa a la próxima cuenta que entre en esta pestaña.
     this.bitacoraClave.olvidar();
+    this.permisos.olvidar();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(ROL_KEY);

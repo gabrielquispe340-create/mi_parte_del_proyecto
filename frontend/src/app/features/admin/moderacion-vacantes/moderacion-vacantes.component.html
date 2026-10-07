@@ -65,14 +65,16 @@
             </td>
             <td>{{ v.created_at | date:'short' }}</td>
             <td class="text-center">
-              <button type="button" class="btn-success-sm" title="Aprobar y publicar"
-                [disabled]="isProcessingAction" (click)="aprobar(v)">
-                ✅ Aprobar
-              </button>
-              <button type="button" class="btn-danger-sm" title="Rechazar con motivo"
-                [disabled]="isProcessingAction" (click)="abrirModalRechazo(v)">
-                ✖️ Rechazar
-              </button>
+              <ng-container *appPermiso="'boton.moderacion.decidir'">
+                <button type="button" class="btn-success-sm" title="Aprobar y publicar"
+                  [disabled]="isProcessingAction" (click)="aprobar(v)">
+                  ✅ Aprobar
+                </button>
+                <button type="button" class="btn-danger-sm" title="Rechazar con motivo"
+                  [disabled]="isProcessingAction" (click)="abrirModalRechazo(v)">
+                  ✖️ Rechazar
+                </button>
+              </ng-container>
             </td>
           </tr>
         </tbody>

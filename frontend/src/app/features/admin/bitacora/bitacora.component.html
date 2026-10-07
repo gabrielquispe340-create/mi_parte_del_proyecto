@@ -117,10 +117,12 @@
           {{ cargando() ? 'Buscando…' : '🔍 Buscar' }}
         </button>
         <button type="button" class="btn-refresh" (click)="limpiar()">Limpiar</button>
-        <button type="button" class="btn-refresh" (click)="exportar('excel')">
-          📊 Exportar Excel
-        </button>
-        <button type="button" class="btn-refresh" (click)="exportar('pdf')">📄 Exportar PDF</button>
+        <ng-container *appPermiso="'boton.bitacora.exportar'">
+          <button type="button" class="btn-refresh" (click)="exportar('excel')">
+            📊 Exportar Excel
+          </button>
+          <button type="button" class="btn-refresh" (click)="exportar('pdf')">📄 Exportar PDF</button>
+        </ng-container>
       </div>
     </form>
 

@@ -102,7 +102,15 @@
   }
 }
 
+.cabecera-acciones {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .btn-refrescar {
+  text-decoration: none;
   padding: 9px 16px;
   background: white;
   border: 1px solid #e2e4ef;

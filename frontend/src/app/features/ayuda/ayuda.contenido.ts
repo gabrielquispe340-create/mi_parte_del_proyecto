@@ -484,6 +484,36 @@ export const TEMAS_AYUDA: TemaAyuda[] = [
       },
     ],
   },
+  {
+    id: 'grupos',
+    titulo: 'Grupos y permisos',
+    audiencia: 'universidad',
+    rutas: ['/admin/grupos'],
+    resumen:
+      'Agrupá a administradores y moderadores y elegí qué menús, formularios, botones y etiquetas del panel ve cada grupo.',
+    pasos: [
+      'Tocá «Nuevo grupo», ponele un nombre y marcá a las personas que lo forman.',
+      'Marcá los componentes que el grupo puede usar. «Empezar desde» copia lo que ve cada rol y desde ahí ajustás.',
+      'Guardá: el cambio vale al instante, también en el servidor (un botón oculto tampoco funciona por otro camino).',
+      'En «Lo que ve cada persona» revisá el resultado de cada cuenta con «Ver detalle».',
+    ],
+    preguntas: [
+      {
+        pregunta: '¿Qué ve alguien que no está en ningún grupo?',
+        respuesta:
+          'Lo que corresponde a su rol: el administrador ve todo el panel y el moderador, todo menos usuarios, grupos y plan.',
+      },
+      {
+        pregunta: '¿Y si una persona está en dos grupos?',
+        respuesta: 'Ve la suma de los permisos de sus grupos.',
+      },
+      {
+        pregunta: 'Le di «Gestión de roles» a un moderador y no la ve',
+        respuesta:
+          'Los componentes marcados «solo admin» no se aplican a moderadores aunque su grupo los tenga. Y el administrador conserva siempre «Grupos y permisos» para no quedar afuera.',
+      },
+    ],
+  },
 ];
 
 function coincide(ruta: string, patron: string): number {

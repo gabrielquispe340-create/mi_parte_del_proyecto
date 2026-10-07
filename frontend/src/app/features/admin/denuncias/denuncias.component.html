@@ -67,7 +67,7 @@
             }
           </ul>
 
-          <div class="acciones">
+          <div class="acciones" *appPermiso="'boton.denuncias.resolver'">
             <button type="button" class="btn btn--neutro" (click)="abrirDecision(v, 'mantener')">Mantener publicada</button>
             <button type="button" class="btn btn--aviso" (click)="abrirDecision(v, 'suspender')">Suspender</button>
             <button type="button" class="btn btn--peligro" (click)="abrirDecision(v, 'eliminar')">Eliminar</button>

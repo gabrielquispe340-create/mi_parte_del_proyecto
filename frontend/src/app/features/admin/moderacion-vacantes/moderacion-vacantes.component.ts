@@ -6,6 +6,7 @@ import { Vacante } from '../../../core/models/vacante.models';
 import { VacanteService } from '../../../core/services/vacante.service';
 import { PaginadorComponent } from '../../../shared/components/paginador/paginador.component';
 import { AuthService } from '../../auth/auth.service';
+import { PermisoDirective } from '../../../shared/directives/permiso.directive';
 
 /**
  * Panel de moderación institucional de ofertas laborales (HU-12).
@@ -15,7 +16,7 @@ import { AuthService } from '../../auth/auth.service';
 @Component({
   selector: 'app-moderacion-vacantes',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, PaginadorComponent],
+  imports: [CommonModule, FormsModule, RouterLink, PaginadorComponent, PermisoDirective],
   templateUrl: './moderacion-vacantes.component.html',
   styleUrl: './moderacion-vacantes.component.scss',
 })
