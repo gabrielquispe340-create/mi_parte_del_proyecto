@@ -54,6 +54,7 @@ export class GruposComponent implements OnInit {
   readonly universidadId = signal<string | null>(null);
 
   readonly cargando = signal(true);
+  readonly cargandoPersonal = signal(false);
   readonly error = signal('');
   readonly mensaje = signal('');
 
@@ -113,10 +114,16 @@ export class GruposComponent implements OnInit {
         this.cargando.set(false);
       },
     });
+    this.personal.set([]);
     if (this.puedeVerPersonal()) {
-      this.servicio.personal(universidad).subscribe({ next: (lista) => this.personal.set(lista) });
-    } else {
-      this.personal.set([]);
+      this.cargandoPersonal.set(true);
+      this.servicio.personal(universidad).subscribe({
+        next: (lista) => {
+          this.personal.set(lista);
+          this.cargandoPersonal.set(false);
+        },
+        error: () => this.cargandoPersonal.set(false),
+      });
     }
   }
 
