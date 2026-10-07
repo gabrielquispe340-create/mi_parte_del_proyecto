@@ -21,8 +21,39 @@ _TAREAS = """CREATE TABLE IF NOT EXISTS scheduled_task_run (
 )"""
 
 
+_GRUPOS = (
+    """CREATE TABLE IF NOT EXISTS user_group (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    institution_id uuid NOT NULL REFERENCES educational_institution(id) ON DELETE CASCADE,
+    name varchar(80) NOT NULL,
+    description text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT uq_user_group_name UNIQUE (institution_id, name)
+)""",
+    """CREATE TABLE IF NOT EXISTS user_group_member (
+    group_id uuid NOT NULL REFERENCES user_group(id) ON DELETE CASCADE,
+    user_id uuid NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+    added_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (group_id, user_id)
+)""",
+    """CREATE TABLE IF NOT EXISTS user_group_permission (
+    group_id uuid NOT NULL REFERENCES user_group(id) ON DELETE CASCADE,
+    permission_code varchar(80) NOT NULL,
+    PRIMARY KEY (group_id, permission_code)
+)""",
+    "CREATE INDEX IF NOT EXISTS ix_user_group_member_user ON user_group_member (user_id)",
+    "ALTER TABLE user_group ENABLE ROW LEVEL SECURITY",
+    "ALTER TABLE user_group_member ENABLE ROW LEVEL SECURITY",
+    "ALTER TABLE user_group_permission ENABLE ROW LEVEL SECURITY",
+)
+
+
 def asegurar_esquema_requisitos(conn: Connection) -> list[str]:
-    """Bitácora cifrada, copias automáticas y tareas programadas. Devuelve lo que cambió."""
+    """Bitácora cifrada, copias automáticas, tareas programadas y grupos de usuarios.
+
+    Devuelve lo que cambió.
+    """
     cambios: list[str] = []
 
     # En una base nueva las tablas todavía no existen: las crea después create_all con todo.
@@ -57,4 +88,12 @@ def asegurar_esquema_requisitos(conn: Connection) -> list[str]:
         )
         conn.execute(text("ALTER TABLE scheduled_task_run ENABLE ROW LEVEL SECURITY"))
         cambios.append("scheduled_task_run")
+
+    # Grupos de usuarios (requisito 2). Necesitan las tablas a las que referencian.
+    existe_base = conn.execute(text("SELECT to_regclass('public.app_user')")).scalar() is not None
+    falta_grupos = conn.execute(text("SELECT to_regclass('public.user_group_permission')")).scalar() is None
+    if existe_base and falta_grupos:
+        for sentencia in _GRUPOS:
+            conn.execute(text(sentencia))
+        cambios.append("user_group, user_group_member, user_group_permission")
     return cambios

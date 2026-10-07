@@ -8,6 +8,7 @@ import { PaginadorComponent } from '../../../shared/components/paginador/paginad
 import { AuthService } from '../../auth/auth.service';
 import { DecisionDenuncia, VacanteDenunciada, etiquetaCategoria, mensajeDeError } from '../../moderacion/denuncias.models';
 import { DenunciasService } from '../../moderacion/denuncias.service';
+import { PermisoDirective } from '../../../shared/directives/permiso.directive';
 
 const DECISIONES: Record<DecisionDenuncia, { titulo: string; boton: string; explicacion: string }> = {
   mantener: {
@@ -31,7 +32,7 @@ const DECISIONES: Record<DecisionDenuncia, { titulo: string; boton: string; expl
 @Component({
   selector: 'app-denuncias',
   standalone: true,
-  imports: [DatePipe, FormsModule, RouterLink, PaginadorComponent],
+  imports: [DatePipe, FormsModule, RouterLink, PaginadorComponent, PermisoDirective],
   templateUrl: './denuncias.component.html',
   styleUrl: './denuncias.component.scss',
 })

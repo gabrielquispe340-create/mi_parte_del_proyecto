@@ -17,6 +17,7 @@ from app.features.bitacora import router as bitacora
 from app.features.catalogo import router as catalogos
 from app.features.comunicacion import router as comunicacion
 from app.features.entrevistas import router as entrevistas
+from app.features.grupos import router as grupos
 from app.features.ia import router as ia
 from app.features.instituciones import router as instituciones
 from app.features.moderacion import router as moderacion
@@ -91,6 +92,7 @@ routers = [
     instituciones.router,
     planes.router,
     roles.router,
+    grupos.router,
     vacantes.router,
     postulaciones.router,
     seleccion.router,

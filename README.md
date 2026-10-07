@@ -337,6 +337,18 @@ Moderador de UMSS: `moderador@umss.egresa.bo` / `Egresa2026!`.
 
 **Requisitos generales de la materia:**
 
+- **Grupos de usuarios y permisos por componente (requisito 2):** "Grupos y permisos" en el
+  menú del admin de la universidad (y del superadmin, eligiendo la universidad). Un grupo
+  junta administradores y moderadores y dice qué menús, formularios, botones y etiquetas del
+  panel ven (el catálogo está en `backend/app/security/permisos.py`). Sin grupo, cada uno ve
+  lo de su rol; con grupos, la suma de sus grupos, sin pasar el techo del rol (los
+  componentes "solo admin" no llegan a un moderador). El backend controla cada permiso en su
+  endpoint, así que ocultar un botón no es la única barrera, y los cambios valen al instante.
+  "Lo que ve cada persona" muestra el resultado de cada cuenta. Para probarlo: con
+  `admin@umss.egresa.bo` creá un grupo con unos pocos permisos, sumá a
+  `moderador@umss.egresa.bo` y entrá con esa cuenta.
+  Las tablas (`user_group`, `user_group_member`, `user_group_permission`) las crea el backend
+  solo al arrancar.
 - **Bitácora confidencial (requisito 3):** registra usuario, IP, fecha y hora, módulo y
   acción, y cada entrada se guarda cifrada (X25519 + AES-256-GCM): en la base solo se ve
   `cifrado`. Para leerla, "Bitácora del sistema" pide la **clave de desarrollador**; la

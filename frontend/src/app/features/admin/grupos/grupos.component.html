@@ -1,0 +1,308 @@
+<header class="cabecera">
+  <div>
+    <h1>Grupos y permisos</h1>
+    <p class="sub">
+      Agrupá al personal de la universidad y elegí qué menús, formularios, botones y etiquetas del
+      panel ve cada grupo. Quien no está en ningún grupo ve lo de su rol. El servidor también
+      controla cada permiso: no alcanza con ocultar un botón.
+    </p>
+  </div>
+  <div class="cabecera-acciones">
+    <a routerLink="/admin/roles" class="btn-secundario">← Gestión de roles</a>
+    <button type="button" class="btn-primario" (click)="nuevo()">+ Nuevo grupo</button>
+  </div>
+</header>
+
+@if (esSuperadmin()) {
+  <label class="selector-universidad">
+    <span>Universidad</span>
+    <select [ngModel]="universidadId()" (ngModelChange)="elegirUniversidad($event)">
+      <option [ngValue]="null">Todas las universidades</option>
+      @for (u of universidades(); track u.id) {
+        <option [ngValue]="u.id">{{ u.nombre }}{{ u.sigla ? ' (' + u.sigla + ')' : '' }}</option>
+      }
+    </select>
+  </label>
+}
+
+@if (error()) {
+  <p class="banner banner-error" role="alert">{{ error() }}</p>
+}
+@if (mensaje()) {
+  <p class="banner banner-ok" role="status">{{ mensaje() }}</p>
+}
+
+<section class="tarjeta">
+  <div class="tarjeta-titulo">
+    <h2>Grupos</h2>
+    <span class="contador">{{ grupos().length }}</span>
+  </div>
+
+  @if (cargando()) {
+    <p class="estado-vacio">Cargando grupos…</p>
+  } @else if (grupos().length === 0) {
+    <div class="estado-vacio">
+      <p>Todavía no hay grupos. Todo el personal ve lo que corresponde a su rol.</p>
+      <button type="button" class="btn-secundario" (click)="nuevo()">Crear el primer grupo</button>
+    </div>
+  } @else {
+    <ul class="lista-grupos">
+      @for (g of grupos(); track g.id) {
+        <li>
+          <button type="button" class="grupo" (click)="editar(g)">
+            <span class="grupo-nombre">{{ g.nombre }}</span>
+            @if (esSuperadmin() && !universidadId()) {
+              <span class="grupo-universidad">{{ g.institucion }}</span>
+            }
+            <span class="grupo-descripcion">{{ g.descripcion || 'Sin descripción' }}</span>
+            <span class="grupo-datos">
+              <span class="dato">{{ g.miembros.length }} {{ g.miembros.length === 1 ? 'miembro' : 'miembros' }}</span>
+              <span class="dato">{{ g.permisos.length }} de {{ totalComponentes() }} componentes</span>
+            </span>
+            @if (g.miembros.length > 0) {
+              <span class="grupo-miembros">
+                @for (m of g.miembros.slice(0, 4); track m.id) {
+                  <span class="avatar" [title]="m.correo">{{ m.correo.charAt(0).toUpperCase() }}</span>
+                }
+                @if (g.miembros.length > 4) {
+                  <span class="avatar avatar--mas">+{{ g.miembros.length - 4 }}</span>
+                }
+              </span>
+            }
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<section class="tarjeta">
+  <div class="tarjeta-titulo">
+    <h2>Lo que ve cada persona</h2>
+  </div>
+  @if (!puedeVerPersonal()) {
+    <p class="estado-vacio">Elegí una universidad para ver a su personal.</p>
+  } @else if (personal().length === 0) {
+    <p class="estado-vacio">La universidad todavía no tiene administradores ni moderadores.</p>
+  } @else {
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Persona</th>
+            <th>Rol</th>
+            <th>Grupos</th>
+            <th class="num">Componentes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of personal(); track p.id) {
+            <tr>
+              <td class="correo" [title]="p.correo">{{ p.correo }}</td>
+              <td><span class="chip-rol">{{ etiquetasRol[p.rol] ?? p.rol }}</span></td>
+              <td>
+                @for (nombre of p.grupos; track nombre) {
+                  <span class="chip-grupo">{{ nombre }}</span>
+                } @empty {
+                  <span class="sin-grupo" title="Ve lo que corresponde a su rol">Sin grupo</span>
+                }
+              </td>
+              <td class="num">{{ p.permisos.length }} / {{ totalComponentes() }}</td>
+              <td class="num">
+                <button type="button" class="enlace" (click)="ver(p)">Ver detalle</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<!-- Editor de grupo -->
+@if (editor(); as e) {
+  <div class="modal-fondo" role="presentation" (click)="cerrar()">
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-grupo"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-cabecera">
+        <h2 id="titulo-grupo">{{ e.id ? 'Editar grupo' : 'Nuevo grupo' }}</h2>
+        <button type="button" class="cerrar" aria-label="Cerrar" (click)="cerrar()">×</button>
+      </header>
+
+      @if (errorEditor()) {
+        <p class="banner banner-error" role="alert">{{ errorEditor() }}</p>
+      }
+
+      <div class="campos">
+        <label>
+          <span>Nombre</span>
+          <input
+            type="text"
+            maxlength="80"
+            placeholder="Ej.: Moderadores de ofertas"
+            [ngModel]="e.nombre"
+            (ngModelChange)="actualizar({ nombre: $event })"
+          />
+        </label>
+        <label>
+          <span>Descripción</span>
+          <input
+            type="text"
+            maxlength="300"
+            placeholder="Para qué sirve este grupo"
+            [ngModel]="e.descripcion"
+            (ngModelChange)="actualizar({ descripcion: $event })"
+          />
+        </label>
+        @if (esSuperadmin()) {
+          <label>
+            <span>Universidad</span>
+            <select [ngModel]="e.institucionId" (ngModelChange)="elegirUniversidadEditor($event)" [disabled]="!!e.id">
+              <option [ngValue]="null" disabled>Elegí una universidad…</option>
+              @for (u of universidades(); track u.id) {
+                <option [ngValue]="u.id">{{ u.nombre }}</option>
+              }
+            </select>
+          </label>
+        }
+      </div>
+
+      <h3>Miembros <small>{{ e.miembros.size }}</small></h3>
+      @if (personalEditor().length === 0) {
+        <p class="ayuda-texto">
+          {{ esSuperadmin() && !e.institucionId ? 'Elegí la universidad para ver a su personal.' : 'No hay personal para sumar.' }}
+        </p>
+      } @else {
+        @if (personalEditor().length > 6) {
+          <input
+            type="search"
+            class="buscar-miembro"
+            placeholder="Buscar por correo…"
+            [ngModel]="filtroMiembros()"
+            (ngModelChange)="filtroMiembros.set($event)"
+          />
+        }
+        <div class="miembros">
+          @for (p of personalFiltrado(); track p.id) {
+            <label class="miembro" [class.miembro--activo]="esMiembro(p.id)">
+              <input type="checkbox" [checked]="esMiembro(p.id)" (change)="alternarMiembro(p.id)" />
+              <span class="miembro-datos">
+                <span class="miembro-correo" [title]="p.correo">{{ p.correo }}</span>
+                <span class="miembro-rol">{{ etiquetasRol[p.rol] ?? p.rol }}</span>
+              </span>
+            </label>
+          } @empty {
+            <p class="ayuda-texto">Nadie coincide con «{{ filtroMiembros() }}».</p>
+          }
+        </div>
+      }
+
+      <div class="permisos-titulo">
+        <h3>Permisos <small>{{ e.permisos.size }} de {{ totalComponentes() }}</small></h3>
+        <div class="atajos">
+          <span>Empezar desde:</span>
+          <button type="button" class="enlace" (click)="copiarRol('moderator')">Moderador</button>
+          <button type="button" class="enlace" (click)="copiarRol('platform_admin')">Administrador</button>
+          <button type="button" class="enlace" (click)="limpiarPermisos()">Ninguno</button>
+        </div>
+      </div>
+      <p class="ayuda-texto">
+        Los componentes <span class="chip-admin">solo admin</span> no se aplican a los moderadores del
+        grupo. El administrador conserva siempre «Grupos y permisos».
+      </p>
+
+      <div class="matriz">
+        @for (m of modulos(); track m.nombre) {
+          <fieldset class="modulo">
+            <legend>
+              <label class="modulo-nombre">
+                <input
+                  type="checkbox"
+                  [checked]="estadoModulo(m) === 'todo'"
+                  [indeterminate]="estadoModulo(m) === 'parte'"
+                  (change)="alternarModulo(m)"
+                />
+                {{ m.nombre }}
+              </label>
+            </legend>
+            @for (c of m.componentes; track c.codigo) {
+              <label class="componente" [title]="c.descripcion">
+                <input type="checkbox" [checked]="tienePermiso(c.codigo)" (change)="alternarPermiso(c.codigo)" />
+                <span class="componente-nombre">{{ c.nombre }}</span>
+                <span class="tipo" [attr.data-tipo]="c.tipo">{{ etiquetasTipo[c.tipo] }}</span>
+                @if (soloAdmins(c)) {
+                  <span class="chip-admin">solo admin</span>
+                }
+              </label>
+            }
+          </fieldset>
+        }
+      </div>
+
+      <footer class="modal-pie">
+        @if (e.id) {
+          @if (confirmandoBorrado()) {
+            <span class="confirmar">
+              ¿Eliminar el grupo?
+              <button type="button" class="btn-peligro" (click)="eliminar()" [disabled]="guardando()">Sí, eliminar</button>
+              <button type="button" class="enlace" (click)="confirmandoBorrado.set(false)">No</button>
+            </span>
+          } @else {
+            <button type="button" class="enlace enlace--peligro" (click)="confirmandoBorrado.set(true)">
+              Eliminar grupo
+            </button>
+          }
+        }
+        <span class="espacio"></span>
+        <button type="button" class="btn-secundario" (click)="cerrar()" [disabled]="guardando()">Cancelar</button>
+        <button type="button" class="btn-primario" (click)="guardar()" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar grupo' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- Permisos efectivos de una persona -->
+@if (viendo(); as p) {
+  <div class="modal-fondo" role="presentation" (click)="cerrarVista()">
+    <div
+      class="modal modal--angosto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-persona"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-cabecera">
+        <div>
+          <h2 id="titulo-persona" class="titulo-correo">{{ p.correo }}</h2>
+          <p class="ayuda-texto">
+            {{ etiquetasRol[p.rol] ?? p.rol }} ·
+            {{ p.grupos.length ? 'Grupos: ' + p.grupos.join(', ') : 'Sin grupo: ve lo de su rol' }}
+          </p>
+        </div>
+        <button type="button" class="cerrar" aria-label="Cerrar" (click)="cerrarVista()">×</button>
+      </header>
+      <ul class="efectivos">
+        @for (m of modulos(); track m.nombre) {
+          <li>
+            <span class="efectivos-modulo">{{ m.nombre }}</span>
+            <span class="efectivos-lista">
+              @for (c of m.componentes; track c.codigo) {
+                <span class="efectivo" [class.efectivo--si]="p.permisos.includes(c.codigo)">
+                  {{ p.permisos.includes(c.codigo) ? '✓' : '✕' }} {{ c.nombre }}
+                </span>
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    </div>
+  </div>
+}

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { passwordPendienteGuard } from './core/guards/password-pendiente.guard';
+import { permisoGuard } from './core/guards/permiso.guard';
 
 export const routes: Routes = [
   {
@@ -57,25 +58,35 @@ export const routes: Routes = [
   {
     path: 'admin',
     canActivate: [passwordPendienteGuard],
-    canActivateChild: [passwordPendienteGuard],
+    canActivateChild: [passwordPendienteGuard, permisoGuard],
     loadComponent: () => import('./features/admin/layout/admin-layout').then((m) => m.AdminLayout),
     children: [
       {
         path: '',
+        data: { permiso: 'menu.dashboard' },
         loadComponent: () => import('./features/admin/dashboard/dashboard').then((m) => m.Dashboard),
       },
       {
         path: 'universidades',
+        data: { permiso: 'menu.universidades' },
         loadComponent: () =>
           import('./features/admin/universidades/universidades.component').then((m) => m.UniversidadesComponent),
       },
       {
         path: 'roles',
+        data: { permiso: 'menu.usuarios' },
         loadComponent: () =>
           import('./features/admin/gestion-roles/gestion-roles.component').then((m) => m.GestionRolesComponent),
       },
       {
+        path: 'grupos',
+        data: { permiso: 'menu.grupos' },
+        loadComponent: () =>
+          import('./features/admin/grupos/grupos.component').then((m) => m.GruposComponent),
+      },
+      {
         path: 'validacion-egresados',
+        data: { permiso: 'menu.validacion' },
         loadComponent: () =>
           import('./features/admin/validacion-egresados/validacion-egresados.component').then(
             (m) => m.ValidacionEgresadosComponent,
@@ -83,6 +94,7 @@ export const routes: Routes = [
       },
       {
         path: 'empresas',
+        data: { permiso: 'menu.empresas' },
         loadComponent: () =>
           import('./features/admin/empresas-gestion/empresas-gestion.component').then(
             (m) => m.EmpresasGestionComponent,
@@ -90,6 +102,7 @@ export const routes: Routes = [
       },
       {
         path: 'moderacion-vacantes',
+        data: { permiso: 'menu.moderacion' },
         loadComponent: () =>
           import('./features/admin/moderacion-vacantes/moderacion-vacantes.component').then(
             (m) => m.ModeracionVacantesComponent,
@@ -97,6 +110,7 @@ export const routes: Routes = [
       },
       {
         path: 'denuncias',
+        data: { permiso: 'menu.denuncias' },
         loadComponent: () =>
           import('./features/admin/denuncias/denuncias.component').then((m) => m.DenunciasComponent),
       },
@@ -110,6 +124,7 @@ export const routes: Routes = [
       },
       {
         path: 'reportes',
+        data: { permiso: 'menu.reportes' },
         loadComponent: () =>
           import('./features/reportes/reporte-personalizado/reporte-personalizado.component').then(
             (m) => m.ReportePersonalizadoComponent,
@@ -117,10 +132,12 @@ export const routes: Routes = [
       },
       {
         path: 'bitacora',
+        data: { permiso: 'menu.bitacora' },
         loadComponent: () => import('./features/admin/bitacora/bitacora.component').then((m) => m.BitacoraComponent),
       },
       {
         path: 'notificaciones',
+        data: { permiso: 'menu.alertas' },
         loadComponent: () =>
           import('./features/notificaciones/notificaciones-panel/notificaciones-panel.component').then(
             (m) => m.NotificacionesPanelComponent,

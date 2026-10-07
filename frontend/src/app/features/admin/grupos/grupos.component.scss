@@ -1,0 +1,741 @@
+// Misma paleta que «Gestión de roles» (gestion-roles.scss).
+$texto: #1a1a2e;
+$texto-suave: #7b7c93;
+$tenue: #a0a0b0;
+$borde: #e2e4ef;
+$borde-suave: #eef0f6;
+$primario: #4c5bd4;
+$foco: #6161d6;
+
+:host {
+  display: block;
+  padding: 2rem 2.4rem;
+  max-width: 1100px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.cabecera {
+  margin-bottom: 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0;
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: $texto;
+    letter-spacing: -0.3px;
+  }
+
+  .sub {
+    margin: 0.25rem 0 0;
+    color: $texto-suave;
+    font-size: 0.85rem;
+    max-width: 600px;
+    line-height: 1.5;
+  }
+}
+
+.cabecera-acciones {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.btn-primario,
+.btn-secundario,
+.btn-peligro {
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primario {
+  background: linear-gradient(90deg, #5b66d6 0%, #8254ca 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 6px 14px rgba(91, 102, 214, 0.25);
+}
+
+.btn-secundario {
+  background: white;
+  border: 1px solid $borde;
+  color: $primario;
+
+  &:hover:not(:disabled) {
+    border-color: $foco;
+  }
+}
+
+.btn-peligro {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+}
+
+.enlace {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: $primario;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &--peligro {
+    color: #b91c1c;
+  }
+}
+
+.selector-universidad {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: $texto-suave;
+
+  select {
+    padding: 8px 10px;
+    border: 1px solid $borde;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 500;
+    color: #333;
+    background: white;
+    max-width: 100%;
+  }
+}
+
+.banner {
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.82rem;
+  margin: 0 0 0.9rem;
+
+  &.banner-error {
+    background: rgba(220, 38, 38, 0.12);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    color: #b91c1c;
+  }
+
+  &.banner-ok {
+    background: rgba(22, 163, 74, 0.12);
+    border: 1px solid rgba(22, 163, 74, 0.35);
+    color: #15803d;
+  }
+}
+
+.tarjeta {
+  background: white;
+  border-radius: 14px;
+  padding: 1.3rem 1.5rem;
+  margin-bottom: 1.2rem;
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.04),
+    0 3px 10px rgba(0, 0, 0, 0.02);
+}
+
+.tarjeta-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: $texto;
+  }
+}
+
+.contador {
+  background: rgba(76, 91, 212, 0.1);
+  color: $primario;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+
+.estado-vacio {
+  text-align: center;
+  color: $texto-suave;
+  font-size: 0.85rem;
+  padding: 1.4rem 0;
+
+  p {
+    margin: 0 0 0.8rem;
+  }
+}
+
+// ─── Lista de grupos ─────────────────────────────────────────────────────
+.lista-grupos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.8rem;
+}
+
+.grupo {
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+  background: #fafbfe;
+  border: 1px solid $borde-suave;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: $foco;
+    box-shadow: 0 6px 16px rgba(76, 91, 212, 0.1);
+    outline: none;
+  }
+}
+
+.grupo-nombre {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: $texto;
+  overflow-wrap: anywhere;
+}
+
+.grupo-universidad {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.grupo-descripcion {
+  font-size: 0.78rem;
+  color: $texto-suave;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.grupo-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+
+  .dato {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: $primario;
+    background: rgba(76, 91, 212, 0.08);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+}
+
+.grupo-miembros {
+  display: flex;
+  margin-top: 0.3rem;
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #5b66d6, #8254ca);
+  color: white;
+  font-size: 0.66rem;
+  font-weight: 700;
+  border: 2px solid white;
+
+  &--mas {
+    background: #e8eaf3;
+    color: $texto-suave;
+  }
+}
+
+// ─── Personal ────────────────────────────────────────────────────────────
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+
+  th {
+    text-align: left;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: $tenue;
+    padding: 0 0.6rem 0.5rem;
+    border-bottom: 1px solid #e8eaf3;
+  }
+
+  td {
+    padding: 0.6rem;
+    border-bottom: 1px solid #f4f5fa;
+    color: #2d2d3f;
+    vertical-align: middle;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .num {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .correo {
+    font-weight: 600;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.chip-rol,
+.chip-grupo,
+.chip-admin {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.chip-rol {
+  background: rgba(76, 91, 212, 0.1);
+  color: $primario;
+}
+
+.chip-grupo {
+  background: rgba(130, 84, 202, 0.1);
+  color: #6d3fb5;
+  margin: 0 0.3rem 0.2rem 0;
+}
+
+.chip-admin {
+  background: rgba(180, 83, 9, 0.1);
+  color: #b45309;
+}
+
+.sin-grupo {
+  font-size: 0.74rem;
+  color: $tenue;
+  white-space: nowrap;
+}
+
+.tabla .enlace {
+  white-space: nowrap;
+}
+
+// ─── Modales ─────────────────────────────────────────────────────────────
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.modal {
+  width: 100%;
+  max-width: 860px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: white;
+  border-radius: 14px;
+  padding: 1.4rem 1.6rem 1.2rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  box-sizing: border-box;
+
+  &--angosto {
+    max-width: 560px;
+  }
+
+  h3 {
+    margin: 1.1rem 0 0.5rem;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: $texto;
+
+    small {
+      font-weight: 600;
+      color: $tenue;
+      margin-left: 0.3rem;
+    }
+  }
+}
+
+.modal-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $texto;
+  }
+
+  .titulo-correo {
+    overflow-wrap: anywhere;
+  }
+
+  .cerrar {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: $tenue;
+    cursor: pointer;
+    padding: 0 0.2rem;
+
+    &:hover {
+      color: $texto;
+    }
+  }
+}
+
+.ayuda-texto {
+  margin: 0.2rem 0 0.5rem;
+  font-size: 0.76rem;
+  color: $texto-suave;
+  line-height: 1.5;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.8rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+
+    > span {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: $texto-suave;
+    }
+  }
+
+  input,
+  select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid $borde;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    color: #333;
+    background: white;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: $foco;
+      box-shadow: 0 0 0 3px rgba(97, 97, 214, 0.1);
+    }
+  }
+}
+
+.buscar-miembro {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 0.5rem;
+  padding: 8px 12px;
+  border: 1px solid $borde;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.8rem;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: $foco;
+    box-shadow: 0 0 0 3px rgba(97, 97, 214, 0.1);
+  }
+}
+
+.miembros {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.4rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.miembro {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid $borde-suave;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 0;
+
+  &--activo {
+    border-color: $foco;
+    background: rgba(76, 91, 212, 0.05);
+  }
+
+  input {
+    accent-color: $primario;
+    flex-shrink: 0;
+  }
+}
+
+.miembro-datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.miembro-correo {
+  font-size: 0.78rem;
+  color: #2d2d3f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.miembro-rol {
+  font-size: 0.66rem;
+  color: $tenue;
+}
+
+.permisos-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.atajos {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  font-size: 0.74rem;
+  color: $tenue;
+}
+
+.matriz {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.7rem;
+}
+
+.modulo {
+  margin: 0;
+  padding: 0.5rem 0.7rem 0.6rem;
+  border: 1px solid $borde-suave;
+  border-radius: 10px;
+  min-width: 0;
+
+  legend {
+    padding: 0 0.3rem;
+  }
+}
+
+.modulo-nombre {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: $texto;
+  cursor: pointer;
+
+  input {
+    accent-color: $primario;
+  }
+}
+
+.componente {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.3rem 0;
+  font-size: 0.78rem;
+  color: #2d2d3f;
+  cursor: pointer;
+
+  input {
+    accent-color: $primario;
+  }
+}
+
+.componente-nombre {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.tipo {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #eef0f6;
+  color: $texto-suave;
+
+  &[data-tipo='menu'] {
+    background: rgba(76, 91, 212, 0.1);
+    color: $primario;
+  }
+
+  &[data-tipo='formulario'] {
+    background: rgba(14, 116, 144, 0.1);
+    color: #0e7490;
+  }
+
+  &[data-tipo='boton'] {
+    background: rgba(22, 163, 74, 0.1);
+    color: #15803d;
+  }
+
+  &[data-tipo='etiqueta'] {
+    background: rgba(130, 84, 202, 0.1);
+    color: #6d3fb5;
+  }
+}
+
+.modal-pie {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid $borde-suave;
+
+  .espacio {
+    flex: 1;
+  }
+}
+
+.confirmar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.efectivos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid #f4f5fa;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.efectivos-modulo {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: $texto-suave;
+  margin-bottom: 0.3rem;
+}
+
+.efectivos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.efectivo {
+  font-size: 0.74rem;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: #f4f5fa;
+  color: $tenue;
+  text-decoration: line-through;
+
+  &--si {
+    background: rgba(22, 163, 74, 0.1);
+    color: #15803d;
+    text-decoration: none;
+  }
+}
+
+@media (max-width: 700px) {
+  :host {
+    padding: 1.2rem 1rem;
+  }
+
+  .modal {
+    padding: 1.1rem 1rem;
+  }
+
+  .tabla .correo {
+    max-width: 160px;
+  }
+}

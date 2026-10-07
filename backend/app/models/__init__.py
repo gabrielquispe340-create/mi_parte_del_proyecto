@@ -14,6 +14,7 @@ from app.models.candidato import (
 )
 from app.models.catalogo import FieldOfStudy, JobCategory, Language, Skill
 from app.models.empresa import Company, CompanyMember, CompanyVerification, Sector
+from app.models.grupo import UserGroup, UserGroupMember, UserGroupPermission
 from app.models.institucion import (
     CompanyInstitution,
     Institution,
@@ -105,6 +106,9 @@ __all__ = [
     "SkillProficiencyLevel",
     "SystemBackup",
     "UniversitySignupRequest",
+    "UserGroup",
+    "UserGroupMember",
+    "UserGroupPermission",
     "UserRole",
     "WorkExperience",
     "WorkModality",

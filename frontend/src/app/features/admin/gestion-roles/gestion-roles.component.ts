@@ -14,6 +14,7 @@ import {
   UsuarioAdmin,
 } from './gestion-roles.model';
 import { GestionRolesService } from './gestion-roles.service';
+import { PermisoDirective } from '../../../shared/directives/permiso.directive';
 
 interface Credenciales {
   correo: string;
@@ -29,7 +30,7 @@ function mensajeDeError(err: HttpErrorResponse, porDefecto: string): string {
 @Component({
   selector: 'app-gestion-roles',
   standalone: true,
-  imports: [FormsModule, PaginadorComponent, RouterLink],
+  imports: [FormsModule, PaginadorComponent, RouterLink, PermisoDirective],
   templateUrl: './gestion-roles.html',
   styleUrl: './gestion-roles.scss',
 })

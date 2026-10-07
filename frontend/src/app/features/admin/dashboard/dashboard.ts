@@ -8,6 +8,9 @@ import { AuthService } from '../../auth/auth.service';
 import { BitacoraClaveService } from '../bitacora/bitacora-clave.service';
 import { BitacoraService } from '../bitacora/bitacora.service';
 import { ETIQUETAS_ROL } from '../gestion-roles/gestion-roles.model';
+import { PANTALLAS_ADMIN } from '../../../core/guards/permiso.guard';
+import { PermisosService } from '../../../core/services/permisos.service';
+import { PermisoDirective } from '../../../shared/directives/permiso.directive';
 
 interface ResumenUniversidad {
   id: string;
@@ -35,13 +38,14 @@ interface ActividadApi {
 
 interface PanelAdmin {
   universidades: ResumenUniversidad[];
+  /** null si el grupo del usuario no ve los indicadores. */
   totales: {
     egresados: number;
     egresados_verificados: number;
     empresas_habilitadas: number;
     vacantes_publicadas: number;
     postulaciones: number;
-  };
+  } | null;
   pendientes: {
     egresados: number;
     empresas: number;
@@ -201,7 +205,7 @@ function porcentaje(parte: number, total: number): number {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, PaginadorComponent],
+  imports: [RouterLink, PaginadorComponent, PermisoDirective],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -210,6 +214,7 @@ export class Dashboard implements OnInit {
   private readonly bitacora = inject(BitacoraService);
   private readonly bitacoraClave = inject(BitacoraClaveService);
   readonly auth = inject(AuthService);
+  private readonly permisos = inject(PermisosService);
 
   readonly panel = signal<PanelAdmin | null>(null);
   readonly cargando = signal(true);
@@ -253,7 +258,7 @@ export class Dashboard implements OnInit {
         query: null,
       });
     }
-    return [
+    const todas: Tarea[] = [
       ...tareas,
       {
         clave: 'egresados',
@@ -290,13 +295,18 @@ export class Dashboard implements OnInit {
         query: null,
       },
     ];
+    return todas.filter((tarea) => {
+      // Solo lo pendiente de los módulos que el grupo del usuario puede abrir.
+      const pantalla = PANTALLAS_ADMIN.find((p) => p.ruta === tarea.ruta);
+      return !pantalla || this.permisos.puede(pantalla.permiso);
+    });
   });
 
   readonly totalPendientes = computed(() => this.tareas().reduce((suma, t) => suma + t.cantidad, 0));
 
   readonly kpis = computed<Kpi[]>(() => {
     const p = this.panel();
-    if (!p) return [];
+    if (!p?.totales) return [];
     const t = p.totales;
     const superadmin = this.esSuperadmin();
     const lista: Kpi[] = [];

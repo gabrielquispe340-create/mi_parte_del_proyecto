@@ -78,7 +78,8 @@ class ActividadPanel(BaseModel):
 
 class PanelAdminResponse(BaseModel):
     universidades: list[ResumenInstitucionResponse]
-    totales: TotalesPanel
+    # None cuando el grupo del usuario no ve los indicadores del dashboard.
+    totales: TotalesPanel | None = None
     pendientes: PendientesPanel
     accesos_hoy: int
     accesos_fallidos_hoy: int

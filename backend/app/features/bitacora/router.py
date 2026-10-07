@@ -10,6 +10,7 @@ from app.core.database import get_db
 from app.features.bitacora.schema import AbrirBitacoraRequest, BitacoraLogResponse, EstadoBitacoraResponse
 from app.features.bitacora.service import BitacoraService, FiltrosBitacora, descripcion_exportacion
 from app.models.usuario import AppUser
+from app.security.permisos import requiere_permiso
 from app.security.tenant import AlcanceStaff, get_alcance_staff
 
 router = APIRouter(prefix="/bitacora", tags=["bitacora"])
@@ -67,7 +68,7 @@ def estado(_: AlcanceStaff = Depends(get_alcance_staff), db: Session = Depends(g
 def abrir(
     data: AbrirBitacoraRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("menu.bitacora", "etiqueta.dashboard.actividad")),
     db: Session = Depends(get_db),
 ):
     """Comprueba la clave de desarrollador antes de mostrar la bitácora (423 si no es correcta)."""
@@ -79,7 +80,7 @@ def listar_bitacora(
     request: Request,
     filtros: FiltrosBitacora = Depends(_filtros),
     clave: str | None = Header(None, alias="X-Clave-Desarrollador"),
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("menu.bitacora", "etiqueta.dashboard.actividad")),
     db: Session = Depends(get_db),
 ):
     return _consultar(db, filtros, alcance, clave, request)
@@ -90,7 +91,7 @@ def exportar_excel(
     request: Request,
     filtros: FiltrosBitacora = Depends(_filtros),
     clave: str | None = Header(None, alias="X-Clave-Desarrollador"),
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.bitacora.exportar")),
     db: Session = Depends(get_db),
 ):
     entradas = _consultar(db, filtros, alcance, clave, request)
@@ -107,7 +108,7 @@ def exportar_pdf(
     request: Request,
     filtros: FiltrosBitacora = Depends(_filtros),
     clave: str | None = Header(None, alias="X-Clave-Desarrollador"),
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.bitacora.exportar")),
     db: Session = Depends(get_db),
 ):
     entradas = _consultar(db, filtros, alcance, clave, request)

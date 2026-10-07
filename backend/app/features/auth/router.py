@@ -8,6 +8,7 @@ from app.features.auth.schema import (
     CambiarPasswordRequest,
     LoginRequest,
     MessageResponse,
+    MisPermisosResponse,
     RefreshRequest,
     RegistroEgresadoRequest,
     RegistroEmpresaRequest,
@@ -15,7 +16,10 @@ from app.features.auth.schema import (
 )
 from app.features.bitacora.service import BitacoraService
 from app.features.auth.service import AuthService
+from app.models.usuario import AppUser
 from app.security.dependencies import CurrentUser, get_current_user
+from app.security.permisos import permisos_de_usuario
+from app.security.tenant import institucion_de_usuario
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -87,3 +91,14 @@ def cambiar_password(
     BitacoraService(db).registrar(modulo="auth", accion="cambiar_password", usuario_id=current_user.id_usuario, ip=ip)
     db.commit()
     return tokens
+
+
+@router.get("/permisos", response_model=MisPermisosResponse)
+def mis_permisos(current_user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Componentes del panel que puede usar el usuario; se consulta en la base, no en el token."""
+    if db.get(AppUser, current_user.id_usuario) is None:
+        raise UnauthorizedException("La cuenta ya no existe.")
+    institucion = institucion_de_usuario(db, current_user)
+    superadmin = "platform_admin" in current_user.roles and institucion is None
+    permisos = permisos_de_usuario(db, current_user.id_usuario, current_user.roles, institucion)
+    return MisPermisosResponse(permisos=sorted(permisos), superadmin=superadmin)

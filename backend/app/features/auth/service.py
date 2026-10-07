@@ -19,6 +19,7 @@ from app.models.usuario import AppUser
 from app.security.jwt_provider import create_access_token, create_refresh_token, decode_token
 from app.security.login_rate_limiter import limpiar_intentos, registrar_intento_fallido, verificar_bloqueo
 from app.security.password_hasher import hash_password, verify_password
+from app.security.permisos import permisos_de_usuario
 from app.shared.email_service import EmailService
 
 _ROL_PRIORIDAD = ("platform_admin", "moderator", "empresa", "candidate")
@@ -268,7 +269,15 @@ class AuthService:
             institucion_id=institucion.id if institucion else None,
             institucion_nombre=institucion.name if institucion else None,
             debe_cambiar_password=bool(usuario.must_change_password),
+            permisos=sorted(self.permisos_de(usuario, roles)),
         )
+
+    def permisos_de(self, usuario: AppUser, roles: list[str]) -> frozenset[str]:
+        """Permisos por componente; el staff sin universidad es superadmin solo si es admin."""
+        institucion_id = usuario.institution_id
+        if institucion_id is None and "platform_admin" not in roles:
+            institucion_id = INSTITUCION_POR_DEFECTO_ID
+        return permisos_de_usuario(self.db, usuario.id, roles, institucion_id)
 
     def _institucion_de(self, usuario: AppUser, roles: list[str]) -> Institution | None:
         if {"platform_admin", "moderator"} & set(roles):

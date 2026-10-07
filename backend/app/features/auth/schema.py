@@ -22,6 +22,13 @@ class TokenResponse(BaseModel):
     institucion_nombre: str | None = None
     # La cuenta tiene una contraseña temporal (creada por un admin) y debe cambiarla.
     debe_cambiar_password: bool = False
+    # Componentes del panel que el usuario puede usar (requisito 2: grupos y permisos).
+    permisos: list[str] = []
+
+
+class MisPermisosResponse(BaseModel):
+    permisos: list[str]
+    superadmin: bool
 
 
 class CambiarPasswordRequest(BaseModel):

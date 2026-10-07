@@ -12,7 +12,8 @@ from app.features.empresa.schema import (
     EmpresaResponse,
     SuspensionEmpresaRequest,
 )
-from app.security.tenant import AlcanceStaff, get_alcance_staff
+from app.security.permisos import requiere_permiso
+from app.security.tenant import AlcanceStaff
 from app.features.bitacora.service import BitacoraService
 from app.features.perfil.service import EgresadoService
 from app.features.empresa.service import EmpresaService
@@ -37,7 +38,9 @@ def _auditar(db: Session, request: Request, alcance: AlcanceStaff, accion: str, 
 
 
 @router.get("/egresados/pendientes", response_model=list[PerfilEgresadoResponse])
-def listar_egresados_pendientes(alcance: AlcanceStaff = Depends(get_alcance_staff), db: Session = Depends(get_db)):
+def listar_egresados_pendientes(
+    alcance: AlcanceStaff = Depends(requiere_permiso("menu.validacion")), db: Session = Depends(get_db)
+):
     return EgresadoService(db).listar_pendientes_validacion(alcance.institution_id)
 
 
@@ -46,7 +49,7 @@ def decidir_egresado(
     perfil_id: uuid.UUID,
     data: ValidacionEgresadoDecisionRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.validacion.decidir")),
     db: Session = Depends(get_db),
 ):
     perfil = EgresadoService(db).validar(perfil_id, data.aprobado, data.motivo_rechazo, alcance.institution_id)
@@ -55,14 +58,16 @@ def decidir_egresado(
 
 
 @router.get("/empresas/pendientes", response_model=list[EmpresaResponse])
-def listar_empresas_pendientes(alcance: AlcanceStaff = Depends(get_alcance_staff), db: Session = Depends(get_db)):
+def listar_empresas_pendientes(
+    alcance: AlcanceStaff = Depends(requiere_permiso("menu.empresas")), db: Session = Depends(get_db)
+):
     return EmpresaService(db).listar_pendientes(alcance.institution_id)
 
 
 @router.get("/empresas", response_model=list[EmpresaResponse])
 def listar_todas_las_empresas(
     incluir_inactivas: bool = Query(default=False),
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("menu.empresas")),
     db: Session = Depends(get_db),
 ):
     return EmpresaService(db).listar_todas(incluir_inactivas=incluir_inactivas, institution_id=alcance.institution_id)
@@ -73,7 +78,7 @@ def decidir_empresa(
     empresa_id: uuid.UUID,
     data: DecisionEmpresaRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.empresas.validar")),
     db: Session = Depends(get_db),
 ):
     empresa = EmpresaService(db).decidir(
@@ -88,7 +93,7 @@ def suspender_empresa(
     empresa_id: uuid.UUID,
     data: SuspensionEmpresaRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.empresas.baja")),
     db: Session = Depends(get_db),
 ):
     empresa = EmpresaService(db).suspender(empresa_id, data.motivo, alcance.institution_id, alcance.usuario.id_usuario)
@@ -101,7 +106,7 @@ def configurar_empresa(
     empresa_id: uuid.UUID,
     data: ConfiguracionEmpresaRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("formulario.empresas.configuracion")),
     db: Session = Depends(get_db),
 ):
     empresa = EmpresaService(db).actualizar_configuracion(
@@ -124,7 +129,7 @@ def configurar_empresa(
 def eliminar_empresa_logico(
     empresa_id: uuid.UUID,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.empresas.baja")),
     db: Session = Depends(get_db),
 ):
     empresa = EmpresaService(db).eliminar_logico(empresa_id, alcance.institution_id, alcance.usuario.id_usuario)
@@ -136,7 +141,7 @@ def eliminar_empresa_logico(
 def restaurar_empresa(
     empresa_id: uuid.UUID,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.empresas.baja")),
     db: Session = Depends(get_db),
 ):
     empresa = EmpresaService(db).restaurar(empresa_id, alcance.institution_id, alcance.usuario.id_usuario)
@@ -151,7 +156,7 @@ def restaurar_empresa(
 def listar_vacantes_pendientes(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("menu.moderacion")),
     db: Session = Depends(get_db),
 ):
     return VacanteService(db).listar_pendientes_revision(
@@ -164,7 +169,7 @@ def decidir_vacante(
     vacante_id: uuid.UUID,
     data: VacanteModeracionRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.moderacion.decidir")),
     db: Session = Depends(get_db),
 ):
     # VacanteService.moderar ya registra su propia auditoria y hace commit,

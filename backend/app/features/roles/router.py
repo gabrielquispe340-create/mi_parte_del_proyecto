@@ -12,32 +12,31 @@ from app.features.roles.schema import (
     RolResponse,
     UsuarioAdminResponse,
 )
-from app.security.dependencies import require_roles
-from app.security.tenant import AlcanceStaff, get_alcance_staff
+from app.security.permisos import requiere_permiso
+from app.security.tenant import AlcanceStaff
 from app.features.roles.service import RolesService
 
 router = APIRouter(prefix="/admin", tags=["gestion-roles"])
 
-_solo_admin = require_roles("platform_admin")
+# Componentes del panel «Gestión de roles»; el catálogo los reserva a administradores.
+_ve_usuarios = requiere_permiso("menu.usuarios")
 
 
-@router.get("/roles", response_model=list[RolResponse], dependencies=[Depends(_solo_admin)])
+@router.get("/roles", response_model=list[RolResponse], dependencies=[Depends(_ve_usuarios)])
 def listar_roles(db: Session = Depends(get_db)):
     return RolesService(db).listar_roles()
 
 
-@router.get("/usuarios", response_model=list[UsuarioAdminResponse], dependencies=[Depends(_solo_admin)])
-def listar_usuarios(alcance: AlcanceStaff = Depends(get_alcance_staff), db: Session = Depends(get_db)):
+@router.get("/usuarios", response_model=list[UsuarioAdminResponse])
+def listar_usuarios(alcance: AlcanceStaff = Depends(_ve_usuarios), db: Session = Depends(get_db)):
     return RolesService(db).listar_usuarios(alcance.institution_id)
 
 
-@router.post(
-    "/usuarios", response_model=UsuarioAdminResponse, status_code=201, dependencies=[Depends(_solo_admin)]
-)
+@router.post("/usuarios", response_model=UsuarioAdminResponse, status_code=201)
 def crear_usuario_staff(
     data: CrearUsuarioStaffRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("formulario.usuarios.nuevo")),
     db: Session = Depends(get_db),
 ):
     return RolesService(db).crear_usuario_staff(
@@ -48,12 +47,12 @@ def crear_usuario_staff(
     )
 
 
-@router.put("/usuarios/{usuario_id}/rol", response_model=AsignarRolResponse, dependencies=[Depends(_solo_admin)])
+@router.put("/usuarios/{usuario_id}/rol", response_model=AsignarRolResponse)
 def asignar_rol(
     usuario_id: uuid.UUID,
     data: AsignarRolRequest,
     request: Request,
-    alcance: AlcanceStaff = Depends(get_alcance_staff),
+    alcance: AlcanceStaff = Depends(requiere_permiso("boton.usuarios.cambiar_rol")),
     db: Session = Depends(get_db),
 ):
     usuario, rol_anterior = RolesService(db).asignar_rol(

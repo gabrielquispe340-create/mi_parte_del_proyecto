@@ -6,7 +6,12 @@
       responsable y surte efecto cuando el usuario vuelve a iniciar sesión.
     </p>
   </div>
-  <button type="button" class="btn-nuevo" (click)="abrirNuevo()">+ Nuevo usuario</button>
+  <div class="cabecera-acciones">
+    <a routerLink="/admin/grupos" class="btn-refrescar" *appPermiso="'menu.grupos'">Grupos y permisos →</a>
+    <button type="button" class="btn-nuevo" *appPermiso="'formulario.usuarios.nuevo'" (click)="abrirNuevo()">
+      + Nuevo usuario
+    </button>
+  </div>
 </header>
 
 <section class="tarjeta">
@@ -64,6 +69,7 @@
             Se gestiona en <a routerLink="/admin/empresas">Gestión de empresas</a>
           </span>
         } @else {
+          <ng-container *appPermiso="'boton.usuarios.cambiar_rol'">
           <select
             class="selector-rol"
             [ngModel]="rolActual(usuario)"
@@ -84,6 +90,7 @@
           >
             {{ guardandoId() === usuario.id ? 'Guardando…' : 'Guardar' }}
           </button>
+          </ng-container>
         }
       </li>
     }
