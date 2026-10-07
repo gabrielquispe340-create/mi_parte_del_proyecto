@@ -82,6 +82,8 @@
   </div>
   @if (!puedeVerPersonal()) {
     <p class="estado-vacio">Elegí una universidad para ver a su personal.</p>
+  } @else if (cargandoPersonal()) {
+    <p class="estado-vacio">Cargando personal…</p>
   } @else if (personal().length === 0) {
     <p class="estado-vacio">La universidad todavía no tiene administradores ni moderadores.</p>
   } @else {
