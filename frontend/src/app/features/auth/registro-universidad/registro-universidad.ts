@@ -50,6 +50,12 @@ export class RegistroUniversidad implements OnInit {
   responsableCorreo = '';
   responsableTelefono = '';
 
+  // Variables de pasarela de pago (visuales para la presentacion)
+  metodoPago = signal<'tarjeta' | 'qr'>('tarjeta');
+  numeroTarjeta = '';
+  vencimientoTarjeta = '';
+  cvvTarjeta = '';
+
   readonly planElegido = computed(() => this.planes().find((p) => p.codigo === this.plan()));
 
   ngOnInit(): void {
