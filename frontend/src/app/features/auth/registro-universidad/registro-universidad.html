@@ -171,7 +171,7 @@
             <span class="resumen">Plan <strong>{{ p.nombre }}</strong> · {{ textoPrecio(p.precio_anual_bs) }}</span>
           }
           <button type="submit" class="btn-primario" [disabled]="enviando() || cargando()">
-            {{ enviando() ? 'Enviando…' : 'Enviar solicitud' }}
+            {{ enviando() ? (plan() !== 'basico' ? 'Procesando pago seguro...' : 'Enviando...') : (plan() !== 'basico' ? 'Procesar pago y enviar' : 'Enviar solicitud') }}
           </button>
         </div>
       </form>
